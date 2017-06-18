@@ -3,6 +3,7 @@ package anka
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
@@ -32,6 +33,12 @@ func (b *Builder) Prepare(raws ...interface{}) (params []string, retErr error) {
 // Run executes an Anka Packer build and returns a packer.Artifact
 func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packer.Artifact, error) {
 	client := &Client{}
+
+	version, err := client.Version()
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("[DEBUG] Anka version: %s", version)
 
 	steps := []multistep.Step{
 		&StepCreateDisk{},

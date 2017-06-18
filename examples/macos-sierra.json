@@ -1,7 +1,6 @@
 {
   "variables": {
-    "sl_username": "{{env  `SL_USERNAME`}}",
-    "sl_api_key": "{{env `SL_API_KEY`}}"
+    "image_id": "{{env `ANKA_IMAGE_ID`}}"
   },
   "provisioners": [
     {
@@ -14,7 +13,7 @@
   "builders": [{
     "type": "veertu-anka",
     "installer_app": "/Applications/Install macOS Sierra.app/",
-    "disk_size": "25G"
+    "disk_size": "25G",
+    "image_id": "{{user `image_id`}}"
   }]
 }
-
