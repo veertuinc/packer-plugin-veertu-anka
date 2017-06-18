@@ -15,3 +15,9 @@ packer build examples/macos-sierra.json
 ```bash
 make packer-test
 ```
+
+If you've already built a base macOS VM, you can use:
+
+```bash
+make packer-test SOURCE_VM_NAME=macos-10.12.3-base
+```

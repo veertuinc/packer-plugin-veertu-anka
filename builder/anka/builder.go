@@ -40,7 +40,8 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 	log.Printf("[DEBUG] Anka version: %s", version)
 
 	steps := []multistep.Step{
-		&StepCreateDisk{},
+		&StepTempDir{},
+		&StepCreateVM{},
 		&communicator.StepConnect{
 			Config: &b.config.Comm,
 			CustomConnect: map[string]multistep.Step{
@@ -85,11 +86,11 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 
 	// return artifact, nil
 
-	return nil, errors.New("Not implemented")
+	return nil, errors.New("Artifact return not implemented")
 }
 
 // Cancel.
-func (self *Builder) Cancel() {
+func (b *Builder) Cancel() {
 	if b.runner != nil {
 		log.Println("Cancelling the step runner...")
 		b.runner.Cancel()

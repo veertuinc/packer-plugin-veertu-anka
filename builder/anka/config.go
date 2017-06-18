@@ -17,7 +17,7 @@ type Config struct {
 
 	DiskSize     string `mapstructure:"disk_size"`
 	InstallerApp string `mapstructure:"installer_app"`
-	ImageID      string `mapstructure:"image_id"`
+	SourceVMName string `mapstructure:"source_vm_name"`
 
 	ctx interpolate.Context
 }

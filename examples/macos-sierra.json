@@ -1,6 +1,6 @@
 {
   "variables": {
-    "image_id": "{{env `ANKA_IMAGE_ID`}}"
+    "source_vm_name": ""
   },
   "provisioners": [
     {
@@ -14,6 +14,6 @@
     "type": "veertu-anka",
     "installer_app": "/Applications/Install macOS Sierra.app/",
     "disk_size": "25G",
-    "image_id": "{{user `image_id`}}"
+    "source_vm_name": "{{user `source_vm_name`}}"
   }]
 }
