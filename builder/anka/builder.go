@@ -2,7 +2,6 @@ package anka
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/hashicorp/packer/common"
@@ -91,9 +90,8 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 
 // Cancel.
 func (self *Builder) Cancel() {
-	// if self.runner != nil {
-	// 	log.Println("Cancelling the step runner...")
-	// 	self.runner.Cancel()
-	// }
-	fmt.Println("Canceling the builder")
+	if b.runner != nil {
+		log.Println("Cancelling the step runner...")
+		b.runner.Cancel()
+	}
 }
