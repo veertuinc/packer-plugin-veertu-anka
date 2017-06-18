@@ -1,0 +1,20 @@
+{
+  "variables": {
+    "sl_username": "{{env  `SL_USERNAME`}}",
+    "sl_api_key": "{{env `SL_API_KEY`}}"
+  },
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "pwd"
+      ]
+    }
+  ],
+  "builders": [{
+    "type": "veertu-anka",
+    "installer_app": "/Applications/Install macOS Sierra.app/",
+    "disk_size": 25
+  }]
+}
+
