@@ -31,8 +31,10 @@ func (b *Builder) Prepare(raws ...interface{}) (params []string, retErr error) {
 
 // Run executes an Anka Packer build and returns a packer.Artifact
 func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packer.Artifact, error) {
+	client := &Client{}
 
 	steps := []multistep.Step{
+		&StepCreateDisk{},
 		&communicator.StepConnect{
 			Config: &b.config.Comm,
 			CustomConnect: map[string]multistep.Step{
@@ -47,6 +49,7 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 	state.Put("config", b.config)
 	state.Put("hook", hook)
 	state.Put("ui", ui)
+	state.Put("client", client)
 
 	// Run!
 	b.runner = common.NewRunner(steps, b.config.PackerConfig, ui)

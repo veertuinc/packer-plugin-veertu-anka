@@ -9,3 +9,9 @@ mkdir -p ~/.packer.d/plugins
 go build -o ~/.packer.d/plugins/packer-builder-veertu-anka
 packer build examples/macos-sierra.json
 ```
+
+## Development
+
+```bash
+make packer-test
+```
