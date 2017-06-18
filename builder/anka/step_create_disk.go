@@ -16,7 +16,7 @@ func (s *StepCreateDisk) Run(state multistep.StateBag) multistep.StepAction {
 
 	ui.Say(fmt.Sprintf("Creating disk image from app: %s", config.InstallerApp))
 
-	err := client.CreateDisk()
+	err := client.CreateDisk(config.DiskSize, config.InstallerApp)
 	if err != nil {
 		return multistep.ActionHalt
 	}

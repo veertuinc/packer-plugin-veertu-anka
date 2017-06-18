@@ -14,7 +14,7 @@
   "builders": [{
     "type": "veertu-anka",
     "installer_app": "/Applications/Install macOS Sierra.app/",
-    "disk_size": 25
+    "disk_size": "25G"
   }]
 }
 

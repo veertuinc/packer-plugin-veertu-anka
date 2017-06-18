@@ -15,7 +15,7 @@ type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 	Comm                communicator.Config `mapstructure:",squash"`
 
-	DiskSize     int    `mapstructure:"disk_size"`
+	DiskSize     string `mapstructure:"disk_size"`
 	InstallerApp string `mapstructure:"installer_app"`
 
 	ctx interpolate.Context
@@ -45,8 +45,8 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		errs = packer.MultiErrorAppend(errs, errors.New("installer_app must be specified"))
 	}
 
-	if c.DiskSize == 0 {
-		c.DiskSize = 25
+	if c.DiskSize == "" {
+		c.DiskSize = "25G"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
