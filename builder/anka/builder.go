@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
 	"github.com/hashicorp/packer/packer"
+	"github.com/lox/packer-builder-veertu-anka/client"
 	"github.com/mitchellh/multistep"
 )
 
@@ -30,7 +31,7 @@ func (b *Builder) Prepare(raws ...interface{}) (params []string, retErr error) {
 
 // Run executes an Anka Packer build and returns a packer.Artifact
 func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packer.Artifact, error) {
-	client := &Client{}
+	client := &client.Client{}
 
 	version, err := client.Version()
 	if err != nil {

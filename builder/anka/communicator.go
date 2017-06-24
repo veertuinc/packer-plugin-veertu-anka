@@ -9,11 +9,12 @@ import (
 	"path"
 
 	"github.com/hashicorp/packer/packer"
+	"github.com/lox/packer-builder-veertu-anka/client"
 )
 
 type Communicator struct {
 	Config  *Config
-	Client  *Client
+	Client  *client.Client
 	HostDir string
 	VMDir   string
 	VMName  string
@@ -22,7 +23,7 @@ type Communicator struct {
 func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 	log.Printf("Communicator Start: %s", remote.Command)
 
-	params := RunParams{
+	params := client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"sh", "-c", remote.Command},
 		VolumesFrom: c.HostDir,
@@ -65,7 +66,7 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	log.Printf("Created temp dir in %s", tempfile.Name())
 	log.Printf("Copying %d bytes from %s to %s", w, tempfile.Name(), dst)
 
-	return c.Client.Run(RunParams{
+	return c.Client.Run(client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"cp", path.Base(tempfile.Name()), dst},
 		VolumesFrom: c.HostDir,
@@ -87,7 +88,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	defer os.Remove(tempfile.Name())
 
 	// Copy it to a local file mounted on shared fs
-	err = c.Client.Run(RunParams{
+	err = c.Client.Run(client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"cp", src, "./" + path.Base(tempfile.Name())},
 		VolumesFrom: c.HostDir,

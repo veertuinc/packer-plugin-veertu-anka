@@ -15,9 +15,13 @@ type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 	Comm                communicator.Config `mapstructure:",squash"`
 
-	DiskSize     string `mapstructure:"disk_size"`
 	InstallerApp string `mapstructure:"installer_app"`
 	SourceVMName string `mapstructure:"source_vm_name"`
+
+	VMName   string `mapstructure:"vm_name"`
+	DiskSize string `mapstructure:"disk_size"`
+	RamSize  string `mapstructure:"ram_size"`
+	CPUCount string `mapstructure:"cpu_count"`
 
 	ctx interpolate.Context
 }
@@ -48,6 +52,14 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 
 	if c.DiskSize == "" {
 		c.DiskSize = "25G"
+	}
+
+	if c.CPUCount == "" {
+		c.CPUCount = "2"
+	}
+
+	if c.RamSize == "" {
+		c.RamSize = "2G"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {

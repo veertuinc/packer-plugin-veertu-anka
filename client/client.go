@@ -1,4 +1,4 @@
-package anka
+package client
 
 import (
 	"bytes"
@@ -13,14 +13,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/template/interpolate"
 )
 
 type Client struct {
-	Ui  packer.Ui
-	Ctx *interpolate.Context
 }
 
 func (c *Client) Version() (string, error) {

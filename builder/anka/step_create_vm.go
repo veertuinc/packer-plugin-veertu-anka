@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/hashicorp/packer/packer"
+	"github.com/lox/packer-builder-veertu-anka/client"
 	"github.com/mitchellh/multistep"
 )
 
@@ -17,35 +19,49 @@ func init() {
 }
 
 type StepCreateVM struct {
-	client *Client
+	client *client.Client
 	vmName string
 }
 
 func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
-	client := state.Get("client").(*Client)
 	ui := state.Get("ui").(packer.Ui)
 	sourceVM := config.SourceVMName
 
+	s.client = state.Get("client").(*client.Client)
+
 	if sourceVM == "" {
 		ui.Say("Creating a new disk from installer, this will take a while")
-		imageID, err := client.CreateDisk(CreateDiskParams{
+		imageID, err := s.client.CreateDisk(client.CreateDiskParams{
 			DiskSize:     config.DiskSize,
 			InstallerApp: config.InstallerApp,
 		})
 		if err != nil {
 			state.Put("error", err)
 			ui.Error(err.Error())
+			return multistep.ActionHalt
 		}
 
 		ui.Say(fmt.Sprintf("Creating disk image from app: %s", config.InstallerApp))
 
 		ui.Say("Creating a new virtual machine")
-		sourceVM = fmt.Sprintf("anka-disk-base-%s", randSeq(10))
-		_, err = client.Create(CreateParams{
+		sourceVM = config.VMName
+
+		if sourceVM == "" {
+			sourceVM = fmt.Sprintf("anka-disk-base-%s", randSeq(10))
+		}
+
+		cpuCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
+		if err != nil {
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+
+		_, err = s.client.Create(client.CreateParams{
 			ImageID:  imageID,
-			RamSize:  "2G",
-			CPUCount: 2,
+			RamSize:  config.RamSize,
+			CPUCount: int(cpuCount),
 			Name:     sourceVM,
 		})
 		if err != nil {
@@ -58,7 +74,7 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		ui.Say(fmt.Sprintf("VM %s was created", sourceVM))
 	}
 
-	descr, err := client.Describe(sourceVM)
+	descr, err := s.client.Describe(sourceVM)
 	if err != nil {
 		state.Put("error", err)
 		ui.Error(err.Error())
@@ -68,7 +84,7 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	vmName := fmt.Sprintf("anka-packer-%s", randSeq(10))
 
 	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine %s", sourceVM, vmName))
-	err = client.Clone(CloneParams{
+	err = s.client.Clone(client.CloneParams{
 		VMName:     vmName,
 		SourceUUID: descr.UUID,
 	})
@@ -79,14 +95,13 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	}
 
 	state.Put("vm_name", vmName)
-	s.client = client
 	s.vmName = vmName
 
 	return multistep.ActionContinue
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
-	err := s.client.Suspend(SuspendParams{
+	err := s.client.Suspend(client.SuspendParams{
 		VMName: s.vmName,
 	})
 	if err != nil {

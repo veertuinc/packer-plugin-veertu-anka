@@ -33,9 +33,22 @@ The path to a macOS installer. This must be provided if `source_vm_name` isn't p
 
 The size in "[0-9]+G" format, defaults to `25G`
 
+* `ram_size` (optional)
+
+The size in "[0-9]+G" format, defaults to `2G`
+
+* `cpu_count` (optional)
+
+The number of CPU cores, defaults to `2`
+
 * `source_vm_name` (optional)
 
 The VM to clone for provisioning, either stopped or suspended.
+
+* `vm_name` (optional)
+
+The name for the VM that is created. One is generated if not provided.
+
 
 ## Development
 
