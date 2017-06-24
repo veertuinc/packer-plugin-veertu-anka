@@ -23,21 +23,22 @@ type Communicator struct {
 func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 	log.Printf("Communicator Start: %s", remote.Command)
 
-	params := client.RunParams{
+	runner := client.NewRunner(client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"sh", "-c", remote.Command},
 		VolumesFrom: c.HostDir,
 		Stdout:      remote.Stdout,
 		Stderr:      remote.Stderr,
 		Stdin:       remote.Stdin,
-	}
+		Debug:       true,
+	})
 
-	resp, err := c.Client.RunAsync(params)
+	err := runner.Start()
 	if err != nil {
 		return err
 	}
 
-	go remote.SetExited(resp.ExitStatus())
+	go remote.SetExited(runner.ExitStatus())
 	return nil
 
 }

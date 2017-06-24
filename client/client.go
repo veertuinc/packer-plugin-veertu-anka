@@ -5,14 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
-	"time"
 )
 
 type Client struct {
@@ -42,6 +39,17 @@ type StartParams struct {
 func (c *Client) Start(params StartParams) error {
 	_, err := runAnkaCommand("start", params.VMName)
 	return err
+}
+
+func (c *Client) Run(params RunParams) error {
+	runner := NewRunner(params)
+
+	err := runner.Start()
+	if err != nil {
+		return err
+	}
+
+	return runner.Wait()
 }
 
 type CreateDiskParams struct {
@@ -120,96 +128,6 @@ func (c *Client) Create(params CreateParams) (CreateResponse, error) {
 	}
 
 	return response, nil
-}
-
-type RunParams struct {
-	VMName         string
-	VolumesFrom    string
-	Command        []string
-	Stdin          io.Reader
-	Stdout, Stderr io.Writer
-}
-
-func (c *Client) Run(params RunParams) error {
-	resp, err := c.RunAsync(params)
-	if err != nil {
-		return err
-	}
-
-	if err := resp.Wait(); err != nil {
-		return fmt.Errorf("Error running command: %v", err)
-	}
-
-	return nil
-}
-
-type RunAsyncResponse struct {
-	cmd            *exec.Cmd
-	Started        time.Time
-	Stdin          io.WriteCloser
-	Stdout, Stderr io.ReadCloser
-}
-
-func (r *RunAsyncResponse) Wait() error {
-	log.Printf("Waiting for command to finish")
-	err := r.cmd.Wait()
-	log.Printf("Command finished in %s", time.Now().Sub(r.Started))
-	if err != nil {
-		log.Printf("Command failed: %v", err)
-	}
-
-	return err
-}
-
-func (r *RunAsyncResponse) ExitStatus() int {
-	err := r.Wait()
-	if err == nil {
-		return 0
-	}
-
-	exitStatus := 1
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		exitStatus = 1
-
-		// There is no process-independent way to get the REAL
-		// exit status so we just try to go deeper.
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
-			exitStatus = status.ExitStatus()
-		}
-	}
-
-	log.Printf("Command exited with %d", exitStatus)
-	return exitStatus
-}
-
-func (c *Client) RunAsync(params RunParams) (resp *RunAsyncResponse, err error) {
-	args := []string{
-		"--machine-readable",
-		"run",
-	}
-
-	if params.VolumesFrom != "" {
-		args = append(args, "--volumes-from", params.VolumesFrom)
-	}
-
-	args = append(args, params.VMName)
-	args = append(args, params.Command...)
-
-	resp = &RunAsyncResponse{}
-	resp.cmd = exec.Command("anka", args...)
-
-	// When these are passed through some commands hang
-	// resp.cmd.Stdin = os.Stdin
-	// resp.cmd.Stdout = os.Stdout
-	// resp.cmd.Stderr = os.Stderr
-	resp.Started = time.Now()
-
-	log.Printf("Running anka %s", strings.Join(args, " "))
-	if err := resp.cmd.Start(); err != nil {
-		return resp, err
-	}
-
-	return resp, err
 }
 
 type DescribeResponse struct {
