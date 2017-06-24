@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -151,16 +150,12 @@ func (c *Client) Run(params RunParams) error {
 
 type RunAsyncResponse struct {
 	cmd            *exec.Cmd
-	wg             sync.WaitGroup
 	Started        time.Time
 	Stdin          io.WriteCloser
 	Stdout, Stderr io.ReadCloser
 }
 
 func (r *RunAsyncResponse) Wait() error {
-	log.Printf("Waiting for streams to finish")
-	r.wg.Wait()
-
 	log.Printf("Waiting for command to finish")
 	err := r.cmd.Wait()
 	log.Printf("Command finished in %s", time.Now().Sub(r.Started))
@@ -207,55 +202,16 @@ func (c *Client) RunAsync(params RunParams) (resp *RunAsyncResponse, err error) 
 
 	resp = &RunAsyncResponse{}
 	resp.cmd = exec.Command("anka", args...)
+
+	// When these are passed through some commands hang
+	// resp.cmd.Stdin = os.Stdin
+	// resp.cmd.Stdout = os.Stdout
+	// resp.cmd.Stderr = os.Stderr
 	resp.Started = time.Now()
-
-	resp.Stdin, err = resp.cmd.StdinPipe()
-	if err != nil {
-		return resp, err
-	}
-
-	resp.Stderr, err = resp.cmd.StderrPipe()
-	if err != nil {
-		return resp, err
-	}
-
-	resp.Stdout, err = resp.cmd.StdoutPipe()
-	if err != nil {
-		return resp, err
-	}
-
-	repeat := func(w io.Writer, r io.ReadCloser, descr string) {
-		log.Printf("Starting copy on %s", descr)
-		n, _ := io.Copy(w, r)
-		log.Printf("Copy done on %s, wrote %d", descr, n)
-		r.Close()
-		resp.wg.Done()
-	}
-
-	if params.Stdout != nil {
-		log.Printf("Copying stdout to command")
-		resp.wg.Add(1)
-		go repeat(params.Stdout, resp.Stdout, "stdout")
-	}
-
-	if params.Stderr != nil {
-		log.Printf("Copying stderr to command")
-		resp.wg.Add(1)
-		go repeat(params.Stderr, resp.Stderr, "stderr")
-	}
 
 	log.Printf("Running anka %s", strings.Join(args, " "))
 	if err := resp.cmd.Start(); err != nil {
 		return resp, err
-	}
-
-	if params.Stdin != nil {
-		log.Printf("Copying stdin to command")
-		go func() {
-			io.Copy(resp.Stdin, params.Stdin)
-			// close stdin to support commands that wait for stdin to be closed before exiting.
-			resp.Stdin.Close()
-		}()
 	}
 
 	return resp, err
@@ -321,6 +277,30 @@ func (c *Client) Describe(vmName string) (DescribeResponse, error) {
 	}
 
 	var response DescribeResponse
+	err = json.Unmarshal(output.Body, &response)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
+}
+
+type ShowResponse struct {
+	UUID     string `json:"uuid"`
+	Name     string `json:"name"`
+	CPUCores int    `json:"cpu_cores"`
+	RAM      string `json:"ram"`
+	ImageID  string `json:"image_id"`
+	Status   string `json:"status"`
+}
+
+func (c *Client) Show(vmName string) (ShowResponse, error) {
+	output, err := runAnkaCommand("info", vmName)
+	if err != nil {
+		return ShowResponse{}, err
+	}
+
+	var response ShowResponse
 	err = json.Unmarshal(output.Body, &response)
 	if err != nil {
 		return response, err

@@ -24,7 +24,7 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 
 	params := RunParams{
 		VMName:      c.VMName,
-		Command:     []string{"bash", "-c", remote.Command},
+		Command:     []string{"sh", "-c", remote.Command},
 		VolumesFrom: c.HostDir,
 		Stdout:      remote.Stdout,
 		Stderr:      remote.Stderr,
