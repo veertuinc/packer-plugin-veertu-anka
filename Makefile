@@ -19,11 +19,11 @@ install: $(BIN)
 	cp $(BIN) ~/.packer.d/plugins/
 
 packer-test: install
-	PACKER_LOG=1 packer build -debug -var "source_vm_name=$(SOURCE_VM_NAME)" examples/macos-sierra.json
+	PACKER_LOG=1 packer build -var "source_vm_name=$(SOURCE_VM_NAME)" examples/macos-sierra.json
 
 clean:
 	rm -f $(BIN)
 
 clean-images:
-	anka --machine-readable list | jq '.body[].name' | grep anka-builder | xargs -n1 anka delete --force
+	anka --machine-readable list | jq '.body[].name' | grep anka-packer | xargs -n1 anka delete --force
 

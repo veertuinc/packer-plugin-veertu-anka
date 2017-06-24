@@ -93,6 +93,18 @@
 			"revisionTime": "2017-06-17T08:27:46Z"
 		},
 		{
+			"checksumSHA1": "JzhIiW939t7RAfHUZ3soXcwqTXw=",
+			"path": "github.com/hashicorp/packer/provisioner/file",
+			"revision": "a23ab86226804322a70ad6315ccf9b64627dacb7",
+			"revisionTime": "2017-06-23T01:08:04Z"
+		},
+		{
+			"checksumSHA1": "XRZd9oqFUXzHBcqtLArsDwFNf4E=",
+			"path": "github.com/hashicorp/packer/provisioner/shell",
+			"revision": "a23ab86226804322a70ad6315ccf9b64627dacb7",
+			"revisionTime": "2017-06-23T01:08:04Z"
+		},
+		{
 			"checksumSHA1": "Wwn5AzeAxZHSJYcXzcEb1bpa0UM=",
 			"path": "github.com/hashicorp/packer/template",
 			"revision": "aa7ef7a4e320897b60a37234428029845e9a2288",

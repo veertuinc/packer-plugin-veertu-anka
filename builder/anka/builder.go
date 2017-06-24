@@ -1,7 +1,6 @@
 package anka
 
 import (
-	"errors"
 	"log"
 
 	"github.com/hashicorp/packer/common"
@@ -72,21 +71,17 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 		return nil, nil
 	}
 
-	// // No errors, must've worked
-	// var artifact packer.Artifact
-	// if b.config.Commit {
-	// 	artifact = &ImportArtifact{
-	// 		IdValue:        state.Get("image_id").(string),
-	// 		BuilderIdValue: BuilderIdImport,
-	// 		Driver:         driver,
-	// 	}
-	// } else {
-	// 	artifact = &ExportArtifact{path: b.config.ExportPath}
-	// }
+	// Check we can describe the VM
+	descr, err := client.Describe(state.Get("vm_name").(string))
+	if err != nil {
+		return nil, err
+	}
 
-	// return artifact, nil
-
-	return nil, errors.New("Artifact return not implemented")
+	// No errors, must've worked
+	return &Artifact{
+		vmId:   descr.UUID,
+		vmName: descr.Name,
+	}, nil
 }
 
 // Cancel.

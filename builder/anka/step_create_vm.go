@@ -2,13 +2,23 @@ package anka
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
+	"time"
 
 	"github.com/hashicorp/packer/packer"
 	"github.com/mitchellh/multistep"
 )
 
+var random *rand.Rand
+
+func init() {
+	random = rand.New(rand.NewSource(time.Now().UnixNano()))
+}
+
 type StepCreateVM struct {
+	client *Client
+	vmName string
 }
 
 func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
@@ -68,26 +78,19 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		return multistep.ActionHalt
 	}
 
-	ui.Say(fmt.Sprintf("Starting up %s", vmName))
-	err = client.Start(vmName)
-	if err != nil {
-		state.Put("error", err)
-		ui.Error(err.Error())
-		return multistep.ActionHalt
-	}
-
 	state.Put("vm_name", vmName)
+	s.client = client
+	s.vmName = vmName
+
 	return multistep.ActionContinue
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
-	client := state.Get("client").(*Client)
-	ui := state.Get("ui").(packer.Ui)
-	vmName := state.Get("vm_name").(string)
-
-	err := client.Stop(vmName)
+	err := s.client.Suspend(SuspendParams{
+		VMName: s.vmName,
+	})
 	if err != nil {
-		ui.Error(err.Error())
+		log.Println(err)
 	}
 }
 
@@ -96,7 +99,7 @@ var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 func randSeq(n int) string {
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[random.Intn(len(letters))]
 	}
 	return string(b)
 }

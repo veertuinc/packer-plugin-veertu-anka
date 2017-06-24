@@ -42,8 +42,8 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		c.Comm.Type = "anka"
 	}
 
-	if c.InstallerApp == "" {
-		errs = packer.MultiErrorAppend(errs, errors.New("installer_app must be specified"))
+	if c.InstallerApp == "" && c.SourceVMName == "" {
+		errs = packer.MultiErrorAppend(errs, errors.New("installer_app or source_vm_name must be specified"))
 	}
 
 	if c.DiskSize == "" {
