@@ -1,11 +1,14 @@
 package client
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -20,10 +23,10 @@ type RunParams struct {
 }
 
 type Runner struct {
+	wg             sync.WaitGroup
 	params         RunParams
 	cmd            *exec.Cmd
 	started        time.Time
-	stdin          io.WriteCloser
 	stdout, stderr io.ReadCloser
 }
 
@@ -32,10 +35,6 @@ func NewRunner(params RunParams) *Runner {
 
 	if params.Debug {
 		args = append(args, "--debug")
-	}
-
-	if params.Stdin == nil {
-		params.Stdin = os.Stdin
 	}
 
 	if params.Stdout == nil {
@@ -64,11 +63,6 @@ func NewRunner(params RunParams) *Runner {
 func (r *Runner) Start() error {
 	var err error
 
-	r.stdin, err = r.cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
-
 	r.stderr, err = r.cmd.StderrPipe()
 	if err != nil {
 		return err
@@ -79,43 +73,57 @@ func (r *Runner) Start() error {
 		return err
 	}
 
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc,
+		syscall.SIGCHLD,
+	)
+	go func() {
+		<-sigc
+		log.Printf("Got SIGCHLD from child")
+	}()
+
 	log.Printf("Starting command: %s", strings.Join(r.cmd.Args, " "))
 	r.started = time.Now()
 	if err := r.cmd.Start(); err != nil {
 		return err
 	}
 
+	log.Printf("Spawned process pid %d", r.cmd.Process.Pid)
 	return r.readStreams()
 }
 
 func (r *Runner) readStreams() error {
-	repeat := func(w io.Writer, rd io.ReadCloser, note string) {
-		log.Printf("Copying %s from %v to %v", note, rd, w)
-		n, _ := io.Copy(w, rd)
-		log.Printf("Copied %d bytes from %s", n, note)
-		log.Printf("Closing %s", note)
-		rd.Close()
+	if r.params.Stdout != nil {
+		r.wg.Add(1)
+		go func() {
+			scanner := bufio.NewScanner(r.stdout)
+			for scanner.Scan() {
+				line := scanner.Text()
+				log.Printf("[stdout] %s", line)
+			}
+			log.Printf("Finished reading stdout")
+			r.wg.Done()
+		}()
 	}
 
-	// for now just close stdin
-	if r.stdin != nil {
-		r.stdin.Close()
-	}
-
-	if r.stdout != nil {
-		go repeat(r.params.Stdout, r.stdout, "stdout")
-	}
-
-	if r.stderr != nil {
-		go repeat(r.params.Stderr, r.stderr, "stderr")
+	if r.params.Stderr != nil {
+		r.wg.Add(1)
+		go func() {
+			scanner := bufio.NewScanner(r.stderr)
+			for scanner.Scan() {
+				line := scanner.Text()
+				log.Printf("[stderr] %s", line)
+			}
+			log.Printf("Finished reading stderr")
+			r.wg.Done()
+		}()
 	}
 
 	return nil
 }
 
 func (r *Runner) Wait() error {
-
-	log.Printf("Waiting for command to finish")
+	r.wg.Wait()
 	err := r.cmd.Wait()
 
 	log.Printf("Command finished in %s", time.Now().Sub(r.started))
