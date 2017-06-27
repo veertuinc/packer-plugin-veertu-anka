@@ -26,9 +26,9 @@ type StepCreateVM struct {
 func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packer.Ui)
-	sourceVM := config.SourceVMName
 
 	s.client = state.Get("client").(*client.Client)
+	sourceVM := config.SourceVMName
 
 	if sourceVM == "" {
 		ui.Say("Creating a new disk from installer, this will take a while")
@@ -42,15 +42,6 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 			return multistep.ActionHalt
 		}
 
-		ui.Say(fmt.Sprintf("Creating disk image from app: %s", config.InstallerApp))
-
-		ui.Say("Creating a new virtual machine")
-		sourceVM = config.VMName
-
-		if sourceVM == "" {
-			sourceVM = fmt.Sprintf("anka-disk-base-%s", randSeq(10))
-		}
-
 		cpuCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
 		if err != nil {
 			state.Put("error", err)
@@ -58,6 +49,9 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 			return multistep.ActionHalt
 		}
 
+		sourceVM = fmt.Sprintf("anka-disk-base-%s", randSeq(10))
+
+		ui.Say("Creating a new virtual machine for disk")
 		_, err = s.client.Create(client.CreateParams{
 			ImageID:  imageID,
 			RamSize:  config.RamSize,
@@ -81,7 +75,10 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		return multistep.ActionHalt
 	}
 
-	vmName := fmt.Sprintf("anka-packer-%s", randSeq(10))
+	vmName := config.VMName
+	if vmName == "" {
+		vmName = fmt.Sprintf("anka-packer-%s", randSeq(10))
+	}
 
 	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine %s", sourceVM, vmName))
 	err = s.client.Clone(client.CloneParams{
@@ -101,6 +98,19 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
+	log.Printf("%#v", state)
+
+	if _, ok := state.GetOk(multistep.StateCancelled); ok {
+		err := s.client.Delete(client.DeleteParams{
+			VMName: s.vmName,
+			Force:  true,
+		})
+		if err != nil {
+			log.Println(err)
+		}
+		return
+	}
+
 	err := s.client.Suspend(client.SuspendParams{
 		VMName: s.vmName,
 	})

@@ -23,21 +23,24 @@ type Communicator struct {
 func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 	log.Printf("Communicator Start: %s", remote.Command)
 
-	params := client.RunParams{
+	runner := client.NewRunner(client.RunParams{
 		VMName:      c.VMName,
-		Command:     []string{"sh", "-c", remote.Command},
+		Command:     []string{"sh", "-x", "-c", remote.Command},
 		VolumesFrom: c.HostDir,
 		Stdout:      remote.Stdout,
 		Stderr:      remote.Stderr,
 		Stdin:       remote.Stdin,
-	}
+	})
 
-	resp, err := c.Client.RunAsync(params)
-	if err != nil {
-		return err
-	}
+	runner.Start()
+	go func() {
+		err, exitCode := runner.Wait()
+		if err != nil {
+			log.Printf("Runner exited with %s %v", exitCode, err)
+		}
+		remote.SetExited(exitCode)
+	}()
 
-	go remote.SetExited(resp.ExitStatus())
 	return nil
 
 }
@@ -66,11 +69,13 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	log.Printf("Created temp dir in %s", tempfile.Name())
 	log.Printf("Copying %d bytes from %s to %s", w, tempfile.Name(), dst)
 
-	return c.Client.Run(client.RunParams{
+	err, _ = c.Client.Run(client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"cp", path.Base(tempfile.Name()), dst},
 		VolumesFrom: c.HostDir,
 	})
+
+	return err
 }
 
 func (c *Communicator) UploadDir(dst string, src string, exclude []string) error {
@@ -88,7 +93,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	defer os.Remove(tempfile.Name())
 
 	// Copy it to a local file mounted on shared fs
-	err = c.Client.Run(client.RunParams{
+	err, _ = c.Client.Run(client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"cp", src, "./" + path.Base(tempfile.Name())},
 		VolumesFrom: c.HostDir,
