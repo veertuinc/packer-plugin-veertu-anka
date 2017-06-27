@@ -49,6 +49,7 @@ func (c *Client) Run(params RunParams) error {
 		return err
 	}
 
+	log.Printf("Waiting for command to run")
 	return runner.Wait()
 }
 

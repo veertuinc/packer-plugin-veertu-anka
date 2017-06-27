@@ -1,11 +1,11 @@
 package client
 
 import (
-	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
-	"sync"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -20,7 +20,6 @@ type RunParams struct {
 }
 
 type Runner struct {
-	wg             sync.WaitGroup
 	params         RunParams
 	cmd            *exec.Cmd
 	started        time.Time
@@ -33,6 +32,18 @@ func NewRunner(params RunParams) *Runner {
 
 	if params.Debug {
 		args = append(args, "--debug")
+	}
+
+	if params.Stdin == nil {
+		params.Stdin = os.Stdin
+	}
+
+	if params.Stdout == nil {
+		params.Stdout = os.Stdout
+	}
+
+	if params.Stderr == nil {
+		params.Stderr = os.Stderr
 	}
 
 	args = append(args, "run")
@@ -68,6 +79,7 @@ func (r *Runner) Start() error {
 		return err
 	}
 
+	log.Printf("Starting command: %s", strings.Join(r.cmd.Args, " "))
 	r.started = time.Now()
 	if err := r.cmd.Start(); err != nil {
 		return err
@@ -78,28 +90,23 @@ func (r *Runner) Start() error {
 
 func (r *Runner) readStreams() error {
 	repeat := func(w io.Writer, rd io.ReadCloser, note string) {
-		log.Printf("Copying %s", note)
+		log.Printf("Copying %s from %v to %v", note, rd, w)
 		n, _ := io.Copy(w, rd)
 		log.Printf("Copied %d bytes from %s", n, note)
 		log.Printf("Closing %s", note)
 		rd.Close()
-		r.wg.Done()
-	}
-
-	for range time.Tick(20 * time.Second) {
-		fmt.Printf("%#v", r.cmd.Process)
 	}
 
 	// for now just close stdin
-	r.stdin.Close()
+	if r.stdin != nil {
+		r.stdin.Close()
+	}
 
 	if r.stdout != nil {
-		r.wg.Add(1)
 		go repeat(r.params.Stdout, r.stdout, "stdout")
 	}
 
 	if r.stderr != nil {
-		r.wg.Add(1)
 		go repeat(r.params.Stderr, r.stderr, "stderr")
 	}
 
@@ -107,8 +114,6 @@ func (r *Runner) readStreams() error {
 }
 
 func (r *Runner) Wait() error {
-	log.Printf("Waiting for streams to finish")
-	r.wg.Wait()
 
 	log.Printf("Waiting for command to finish")
 	err := r.cmd.Wait()

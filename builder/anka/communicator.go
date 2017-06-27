@@ -30,7 +30,6 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 		Stdout:      remote.Stdout,
 		Stderr:      remote.Stderr,
 		Stdin:       remote.Stdin,
-		Debug:       true,
 	})
 
 	err := runner.Start()
