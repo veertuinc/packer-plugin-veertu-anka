@@ -41,13 +41,9 @@ func (c *Client) Start(params StartParams) error {
 	return err
 }
 
-func (c *Client) Run(params RunParams) error {
+func (c *Client) Run(params RunParams) (error, int) {
 	runner := NewRunner(params)
-
-	err := runner.Start()
-	if err != nil {
-		return err
-	}
+	runner.Start()
 
 	log.Printf("Waiting for command to run")
 	return runner.Wait()

@@ -1,16 +1,14 @@
 package client
 
 import (
-	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
-	"os/exec"
-	"os/signal"
 	"strings"
-	"sync"
-	"syscall"
 	"time"
+
+	"github.com/go-cmd/cmd"
 )
 
 type RunParams struct {
@@ -23,11 +21,10 @@ type RunParams struct {
 }
 
 type Runner struct {
-	wg             sync.WaitGroup
-	params         RunParams
-	cmd            *exec.Cmd
-	started        time.Time
-	stdout, stderr io.ReadCloser
+	params     RunParams
+	cmd        *cmd.Cmd
+	started    time.Time
+	statusChan <-chan cmd.Status
 }
 
 func NewRunner(params RunParams) *Runner {
@@ -56,100 +53,45 @@ func NewRunner(params RunParams) *Runner {
 
 	return &Runner{
 		params: params,
-		cmd:    exec.Command("anka", args...),
+		cmd:    cmd.NewCmd("anka", args...),
 	}
 }
 
-func (r *Runner) Start() error {
-	var err error
-
-	r.stderr, err = r.cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	r.stdout, err = r.cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc,
-		syscall.SIGCHLD,
-	)
-	go func() {
-		<-sigc
-		log.Printf("Got SIGCHLD from child")
-	}()
-
+func (r *Runner) Start() {
 	log.Printf("Starting command: %s", strings.Join(r.cmd.Args, " "))
 	r.started = time.Now()
-	if err := r.cmd.Start(); err != nil {
-		return err
-	}
+	r.statusChan = r.cmd.Start()
 
-	log.Printf("Spawned process pid %d", r.cmd.Process.Pid)
-	return r.readStreams()
-}
+	ticker := time.NewTicker(time.Millisecond * 100)
 
-func (r *Runner) readStreams() error {
-	if r.params.Stdout != nil {
-		r.wg.Add(1)
-		go func() {
-			scanner := bufio.NewScanner(r.stdout)
-			for scanner.Scan() {
-				line := scanner.Text()
-				log.Printf("[stdout] %s", line)
+	go func() {
+		var stdoutN, stderrN int
+		for range ticker.C {
+			status := r.cmd.Status()
+
+			// relay stdout to provided writer
+			for _, line := range status.Stdout[stdoutN:] {
+				fmt.Fprintf(r.params.Stdout, "%s\n", line)
 			}
-			log.Printf("Finished reading stdout")
-			r.wg.Done()
-		}()
-	}
+			stdoutN = len(status.Stdout)
 
-	if r.params.Stderr != nil {
-		r.wg.Add(1)
-		go func() {
-			scanner := bufio.NewScanner(r.stderr)
-			for scanner.Scan() {
-				line := scanner.Text()
-				log.Printf("[stderr] %s", line)
+			// relay stderr to provided writer
+			for _, line := range status.Stderr[stderrN:] {
+				fmt.Fprintf(r.params.Stderr, "%s\n", line)
 			}
-			log.Printf("Finished reading stderr")
-			r.wg.Done()
-		}()
-	}
+			stderrN = len(status.Stderr)
 
-	return nil
-}
-
-func (r *Runner) Wait() error {
-	r.wg.Wait()
-	err := r.cmd.Wait()
-
-	log.Printf("Command finished in %s", time.Now().Sub(r.started))
-	if err != nil {
-		log.Printf("Command failed: %v", err)
-	}
-	return err
-}
-
-func (r *Runner) ExitStatus() int {
-	err := r.Wait()
-	if err == nil {
-		return 0
-	}
-
-	exitStatus := 1
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		exitStatus = 1
-
-		// There is no process-independent way to get the REAL
-		// exit status so we just try to go deeper.
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
-			exitStatus = status.ExitStatus()
+			// stop when done
+			if status.Complete {
+				ticker.Stop()
+			}
 		}
-	}
+	}()
+}
 
-	log.Printf("Command exited with %d", exitStatus)
-	return exitStatus
+func (r *Runner) Wait() (error, int) {
+	status := <-r.statusChan
+
+	log.Printf("Command finished in %s with %d", time.Now().Sub(r.started), status.Exit)
+	return status.Error, status.Exit
 }
