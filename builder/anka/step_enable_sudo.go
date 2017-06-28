@@ -18,7 +18,7 @@ func (s *StepEnableSudo) Run(state multistep.StateBag) multistep.StepAction {
 	s.client = state.Get("client").(*client.Client)
 
 	ui.Say("Enabling sudo access for anka user in VM")
-	err, _ = s.client.Run(client.RunParams{
+	err, _ := s.client.Run(client.RunParams{
 		VMName:  s.vmName,
 		Command: []string{"sh", "-c", `echo "anka  ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers`},
 		User:    "root",
