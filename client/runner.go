@@ -18,6 +18,7 @@ type RunParams struct {
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
 	Debug          bool
+	User           string
 }
 
 type Runner struct {
@@ -43,6 +44,10 @@ func NewRunner(params RunParams) *Runner {
 	}
 
 	args = append(args, "run")
+
+	if params.User != "" {
+		args = append(args, "--user", params.User)
+	}
 
 	if params.VolumesFrom != "" {
 		args = append(args, "--volumes-from", params.VolumesFrom)

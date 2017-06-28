@@ -5,8 +5,6 @@ import (
 	"github.com/mitchellh/multistep"
 )
 
-// Borrowed from docker communicator, needs to be adapted still
-
 type StepConnectAnka struct{}
 
 func (s *StepConnectAnka) Run(state multistep.StateBag) multistep.StepAction {

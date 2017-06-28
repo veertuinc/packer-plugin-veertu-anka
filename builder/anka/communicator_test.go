@@ -166,7 +166,7 @@ func TestExecuteShellCommand(t *testing.T) {
 		t.Fatalf("Unable to read output file: %s", err)
 	}
 
-	if string(outputFile) != fmt.Sprintf("inline\nscript1\nscript2\n") {
+	if string(outputFile) != fmt.Sprintf("inline\nanka\nroot\nscript1\nscript2\n") {
 		t.Fatalf("Didn't expect output of %q", outputFile)
 	}
 }
@@ -210,7 +210,9 @@ const ankaBuilderShellConfig = `
       "type": "shell",
       "inline": [
         "echo inline >> /tmp/provisioner_log",
-        "echo hello from shell!"
+        "whoami >> /tmp/provisioner_log",
+        "echo hello from shell!",
+        "sudo whoami >> /tmp/provisioner_log"
         ]
     },
     {
