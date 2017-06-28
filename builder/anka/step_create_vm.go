@@ -87,7 +87,7 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		vmName = fmt.Sprintf("anka-packer-%s", randSeq(10))
 	}
 
-	exists, _ := s.client.Exists(sourceVM)
+	exists, _ := s.client.Exists(vmName)
 	if exists && config.PackerConfig.PackerForce {
 		ui.Say(fmt.Sprintf("Deleting existing virtual machine %s", vmName))
 		err = s.client.Delete(client.DeleteParams{
