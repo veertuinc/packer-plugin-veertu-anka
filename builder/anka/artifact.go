@@ -2,7 +2,6 @@ package anka
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Artifact represents an Anka image as the result of a Packer build.
@@ -39,5 +38,5 @@ func (self *Artifact) State(name string) interface{} {
 
 // String returns the string representation of the artifact.
 func (self *Artifact) String() string {
-	return fmt.Sprintf("%s::%s", self.vmName, self.vmId)
+	return self.vmName
 }

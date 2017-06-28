@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os/exec"
@@ -275,6 +274,19 @@ func (c *Client) Delete(params DeleteParams) error {
 	return err
 }
 
+func (c *Client) Exists(vmName string) (bool, error) {
+	_, err := c.Show(vmName)
+	if err == nil {
+		return true, nil
+	}
+
+	if err.(machineReadableError).ExceptionType == "VMNotFoundException" {
+		return false, nil
+	}
+
+	return false, err
+}
+
 func runAnkaCommand(args ...string) (machineReadableOutput, error) {
 	log.Printf("Executing anka --machine-readable %s", strings.Join(args, " "))
 
@@ -303,6 +315,14 @@ const (
 	statusERROR = "ERROR"
 )
 
+type machineReadableError struct {
+	*machineReadableOutput
+}
+
+func (ae machineReadableError) Error() string {
+	return ae.Message
+}
+
 type machineReadableOutput struct {
 	Status        string `json:"status"`
 	Body          json.RawMessage
@@ -313,19 +333,16 @@ type machineReadableOutput struct {
 
 func (parsed *machineReadableOutput) GetError() error {
 	if parsed.Status != statusOK {
-		return errors.New(parsed.Message)
+		return machineReadableError{parsed}
 	}
 	return nil
 }
 
 func parseOutput(output []byte) (machineReadableOutput, error) {
-	log.Printf("Response JSON: %s", output)
-
 	var parsed machineReadableOutput
 	if err := json.Unmarshal(output, &parsed); err != nil {
 		return parsed, err
 	}
 
-	// log.Printf("Response %#v", parsed)
 	return parsed, nil
 }
