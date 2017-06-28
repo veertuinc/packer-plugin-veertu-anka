@@ -56,6 +56,8 @@ func NewRunner(params RunParams) *Runner {
 	args = append(args, params.VMName)
 	args = append(args, params.Command...)
 
+	log.Printf("%#v", args)
+
 	return &Runner{
 		params: params,
 		cmd:    cmd.NewCmd("anka", args...),

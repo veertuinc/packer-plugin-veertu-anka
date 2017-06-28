@@ -204,8 +204,12 @@ type ShowResponse struct {
 	Status   string `json:"status"`
 }
 
+func (sr ShowResponse) IsRunning() bool {
+	return sr.Status == "running"
+}
+
 func (c *Client) Show(vmName string) (ShowResponse, error) {
-	output, err := runAnkaCommand("info", vmName)
+	output, err := runAnkaCommand("show", vmName)
 	if err != nil {
 		return ShowResponse{}, err
 	}

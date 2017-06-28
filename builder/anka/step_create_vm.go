@@ -68,11 +68,23 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		ui.Say(fmt.Sprintf("VM %s was created", sourceVM))
 	}
 
-	descr, err := s.client.Describe(sourceVM)
+	show, err := s.client.Show(sourceVM)
 	if err != nil {
 		state.Put("error", err)
 		ui.Error(err.Error())
 		return multistep.ActionHalt
+	}
+
+	if show.IsRunning() {
+		ui.Say(fmt.Sprintf("Suspending VM %s", sourceVM))
+		err := s.client.Suspend(client.SuspendParams{
+			VMName: sourceVM,
+		})
+		if err != nil {
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
 	}
 
 	vmName := config.VMName
@@ -83,7 +95,7 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine %s", sourceVM, vmName))
 	err = s.client.Clone(client.CloneParams{
 		VMName:     vmName,
-		SourceUUID: descr.UUID,
+		SourceUUID: show.UUID,
 	})
 	if err != nil {
 		state.Put("error", err)

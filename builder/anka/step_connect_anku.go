@@ -1,6 +1,8 @@
 package anka
 
 import (
+	"log"
+
 	"github.com/lox/packer-builder-veertu-anka/client"
 	"github.com/mitchellh/multistep"
 )
@@ -25,4 +27,7 @@ func (s *StepConnectAnka) Run(state multistep.StateBag) multistep.StepAction {
 	return multistep.ActionContinue
 }
 
-func (s *StepConnectAnka) Cleanup(state multistep.StateBag) {}
+func (s *StepConnectAnka) Cleanup(state multistep.StateBag) {
+	log.Printf("Cleaning up communicator")
+
+}
