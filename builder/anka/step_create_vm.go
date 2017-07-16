@@ -37,34 +37,26 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	}
 
 	if sourceVM == "" {
-		ui.Say("Creating a new disk from installer, this will take a while")
-		imageID, err := s.client.CreateDisk(client.CreateDiskParams{
-			DiskSize:     config.DiskSize,
-			InstallerApp: config.InstallerApp,
-		})
-		if err != nil {
-			return onError(err)
-		}
-
 		cpuCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
 		if err != nil {
 			return onError(err)
 		}
 
-		sourceVM = fmt.Sprintf("anka-disk-base-%s", randSeq(10))
+		sourceVM = fmt.Sprintf("anka-base-%s", randSeq(10))
 
-		ui.Say("Creating a new virtual machine for disk")
-		_, err = s.client.Create(client.CreateParams{
-			ImageID:  imageID,
-			RamSize:  config.RamSize,
-			CPUCount: int(cpuCount),
-			Name:     sourceVM,
+		ui.Say("Creating a new vm from installer, this will take a while")
+		resp, err := s.client.Create(client.CreateParams{
+			DiskSize:     config.DiskSize,
+			InstallerApp: config.InstallerApp,
+			RAMSize:      config.RAMSize,
+			CPUCount:     int(cpuCount),
+			Name:         sourceVM,
 		})
 		if err != nil {
-			return onError(fmt.Errorf("Error creating VM: %v", err))
+			return onError(err)
 		}
 
-		ui.Say(fmt.Sprintf("VM %s was created", sourceVM))
+		ui.Say(fmt.Sprintf("VM %s was created (%s)", sourceVM, resp.UUID))
 	}
 
 	show, err := s.client.Show(sourceVM)
