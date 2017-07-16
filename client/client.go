@@ -1,12 +1,9 @@
 package client
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -48,67 +45,32 @@ func (c *Client) Run(params RunParams) (error, int) {
 	return runner.Wait()
 }
 
-type CreateDiskParams struct {
-	DiskSize     string
-	InstallerApp string
-}
-
-func (c *Client) CreateDisk(params CreateDiskParams) (string, error) {
-	var stderr bytes.Buffer
-	var stdout bytes.Buffer
-
-	cmd := exec.Command(
-		"anka",
-		// "--machine-readable", NB: isn't supported yet
-		"create-disk",
-		"--size",
-		params.DiskSize,
-		"--app",
-		params.InstallerApp,
-	)
-	cmd.Stderr = &stderr
-	cmd.Stdout = &stdout
-
-	log.Printf("Creating disk with %#v", params)
-	if err := cmd.Start(); err != nil {
-		return "", err
-	}
-
-	if err := cmd.Wait(); err != nil {
-		err = fmt.Errorf("Error creating disk: %s\nStderr: %s",
-			err, stderr.String())
-		return "", err
-	}
-
-	re := regexp.MustCompile(`disk (.+?) created successfully`)
-	matches := re.FindStringSubmatch(strings.TrimSpace(stdout.String()))
-
-	if len(matches) == 0 {
-		return "", fmt.Errorf(
-			"Unknown error creating disk\nStderr: %s\n Stdout: %s",
-			stderr.String(), stdout.String())
-	}
-
-	return matches[1], nil
-}
-
 type CreateParams struct {
-	ImageID  string
-	Name     string
-	RamSize  string
-	CPUCount int
+	Name         string
+	InstallerApp string
+	OpticalDrive string
+	RAMSize      string
+	DiskSize     string
+	CPUCount     int
 }
 
 type CreateResponse struct {
-	UUID string `json:"uuid"`
+	UUID     string `json:"uuid"`
+	Name     string `json:"name"`
+	CPUCores int    `json:"cpu_cores"`
+	RAM      string `json:"ram"`
+	ImageID  string `json:"image_id"`
+	Status   string `json:"status"`
 }
 
 func (c *Client) Create(params CreateParams) (CreateResponse, error) {
 	args := []string{
 		"create",
-		"--image-id", params.ImageID,
-		"--ram-size", params.RamSize,
+		"--disk-size", params.DiskSize,
+		"--app", params.InstallerApp,
+		"--ram-size", params.RAMSize,
 		"--cpu-count", strconv.Itoa(params.CPUCount),
+		"--disk-size", params.DiskSize,
 		params.Name,
 	}
 
@@ -297,6 +259,8 @@ func runAnkaCommand(args ...string) (machineReadableOutput, error) {
 	if err != nil {
 		log.Printf("Failed with an error of %v", err)
 	}
+
+	log.Printf("%s", output)
 
 	parsed, err := parseOutput(output)
 	if err != nil {

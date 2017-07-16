@@ -20,7 +20,7 @@ type Config struct {
 
 	VMName   string `mapstructure:"vm_name"`
 	DiskSize string `mapstructure:"disk_size"`
-	RamSize  string `mapstructure:"ram_size"`
+	RAMSize  string `mapstructure:"ram_size"`
 	CPUCount string `mapstructure:"cpu_count"`
 
 	ctx interpolate.Context
@@ -58,8 +58,8 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		c.CPUCount = "2"
 	}
 
-	if c.RamSize == "" {
-		c.RamSize = "2G"
+	if c.RAMSize == "" {
+		c.RAMSize = "2G"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
