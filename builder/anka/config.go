@@ -23,6 +23,8 @@ type Config struct {
 	RAMSize  string `mapstructure:"ram_size"`
 	CPUCount string `mapstructure:"cpu_count"`
 
+	BootDelay string `mapstructure:"boot_delay"`
+
 	ctx interpolate.Context
 }
 
@@ -60,6 +62,10 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 
 	if c.RAMSize == "" {
 		c.RAMSize = "2G"
+	}
+
+	if c.BootDelay == "" {
+		c.BootDelay = "2s"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {

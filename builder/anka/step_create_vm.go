@@ -99,6 +99,22 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		return onError(err)
 	}
 
+	err = s.client.Start(client.StartParams{
+		VMName: vmName,
+	})
+	if err != nil {
+		return onError(err)
+	}
+
+	if config.BootDelay != "" {
+		d, err := time.ParseDuration(config.BootDelay)
+		if err != nil {
+			return onError(err)
+		}
+		ui.Say(fmt.Sprintf("Waiting for %s for clone to boot", d))
+		time.Sleep(d)
+	}
+
 	state.Put("vm_name", vmName)
 	s.vmName = vmName
 
