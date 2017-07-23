@@ -2,11 +2,13 @@ package anka
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/hashicorp/packer/packer"
 	"github.com/lox/packer-builder-veertu-anka/client"
@@ -79,7 +81,97 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 }
 
 func (c *Communicator) UploadDir(dst string, src string, exclude []string) error {
-	return errors.New("communicator.UploadDir isn't implemented")
+	// Create the temporary directory that will store the contents of "src"
+	// for copying into the container.
+	td, err := ioutil.TempDir(c.HostDir, "dirupload")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(td)
+
+	walkFn := func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relpath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		hostpath := filepath.Join(td, relpath)
+
+		// If it is a directory, just create it
+		if info.IsDir() {
+			return os.MkdirAll(hostpath, info.Mode())
+		}
+
+		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+			dest, err := os.Readlink(path)
+
+			if err != nil {
+				return err
+			}
+
+			return os.Symlink(dest, hostpath)
+		}
+
+		// It is a file, copy it over, including mode.
+		src, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		dst, err := os.Create(hostpath)
+		if err != nil {
+			return err
+		}
+		defer dst.Close()
+
+		log.Printf("Copying %s to %s", src.Name(), dst.Name())
+		if _, err := io.Copy(dst, src); err != nil {
+			return err
+		}
+
+		si, err := src.Stat()
+		if err != nil {
+			return err
+		}
+
+		return dst.Chmod(si.Mode())
+	}
+
+	// Copy the entire directory tree to the temporary directory
+	if err := filepath.Walk(src, walkFn); err != nil {
+		return err
+	}
+
+	// Determine the destination directory
+	// containerSrc := filepath.Join(c.ContainerDir, filepath.Base(td))
+	containerDst := dst
+	if src[len(src)-1] != '/' {
+		containerDst = filepath.Join(dst, filepath.Base(src))
+	}
+
+	log.Printf("from %#v to %#v", td, containerDst)
+
+	// Make the directory, then copy into it
+	cmd := &packer.RemoteCmd{
+		Command: fmt.Sprintf("set -e; mkdir -p %s; command cp -R %s/* %s",
+			containerDst, filepath.Base(td), containerDst,
+		),
+	}
+	if err := c.Start(cmd); err != nil {
+		return err
+	}
+
+	// Wait for the copy to complete
+	cmd.Wait()
+	if cmd.ExitStatus != 0 {
+		return fmt.Errorf("Upload failed with non-zero exit status: %d", cmd.ExitStatus)
+	}
+
+	return nil
 }
 
 func (c *Communicator) Download(src string, dst io.Writer) error {
