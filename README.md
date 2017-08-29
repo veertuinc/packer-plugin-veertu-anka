@@ -9,12 +9,13 @@ to you to use it or delete it.
 ## Installing from Binary
 
 1. Install Packer
-2. Download the [latest release](https://github.com/buildkite/packer-builder-veertu-anka/releases) for your host environment
-3. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
+2. Install Veertu Anka
+3. Download the [latest release](https://github.com/buildkite/packer-builder-veertu-anka/releases) for your host environment
+4. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
     * The directory where the packer binary is.
     * The `~/.packer.d/plugins` directory.
     * The current working directory.
-4. Change to a directory where you have packer templates, and run as usual.
+5. Change to a directory where you have packer templates, and run as usual.
 
 ## Configuration
 
