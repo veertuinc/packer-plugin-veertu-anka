@@ -122,6 +122,9 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
+	if s.vmName == "" {
+		return
+	}
 	if _, ok := state.GetOk(multistep.StateCancelled); ok {
 		err := s.client.Delete(client.DeleteParams{
 			VMName: s.vmName,
