@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/packer/packer"
-	"github.com/lox/packer-builder-veertu-anka/client"
+	"github.com/buildkite/packer-builder-veertu-anka/client"
 	"github.com/mitchellh/multistep"
 )
 

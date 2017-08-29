@@ -1,4 +1,4 @@
-PREFIX := github.com/lox/packer-builder-veertu-anka
+PREFIX := github.com/buildkite/packer-builder-veertu-anka
 VERSION := $(shell git describe --tags --candidates=1 --dirty 2>/dev/null || echo "dev")
 FLAGS := -X main.Version=$(VERSION)
 BIN := packer-builder-veertu-anka
