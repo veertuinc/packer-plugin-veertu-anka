@@ -1,0 +1,6 @@
+builds:
+  - binary: packer-builder-veertu-anka
+    goos:
+      - darwin
+    goarch:
+      - amd64
