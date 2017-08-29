@@ -27,3 +27,6 @@ clean:
 clean-images:
 	anka --machine-readable list | jq '.body[].name' | grep anka-packer | xargs -n1 anka delete --force
 
+wipe-anka:
+	-rm -rf ~/Library/Application\ Support/Veertu
+	-rm -rf ~/.anka
