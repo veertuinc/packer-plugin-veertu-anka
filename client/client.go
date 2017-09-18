@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os/exec"
 	"strconv"
@@ -66,7 +67,6 @@ type CreateResponse struct {
 func (c *Client) Create(params CreateParams) (CreateResponse, error) {
 	args := []string{
 		"create",
-		"--disk-size", params.DiskSize,
 		"--app", params.InstallerApp,
 		"--ram-size", params.RAMSize,
 		"--cpu-count", strconv.Itoa(params.CPUCount),
@@ -82,7 +82,7 @@ func (c *Client) Create(params CreateParams) (CreateResponse, error) {
 	var response CreateResponse
 	err = json.Unmarshal(output.Body, &response)
 	if err != nil {
-		return response, err
+		return response, fmt.Errorf("Failed parsing output: %q (%v)", output.Body, err)
 	}
 
 	return response, nil
