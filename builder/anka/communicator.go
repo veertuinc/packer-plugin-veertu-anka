@@ -10,8 +10,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/hashicorp/packer/packer"
 	"github.com/buildkite/packer-builder-veertu-anka/client"
+	"github.com/hashicorp/packer/packer"
 )
 
 type Communicator struct {
@@ -34,11 +34,14 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 		Stdin:       remote.Stdin,
 	})
 
-	runner.Start()
+	if err := runner.Start(); err != nil {
+		return err
+	}
+
 	go func() {
 		err, exitCode := runner.Wait()
 		if err != nil {
-			log.Printf("Runner exited with %s %v", exitCode, err)
+			log.Printf("Runner exited with error: %v", err)
 		}
 		remote.SetExited(exitCode)
 	}()

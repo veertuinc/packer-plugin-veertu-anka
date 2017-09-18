@@ -15,12 +15,6 @@
 			"revisionTime": "2015-01-25T03:41:22Z"
 		},
 		{
-			"checksumSHA1": "TKtvaGC1+1efYV/5ydefnhoVGPk=",
-			"path": "github.com/go-cmd/cmd",
-			"revision": "a2f18106a9e069b001ad1136e2c89723d25301f4",
-			"revisionTime": "2017-06-17T18:34:34Z"
-		},
-		{
 			"checksumSHA1": "cdOCt0Yb+hdErz8NAQqayxPmRsY=",
 			"path": "github.com/hashicorp/errwrap",
 			"revision": "7554cd9344cec97297fa6649b055a8c98c2a1e55",
@@ -279,5 +273,5 @@
 			"revisionTime": "2017-06-13T19:24:08Z"
 		}
 	],
-	"rootPath": "github.com/lox/packer-builder-veertu-anka"
+	"rootPath": "github.com/buildkite/packer-builder-veertu-anka"
 }

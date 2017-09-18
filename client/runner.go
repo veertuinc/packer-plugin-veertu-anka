@@ -1,14 +1,15 @@
 package client
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 
-	"github.com/go-cmd/cmd"
+	"github.com/pkg/errors"
 )
 
 type RunParams struct {
@@ -22,10 +23,9 @@ type RunParams struct {
 }
 
 type Runner struct {
-	params     RunParams
-	cmd        *cmd.Cmd
-	started    time.Time
-	statusChan <-chan cmd.Status
+	params  RunParams
+	cmd     *exec.Cmd
+	started time.Time
 }
 
 func NewRunner(params RunParams) *Runner {
@@ -56,49 +56,43 @@ func NewRunner(params RunParams) *Runner {
 	args = append(args, params.VMName)
 	args = append(args, params.Command...)
 
-	log.Printf("%#v", args)
+	cmd := exec.Command("anka", args...)
+	cmd.Stdin = params.Stdin
+	cmd.Stdout = params.Stdout
+	cmd.Stderr = params.Stderr
 
 	return &Runner{
 		params: params,
-		cmd:    cmd.NewCmd("anka", args...),
+		cmd:    cmd,
 	}
 }
 
-func (r *Runner) Start() {
+func (r *Runner) Start() error {
 	log.Printf("Starting command: %s", strings.Join(r.cmd.Args, " "))
 	r.started = time.Now()
-	r.statusChan = r.cmd.Start()
-
-	ticker := time.NewTicker(time.Millisecond * 100)
-
-	go func() {
-		var stdoutN, stderrN int
-		for range ticker.C {
-			status := r.cmd.Status()
-
-			// relay stdout to provided writer
-			for _, line := range status.Stdout[stdoutN:] {
-				fmt.Fprintf(r.params.Stdout, "%s\n", line)
-			}
-			stdoutN = len(status.Stdout)
-
-			// relay stderr to provided writer
-			for _, line := range status.Stderr[stderrN:] {
-				fmt.Fprintf(r.params.Stderr, "%s\n", line)
-			}
-			stderrN = len(status.Stderr)
-
-			// stop when done
-			if status.Complete {
-				ticker.Stop()
-			}
-		}
-	}()
+	return r.cmd.Start()
 }
 
 func (r *Runner) Wait() (error, int) {
-	status := <-r.statusChan
+	err := r.cmd.Wait()
+	log.Printf("Command finished in %s with %v", time.Now().Sub(r.started), err)
+	return err, getExitCode(err)
+}
 
-	log.Printf("Command finished in %s with %d", time.Now().Sub(r.started), status.Exit)
-	return status.Error, status.Exit
+// GetExitCode extracts an exit code from an error where the platform supports it,
+// otherwise returns 0 for no error and 1 for an error
+func getExitCode(err error) int {
+	if err == nil {
+		return 0
+	}
+	switch cause := errors.Cause(err).(type) {
+	case *exec.ExitError:
+		// The program has exited with an exit code != 0
+		// There is no platform independent way to retrieve
+		// the exit code, but the following will work on Unix/macOS
+		if status, ok := cause.Sys().(syscall.WaitStatus); ok {
+			return status.ExitStatus()
+		}
+	}
+	return 1
 }
