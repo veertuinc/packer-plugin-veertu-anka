@@ -59,6 +59,9 @@ The VM to clone for provisioning, either stopped or suspended.
 
 The name for the VM that is created. One is generated if not provided.
 
+* `boot_delay` (optional)
+
+The time to wait before running packer provisioner commands, defaults to `2s`.
 
 ## Development
 
