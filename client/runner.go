@@ -6,10 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/hashicorp/packer/packer"
 )
 
 type RunParams struct {
@@ -32,7 +31,7 @@ func NewRunner(params RunParams) *Runner {
 	args := []string{}
 
 	if params.Debug {
-		args = append(args, "--debug")
+		args = append(args, "--log-level", "debug")
 	}
 
 	if params.Stdout == nil {
@@ -45,12 +44,10 @@ func NewRunner(params RunParams) *Runner {
 
 	args = append(args, "run")
 
-	if params.User != "" {
-		args = append(args, "--user", params.User)
-	}
-
 	if params.VolumesFrom != "" {
-		args = append(args, "--volumes-from", params.VolumesFrom)
+		args = append(args, "-v", params.VolumesFrom)
+	} else {
+		args = append(args, "-n")
 	}
 
 	args = append(args, params.VMName)
@@ -85,14 +82,13 @@ func getExitCode(err error) int {
 	if err == nil {
 		return 0
 	}
-	switch cause := errors.Cause(err).(type) {
-	case *exec.ExitError:
-		// The program has exited with an exit code != 0
-		// There is no platform independent way to retrieve
-		// the exit code, but the following will work on Unix/macOS
-		if status, ok := cause.Sys().(syscall.WaitStatus); ok {
-			return status.ExitStatus()
+ 	if eerr, ok := err.(*exec.ExitError); ok {
+		code := eerr.ExitCode()
+		if code == 125 {
+			code = packer.CmdDisconnect
 		}
+		return code
 	}
+
 	return 1
 }
