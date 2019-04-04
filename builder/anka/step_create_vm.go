@@ -126,10 +126,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 		return
 	}
 	if _, ok := state.GetOk(multistep.StateCancelled); ok {
-		err := s.client.Delete(client.DeleteParams{
-			VMName: s.vmName,
-			Force:  true,
-		})
+		err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
 		if err != nil {
 			log.Println(err)
 		}
@@ -141,6 +138,8 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	})
 	if err != nil {
 		log.Println(err)
+		s.client.Delete(client.DeleteParams{VMName: s.vmName})
+		panic(err)
 	}
 }
 
