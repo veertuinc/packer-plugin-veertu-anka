@@ -27,8 +27,8 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 
 	runner := client.NewRunner(client.RunParams{
 		VMName:      c.VMName,
-		Command:     []string{"sh", "-c", remote.Command},
-		VolumesFrom: c.HostDir,
+		Command:     []string{"bash", "-c", remote.Command},
+		Volume: 	 "",
 		Stdout:      remote.Stdout,
 		Stderr:      remote.Stderr,
 		Stdin:       remote.Stdin,
@@ -77,7 +77,7 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	err, _ = c.Client.Run(client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"cp", path.Base(tempfile.Name()), dst},
-		VolumesFrom: c.HostDir,
+		Volume: 	 c.HostDir,
 	})
 
 	return err
@@ -191,7 +191,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	err, _ = c.Client.Run(client.RunParams{
 		VMName:      c.VMName,
 		Command:     []string{"cp", src, "./" + path.Base(tempfile.Name())},
-		VolumesFrom: c.HostDir,
+		Volume: 	 c.HostDir,
 	})
 
 	log.Printf("Copying from %s to writer", tempfile.Name())

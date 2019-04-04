@@ -13,7 +13,7 @@ import (
 
 type RunParams struct {
 	VMName         string
-	VolumesFrom    string
+	Volume    string
 	Command        []string
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
@@ -44,8 +44,8 @@ func NewRunner(params RunParams) *Runner {
 
 	args = append(args, "run")
 
-	if params.VolumesFrom != "" {
-		args = append(args, "-v", params.VolumesFrom)
+	if params.Volume != "" {
+		args = append(args, "-v", params.Volume)
 	} else {
 		args = append(args, "-n")
 	}
