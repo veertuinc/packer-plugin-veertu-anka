@@ -1,6 +1,6 @@
 # Packer Builder for Anka
 
-This is a [Packer Builder] for building images that work with [Veertu Anka], a 
+This is a [Packer Builder] for building images that work with [Veertu Anka], a
 macOS virtualization tool.
 
 Note that this builder does not manage images. Once it creates an image, it is up
@@ -36,7 +36,7 @@ Must be `veertu-anka`
 
 * `installer_app` (optional)
 
-The path to a macOS installer. This must be provided if `source_vm_name` isn't 
+The path to a macOS installer. This must be provided if `source_vm_name` isn't
 provided. This process takes about 20 minutes
 
 * `disk_size` (optional)
@@ -54,6 +54,10 @@ The number of CPU cores, defaults to `2`
 * `source_vm_name` (optional)
 
 The VM to clone for provisioning, either stopped or suspended.
+
+If you specify both `source_vm_name` and `installer_app`, and a VM image with `source_vm_name`
+does not exist locally, a VM image with that name is created for you using the `installer_app`.
+This process takes about 20 minutes.
 
 * `vm_name` (optional)
 
