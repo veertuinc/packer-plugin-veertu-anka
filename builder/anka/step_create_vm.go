@@ -36,15 +36,33 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		return multistep.ActionHalt
 	}
 
-	if sourceVM == "" {
+	// By default, do not create a new sourceVM
+	doCreateSourceVM := false
+
+	// If users specifies both a source name and installer app, assume they wish us to create the
+	// source image using the installer app
+	if config.InstallerApp != "" && sourceVM != "" {
+		doCreateSourceVM = true
+	}
+
+	// If no source name was specified but an installer_app was, generate a source name
+	if config.InstallerApp != "" && sourceVM == "" {
+		sourceVM = fmt.Sprintf("anka-base-%s", randSeq(10))
+		doCreateSourceVM = true
+	}
+
+	// Do not create the source vm if it already exists
+	if sourceVMExists, _ := s.client.Exists(sourceVM); sourceVMExists {
+		doCreateSourceVM = false
+	}
+
+	if doCreateSourceVM {
 		cpuCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
 		if err != nil {
 			return onError(err)
 		}
 
-		sourceVM = fmt.Sprintf("anka-base-%s", randSeq(10))
-
-		ui.Say("Creating a new vm from installer, this will take a while")
+		ui.Say(fmt.Sprintf("Creating a new vm (%s) from installer, this will take a while", sourceVM))
 		resp, err := s.client.Create(client.CreateParams{
 			DiskSize:     config.DiskSize,
 			InstallerApp: config.InstallerApp,
