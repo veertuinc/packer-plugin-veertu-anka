@@ -26,12 +26,12 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 	log.Printf("Communicator Start: %s", remote.Command)
 
 	runner := client.NewRunner(client.RunParams{
-		VMName:      c.VMName,
-		Command:     []string{"bash", "-c", remote.Command},
-		Volume: 	 "",
-		Stdout:      remote.Stdout,
-		Stderr:      remote.Stderr,
-		Stdin:       remote.Stdin,
+		VMName:  c.VMName,
+		Command: []string{"bash", "-c", remote.Command},
+		Volume:  "",
+		Stdout:  remote.Stdout,
+		Stderr:  remote.Stderr,
+		Stdin:   remote.Stdin,
 	})
 
 	if err := runner.Start(); err != nil {
@@ -75,9 +75,9 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	log.Printf("Copying %d bytes from %s to %s", w, tempfile.Name(), dst)
 
 	err, _ = c.Client.Run(client.RunParams{
-		VMName:      c.VMName,
-		Command:     []string{"cp", path.Base(tempfile.Name()), dst},
-		Volume: 	 c.HostDir,
+		VMName:  c.VMName,
+		Command: []string{"cp", path.Base(tempfile.Name()), dst},
+		Volume:  c.HostDir,
 	})
 
 	return err
@@ -159,22 +159,16 @@ func (c *Communicator) UploadDir(dst string, src string, exclude []string) error
 	log.Printf("from %#v to %#v", td, containerDst)
 
 	// Make the directory, then copy into it
-	cmd := &packer.RemoteCmd{
-		Command: fmt.Sprintf("set -e; mkdir -p %s; command cp -R %s/* %s",
-			containerDst, filepath.Base(td), containerDst,
-		),
-	}
-	if err := c.Start(cmd); err != nil {
-		return err
-	}
+	command := fmt.Sprintf("set -e; mkdir -p %s; command cp -R %s/* %s",
+		containerDst, filepath.Base(td), containerDst,
+	)
+	err, _ = c.Client.Run(client.RunParams{
+		VMName:  c.VMName,
+		Command: []string{"bash", "-c", command},
+		Volume:  c.HostDir,
+	})
 
-	// Wait for the copy to complete
-	cmd.Wait()
-	if cmd.ExitStatus != 0 {
-		return fmt.Errorf("Upload failed with non-zero exit status: %d", cmd.ExitStatus)
-	}
-
-	return nil
+	return err
 }
 
 func (c *Communicator) Download(src string, dst io.Writer) error {
@@ -189,9 +183,9 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 
 	// Copy it to a local file mounted on shared fs
 	err, _ = c.Client.Run(client.RunParams{
-		VMName:      c.VMName,
-		Command:     []string{"cp", src, "./" + path.Base(tempfile.Name())},
-		Volume: 	 c.HostDir,
+		VMName:  c.VMName,
+		Command: []string{"cp", src, "./" + path.Base(tempfile.Name())},
+		Volume:  c.HostDir,
 	})
 
 	log.Printf("Copying from %s to writer", tempfile.Name())
