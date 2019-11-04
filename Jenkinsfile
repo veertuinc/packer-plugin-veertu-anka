@@ -1,7 +1,7 @@
 
 
 pipeline {
-    agent { node { label 'build-packer' }} 
+    agent { node { label 'mojave-build-packer' }} 
     stages {
         stage('Build') {
             steps {
