@@ -3,7 +3,7 @@ package anka
 import (
 	"log"
 
-	"github.com/buildkite/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	"github.com/mitchellh/multistep"
 )
 

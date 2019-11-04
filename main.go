@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/buildkite/packer-builder-veertu-anka/builder/anka"
+	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
 	"github.com/mitchellh/packer/packer/plugin"
 )
 

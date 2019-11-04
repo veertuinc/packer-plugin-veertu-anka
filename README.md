@@ -10,7 +10,7 @@ to you to use it or delete it.
 
 1. Install Packer
 2. Install Veertu Anka
-3. Download the [latest release](https://github.com/buildkite/packer-builder-veertu-anka/releases) for your host environment
+3. Download the [latest release](https://github.com/veertuinc/packer-builder-veertu-anka/releases) for your host environment
 4. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
     * The directory where the packer binary is.
     * The `~/.packer.d/plugins` directory.
