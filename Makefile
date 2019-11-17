@@ -12,7 +12,7 @@ test:
 build: $(BIN)
 
 $(BIN): $(SOURCES)
-	go build -ldflags="$(FLAGS)" -o $(BIN) $(PREFIX)
+	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN) $(PREFIX)
 
 install: $(BIN)
 	mkdir -p ~/.packer.d/plugins/

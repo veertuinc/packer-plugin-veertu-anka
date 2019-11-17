@@ -1,8 +1,9 @@
 package anka
 
 import (
-	"errors"
+	"strings"
 	"fmt"
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -27,7 +28,7 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 
 	runner := client.NewRunner(client.RunParams{
 		VMName:  c.VMName,
-		Command: []string{"bash", "-c", remote.Command},
+		Command: []string{remote.Command},
 		Volume:  "",
 		Stdout:  remote.Stdout,
 		Stderr:  remote.Stderr,
@@ -52,7 +53,12 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 
 func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error {
 	log.Printf("Communicator Upload")
-
+	if strings.HasPrefix(dst, "~") {
+		folders := strings.Split(dst, "/")
+		if len(folders) > 0 {
+			dst = strings.Replace(dst, folders[0], "~", 1)
+		}
+	}
 	// Create a temporary file to store the upload
 	tempfile, err := ioutil.TempFile(c.HostDir, "upload")
 	if err != nil {
@@ -73,6 +79,8 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 
 	log.Printf("Created temp dir in %s", tempfile.Name())
 	log.Printf("Copying %d bytes from %s to %s", w, tempfile.Name(), dst)
+
+	log.Printf("Destination os %v", dst)
 
 	err, _ = c.Client.Run(client.RunParams{
 		VMName:  c.VMName,

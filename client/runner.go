@@ -1,6 +1,7 @@
 package client
 
 import (
+	// "syscall"
 	"io"
 	"log"
 	"os"
@@ -51,12 +52,17 @@ func NewRunner(params RunParams) *Runner {
 	}
 
 	args = append(args, params.VMName)
-	args = append(args, params.Command...)
+	args = append(args, "sh")
 
 	cmd := exec.Command("anka", args...)
-	cmd.Stdin = params.Stdin
 	cmd.Stdout = params.Stdout
 	cmd.Stderr = params.Stderr
+	
+	// cmd.SysProcAttr = &syscall.SysProcAttr{
+	// 	Setpgid: true,
+	// 	Pgid:    0,
+	// }
+
 
 	return &Runner{
 		params: params,
@@ -67,7 +73,11 @@ func NewRunner(params RunParams) *Runner {
 func (r *Runner) Start() error {
 	log.Printf("Starting command: %s", strings.Join(r.cmd.Args, " "))
 	r.started = time.Now()
-	return r.cmd.Start()
+	stdin, err := r.cmd.StdinPipe(); if err != nil {return err}
+	err = r.cmd.Start(); if err != nil {return err}
+	stdin.Write([]byte(strings.Join(r.params.Command, " ")))
+	stdin.Close()
+	return err
 }
 
 func (r *Runner) Wait() (error, int) {
