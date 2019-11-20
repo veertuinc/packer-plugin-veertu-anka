@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
-
 	"github.com/hashicorp/packer/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	"github.com/mitchellh/multistep"
@@ -63,16 +62,26 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 		}
 
 		ui.Say(fmt.Sprintf("Creating a new vm (%s) from installer, this will take a while", sourceVM))
+		
+		outputStream := make(chan string)
+		go func() {
+			for msg := range outputStream {
+				ui.Say(msg)
+			}
+		}()
+
 		resp, err := s.client.Create(client.CreateParams{
 			DiskSize:     config.DiskSize,
 			InstallerApp: config.InstallerApp,
 			RAMSize:      config.RAMSize,
 			CPUCount:     int(cpuCount),
 			Name:         sourceVM,
-		})
+		}, outputStream)
 		if err != nil {
 			return onError(err)
 		}
+
+		close(outputStream)
 
 		ui.Say(fmt.Sprintf("VM %s was created (%s)", sourceVM, resp.UUID))
 	}
