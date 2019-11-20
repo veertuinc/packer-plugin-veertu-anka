@@ -1,7 +1,6 @@
 package anka
 
 import (
-	"strings"
 	"fmt"
 	"errors"
 	"io"
@@ -53,12 +52,6 @@ func (c *Communicator) Start(remote *packer.RemoteCmd) error {
 
 func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error {
 	log.Printf("Communicator Upload")
-	if strings.HasPrefix(dst, "~") {
-		folders := strings.Split(dst, "/")
-		if len(folders) > 0 {
-			dst = strings.Replace(dst, folders[0], "~", 1)
-		}
-	}
 	// Create a temporary file to store the upload
 	tempfile, err := ioutil.TempFile(c.HostDir, "upload")
 	if err != nil {

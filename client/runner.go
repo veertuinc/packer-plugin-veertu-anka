@@ -75,7 +75,9 @@ func (r *Runner) Start() error {
 	r.started = time.Now()
 	stdin, err := r.cmd.StdinPipe(); if err != nil {return err}
 	err = r.cmd.Start(); if err != nil {return err}
-	stdin.Write([]byte(strings.Join(r.params.Command, " ")))
+	cmdString := strings.Join(r.params.Command, " ")
+	log.Print("Executing on sh: ", cmdString)
+	stdin.Write([]byte(cmdString))
 	stdin.Close()
 	return err
 }
