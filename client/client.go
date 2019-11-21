@@ -96,6 +96,7 @@ type DescribeResponse struct {
 	UUID    string `json:"uuid"`
 	CPU     struct {
 		Cores int `json:"cores"`
+		Threads int `json:"threads"`
 	} `json:"cpu"`
 	RAM string `json:"ram"`
 	Usb struct {
@@ -169,6 +170,10 @@ type ShowResponse struct {
 
 func (sr ShowResponse) IsRunning() bool {
 	return sr.Status == "running"
+}
+
+func (sr ShowResponse) IsStopped() bool {
+	return sr.Status == "stopped"
 }
 
 func (c *Client) Show(vmName string) (ShowResponse, error) {
@@ -249,6 +254,20 @@ func (c *Client) Exists(vmName string) (bool, error) {
 	}
 
 	return false, err
+}
+
+func (c *Client) Modify(vmName string, command string, property string, flags ...string) error {
+	ankaCommand := []string{"modify", vmName, command, property}
+	ankaCommand = append(ankaCommand, flags...)
+	output, err := runAnkaCommand(ankaCommand...)
+	if err != nil {
+		return err
+	}
+	if output.Status != "OK" {
+		log.Print("Error executing modify command: ", output.ExceptionType, " ", output.Message)
+		return fmt.Errorf(output.Message)
+	}
+	return nil
 }
 
 func runAnkaCommand(args ...string) (machineReadableOutput, error) {

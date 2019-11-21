@@ -30,9 +30,7 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	sourceVM := config.SourceVMName
 
 	onError := func(err error) multistep.StepAction {
-		state.Put("error", err)
-		ui.Error(err.Error())
-		return multistep.ActionHalt
+		return stepError(ui, state, err)
 	}
 
 	// By default, do not create a new sourceVM
@@ -124,22 +122,6 @@ func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
 	})
 	if err != nil {
 		return onError(err)
-	}
-
-	err = s.client.Start(client.StartParams{
-		VMName: vmName,
-	})
-	if err != nil {
-		return onError(err)
-	}
-
-	if config.BootDelay != "" {
-		d, err := time.ParseDuration(config.BootDelay)
-		if err != nil {
-			return onError(err)
-		}
-		ui.Say(fmt.Sprintf("Waiting for %s for clone to boot", d))
-		time.Sleep(d)
 	}
 
 	state.Put("vm_name", vmName)

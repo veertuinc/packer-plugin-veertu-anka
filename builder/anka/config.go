@@ -24,6 +24,8 @@ type Config struct {
 	CPUCount string `mapstructure:"cpu_count"`
 
 	BootDelay string `mapstructure:"boot_delay"`
+	EnableHtt bool   `mapstructure:"enable_htt"`
+	DisableHtt bool  `mapstructure:"disable_htt"`
 
 	ctx interpolate.Context
 }
