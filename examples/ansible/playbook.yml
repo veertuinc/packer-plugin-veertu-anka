@@ -1,0 +1,12 @@
+
+---
+- hosts: default
+  gather_facts: no
+  tasks:
+    - name: hello
+      raw: echo "hello ansible and packer"
+    - name: command module
+      command: ls -l 
+
+
+
