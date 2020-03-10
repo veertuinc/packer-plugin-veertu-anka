@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/packer/packer"
 	"log"
+	"context"
 
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	"github.com/hashicorp/packer/helper/multistep"
@@ -11,7 +12,7 @@ import (
 
 type StepSetHyperThreading struct{}
 
-func (s *StepSetHyperThreading) Run(state multistep.StateBag) multistep.StepAction {
+func (s *StepSetHyperThreading) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packer.Ui)
 

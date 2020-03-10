@@ -12,6 +12,8 @@ test:
 build: $(BIN)
 
 $(BIN): $(SOURCES)
+	GOOS=darwin GOBIN=$(shell pwd) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
+	GOOS=darwin PATH=$(shell pwd):${PATH} go generate builder/anka/config.go
 	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN) $(PREFIX)
 
 install: $(BIN)

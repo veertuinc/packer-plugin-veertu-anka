@@ -17,7 +17,7 @@ func TestPrepare(t *testing.T) {
 
 	c := testConfig()
 
-	if _, err := b.Prepare(c); err != nil {
+	if _, _, err := b.Prepare(c); err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 }

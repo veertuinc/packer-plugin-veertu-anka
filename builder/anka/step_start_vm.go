@@ -3,6 +3,7 @@ package anka
 import (
 	"time"
 	"fmt"
+	"context"
 	"github.com/hashicorp/packer/packer"
 	"log"
 
@@ -12,7 +13,7 @@ import (
 
 type StepStartVM struct{}
 
-func (s *StepStartVM) Run(state multistep.StateBag) multistep.StepAction {
+func (s *StepStartVM) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packer.Ui)
 	onError := func(err error) multistep.StepAction {

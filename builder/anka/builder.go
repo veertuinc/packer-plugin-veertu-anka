@@ -2,7 +2,10 @@ package anka
 
 import (
 	"log"
+	"context"
+	"errors"
 
+	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
 	"github.com/hashicorp/packer/packer"
@@ -20,17 +23,17 @@ type Builder struct {
 }
 
 // Prepare processes the build configuration parameters.
-func (b *Builder) Prepare(raws ...interface{}) (params []string, retErr error) {
+func (b *Builder) Prepare(raws ...interface{}) (params []string, warns []string, retErr error) {
 	c, errs := NewConfig(raws...)
 	if errs != nil {
-		return nil, errs
+		return nil, nil, errs
 	}
 	b.config = c
-	return nil, nil
+	return nil, nil, nil
 }
 
 // Run executes an Anka Packer build and returns a packer.Artifact
-func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packer.Artifact, error) {
+func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (packer.Artifact, error) {
 	client := &client.Client{}
 
 	version, err := client.Version()
@@ -49,6 +52,9 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 			CustomConnect: map[string]multistep.Step{
 				"anka": &StepConnectAnka{},
 			},
+			Host: func(state multistep.StateBag) (string, error) {
+				return "", errors.New("No host implemented for anka builder (which is ok)")
+			},
 		},
 		&common.StepProvision{},
 	}
@@ -62,7 +68,7 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 
 	// Run!
 	b.runner = common.NewRunner(steps, b.config.PackerConfig, ui)
-	b.runner.Run(state)
+	b.runner.Run(ctx, state)
 
 	// If there was an error, return that
 	if rawErr, ok := state.GetOk("error"); ok {
@@ -88,9 +94,15 @@ func (b *Builder) Run(ui packer.Ui, hook packer.Hook, cache packer.Cache) (packe
 }
 
 // Cancel.
-func (b *Builder) Cancel() {
-	if b.runner != nil {
-		log.Println("Cancelling the step runner...")
-		b.runner.Cancel()
-	}
+// Not used after packer 1.3
+
+// func (b *Builder) Cancel() {
+// 	if b.runner != nil {
+// 		log.Println("Cancelling the step runner...")
+// 		b.runner.Cleanup()
+// 	}
+// }
+
+func (b *Builder) ConfigSpec() hcldec.ObjectSpec {
+	return b.config.FlatMapstructure().HCL2Spec()
 }

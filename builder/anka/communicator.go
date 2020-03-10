@@ -9,7 +9,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-
+	"context"
+	
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	"github.com/hashicorp/packer/packer"
 )
@@ -22,7 +23,7 @@ type Communicator struct {
 	VMName  string
 }
 
-func (c *Communicator) Start(remote *packer.RemoteCmd) error {
+func (c *Communicator) Start(ctx context.Context, remote *packer.RemoteCmd) error {
 	log.Printf("Communicator Start: %s", remote.Command)
 
 	runner := client.NewRunner(client.RunParams{

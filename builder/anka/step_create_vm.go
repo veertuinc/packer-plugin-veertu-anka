@@ -3,6 +3,7 @@ package anka
 import (
 	"fmt"
 	"log"
+	"context"
 	"math/rand"
 	"strconv"
 	"time"
@@ -22,7 +23,7 @@ type StepCreateVM struct {
 	vmName string
 }
 
-func (s *StepCreateVM) Run(state multistep.StateBag) multistep.StepAction {
+func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packer.Ui)
 

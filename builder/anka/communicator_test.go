@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/packer/provisioner/file"
 	"github.com/hashicorp/packer/provisioner/shell"
 	"github.com/hashicorp/packer/template"
+	"context"
 )
 
 func TestCommunicator_impl(t *testing.T) {
@@ -22,7 +23,6 @@ func TestCommunicator_impl(t *testing.T) {
 // TestUploadDownload verifies that basic upload / download functionality works
 func TestUploadDownload(t *testing.T) {
 	ui := packer.TestUi(t)
-	cache := &packer.FileCache{CacheDir: os.TempDir()}
 
 	tpl, err := template.Parse(strings.NewReader(ankaBuilderConfig))
 	if err != nil {
@@ -38,7 +38,7 @@ func TestUploadDownload(t *testing.T) {
 
 	// Setup the builder
 	builder := &Builder{}
-	warnings, err := builder.Prepare(tpl.Builders["veertu-anka"].Config)
+	_, warnings, err := builder.Prepare(tpl.Builders["veertu-anka"].Config)
 	if err != nil {
 		t.Fatalf("Error preparing configuration %s", err)
 	}
@@ -63,15 +63,16 @@ func TestUploadDownload(t *testing.T) {
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
 		&packer.ProvisionHook{
-			Provisioners: []packer.Provisioner{
-				upload,
-				download,
+			Provisioners: []*packer.HookedProvisioner{
+				{Provisioner: upload, Config: nil, TypeName: ""},
+				{Provisioner: download, Config: nil, TypeName: ""},
 			},
 		},
 	}
+	hook := &packer.DispatchHook{Mapping: hooks}
 
 	// Run things
-	artifact, err := builder.Run(ui, &packer.DispatchHook{Mapping: hooks}, cache)
+	artifact, err := builder.Run(context.Background(), ui, hook)
 	if err != nil {
 		t.Fatalf("Error running build %s", err)
 	}
@@ -96,7 +97,6 @@ func TestUploadDownload(t *testing.T) {
 // TestShellProvisioner verifies that shell provisioning works
 func TestExecuteShellCommand(t *testing.T) {
 	ui := packer.TestUi(t)
-	cache := &packer.FileCache{CacheDir: os.TempDir()}
 
 	tpl, err := template.Parse(strings.NewReader(ankaBuilderShellConfig))
 	if err != nil {
@@ -112,7 +112,7 @@ func TestExecuteShellCommand(t *testing.T) {
 
 	// Setup the builder
 	builder := &Builder{}
-	warnings, err := builder.Prepare(tpl.Builders["veertu-anka"].Config)
+	_, warnings, err := builder.Prepare(tpl.Builders["veertu-anka"].Config)
 	if err != nil {
 		t.Fatalf("Error preparing configuration %s", err)
 	}
@@ -144,16 +144,17 @@ func TestExecuteShellCommand(t *testing.T) {
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
 		&packer.ProvisionHook{
-			Provisioners: []packer.Provisioner{
-				inline,
-				scripts,
-				download,
+			Provisioners: []*packer.HookedProvisioner{
+				{Provisioner: inline, Config: nil, TypeName: ""},
+				{Provisioner: scripts, Config: nil, TypeName: ""},
+				{Provisioner: download, Config: nil, TypeName: ""},
 			},
 		},
 	}
+	hook := &packer.DispatchHook{Mapping: hooks}
 
 	// Run things
-	artifact, err := builder.Run(ui, &packer.DispatchHook{Mapping: hooks}, cache)
+	artifact, err := builder.Run(context.Background(), ui, hook)
 	if err != nil {
 		t.Fatalf("Error running build %s", err)
 	}
