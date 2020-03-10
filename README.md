@@ -6,6 +6,11 @@ macOS virtualization tool.
 Note that this builder does not manage images. Once it creates an image, it is up
 to you to use it or delete it.
 
+### Compatibility
+Packer Version | Builder for Anka Version
+Up to 1.4.5 | 1.1.0
+1.5.x and above | 1.2.0
+
 ## Installing from Binary
 
 1. Install Packer
