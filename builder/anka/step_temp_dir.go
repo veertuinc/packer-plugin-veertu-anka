@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/hashicorp/packer/packer"
-	"github.com/mitchellh/multistep"
+	"github.com/hashicorp/packer/helper/multistep"
 )
 
 // StepTempDir creates a temporary directory that we use in order to

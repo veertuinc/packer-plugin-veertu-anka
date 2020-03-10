@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/mitchellh/multistep"
+	"github.com/hashicorp/packer/helper/multistep"
 )
 
 type StepSetHyperThreading struct{}

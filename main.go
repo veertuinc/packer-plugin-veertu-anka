@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
-	"github.com/mitchellh/packer/packer/plugin"
+	"github.com/hashicorp/packer/packer/plugin"
 )
 
 func main() {

@@ -6,8 +6,8 @@ import (
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
 	"github.com/hashicorp/packer/packer"
+	"github.com/hashicorp/packer/helper/multistep"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/mitchellh/multistep"
 )
 
 // The unique ID for this builder.
