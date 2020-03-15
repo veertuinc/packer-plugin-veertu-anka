@@ -11,7 +11,7 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'go test -v builder/anka/*.go'
+                sh 'export GOPATH=$PWD && export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin && cd ./src/github.com/veertuinc/packer-builder-veertu-anka/ && go test -v builder/anka/*.go'
             }
         }
         stage('Publish') {
