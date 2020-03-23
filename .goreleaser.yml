@@ -1,5 +1,5 @@
 builds:
-  - binary: packer-builder-veertu-anka
+  - binary: packer-builder-veertu-anka.zip
     goos:
       - darwin
     goarch:
