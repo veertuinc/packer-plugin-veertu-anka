@@ -1,6 +1,31 @@
 builds:
-  - binary: packer-builder-veertu-anka
+  - id: builder
+    binary: packer-builder-veertu-anka
     goos:
       - darwin
     goarch:
       - amd64
+
+archives:
+- files:
+  - none*
+
+ 
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  
+signs:
+  - id: notarize
+    signature: "${artifact}.zip"
+    cmd: gon
+    args: [".gon.hcl"]
+    artifacts: all
+    ids:
+      - builder
+
+release:
+  ids:
+    - none
+  extra_files:
+    - glob: ./dist/packer-builder-veertu-anka.zip
+
