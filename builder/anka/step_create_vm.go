@@ -132,10 +132,16 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
+	log.Println("Cleaning up create VM step")
 	if s.vmName == "" {
+		log.Println("No VM name - skipping this part")
 		return
 	}
-	if _, ok := state.GetOk(multistep.StateCancelled); ok {
+	_, halted := state.GetOk(multistep.StateHalted)
+	_, canceled := state.GetOk(multistep.StateCancelled)
+
+	if halted || canceled {
+		log.Println("Deleting VM ", s.vmName)
 		err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
 		if err != nil {
 			log.Println(err)
