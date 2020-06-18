@@ -226,16 +226,12 @@ func (c *Client) Stop(params StopParams) error {
 
 type DeleteParams struct {
 	VMName string
-	Force  bool
 }
 
 func (c *Client) Delete(params DeleteParams) error {
 	args := []string{
 		"delete",
-	}
-
-	if params.Force {
-		args = append(args, "--force")
+		"--yes",
 	}
 
 	args = append(args, params.VMName)
@@ -286,6 +282,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
+		log.Println("Err on stdoutpipe")
 		return machineReadableOutput{}, err
 	}
 
