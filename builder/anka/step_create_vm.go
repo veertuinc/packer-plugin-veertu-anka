@@ -163,7 +163,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 		// RAM
 		if config.RAMSize != showResponse.RAM {
-			ui.Say(fmt.Sprintf("Modifying VM %S RAM to %s", showResponse.Name, config.RAMSize))
+			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, config.RAMSize))
 			if err := s.client.Stop(stopParams); err != nil {
 				return onError(err)
 			}
