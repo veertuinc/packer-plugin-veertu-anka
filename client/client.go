@@ -160,12 +160,13 @@ func (c *Client) Describe(vmName string) (DescribeResponse, error) {
 }
 
 type ShowResponse struct {
-	UUID     string `json:"uuid"`
-	Name     string `json:"name"`
-	CPUCores int    `json:"cpu_cores"`
-	RAM      string `json:"ram"`
-	ImageID  string `json:"image_id"`
-	Status   string `json:"status"`
+	UUID     	string `json:"uuid"`
+	Name     	string `json:"name"`
+	CPUCores 	int    `json:"cpu_cores"`
+	RAM      	string `json:"ram"`
+	ImageID  	string `json:"image_id"`
+	Status   	string `json:"status"`
+	HardDrive 	uint64 `json:"hard_drive"`
 }
 
 func (sr ShowResponse) IsRunning() bool {
