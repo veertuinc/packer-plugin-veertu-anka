@@ -125,6 +125,71 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		return onError(err)
 	}
 
+	// If cloned from an existing VM, check if modification is required
+	if !doCreateSourceVM {
+
+		showResponse, err := s.client.Show(vmName)
+		if err != nil {
+			return onError(err)
+		}
+
+		stopParams := client.StopParams{
+			VMName: showResponse.Name,
+			Force: true,
+		}
+
+		// Disk Size
+		err, diskSizeBytes := convertDiskSizeToBytes(config.DiskSize)
+		if err != nil {
+			return onError(err)
+		}
+
+		if diskSizeBytes != showResponse.HardDrive {
+			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name,  config.DiskSize))
+
+			if diskSizeBytes < showResponse.HardDrive {
+				return onError(fmt.Errorf("Can not set disk size to smaller than source VM"))
+			}
+
+			if err := s.client.Stop(stopParams); err != nil {
+				return onError(err)
+			}
+
+			err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
+			if err != nil {
+				return onError(err)
+			}
+		}
+
+		// RAM
+		if config.RAMSize != showResponse.RAM {
+			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, config.RAMSize))
+			if err := s.client.Stop(stopParams); err != nil {
+				return onError(err)
+			}
+
+			err = s.client.Modify(showResponse.Name, "set", "ram", config.RAMSize)
+			if err != nil {
+				return onError(err)
+			}
+		}
+
+		// CPU Core Count
+		if config.CPUCount != strconv.Itoa(showResponse.CPUCores) {
+			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %s", showResponse.Name, config.CPUCount))
+
+			if err := s.client.Stop(stopParams); err != nil {
+				return onError(err)
+			}
+
+			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", config.CPUCount)
+			if err != nil {
+				return onError(err)
+			}
+		}
+
+	}
+	
 	state.Put("vm_name", vmName)
 	s.vmName = vmName
 
