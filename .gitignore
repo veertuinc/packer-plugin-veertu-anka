@@ -8,6 +8,9 @@ dist/
 builder/anka/config.hcl2spec.go
 .gon.hcl
 
+# generated code
+builder/anka/config.hcl2spec.go
+
 # The following was created by https://www.gitignore.io
 
 ### Vagrant ###
