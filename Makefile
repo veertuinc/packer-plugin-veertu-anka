@@ -32,3 +32,6 @@ clean-images:
 wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
 	-rm -rf ~/.anka
+
+release-dry-run: build test
+	goreleaser --snapshot --skip-sign --skip-publish --rm-dist
