@@ -54,6 +54,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	// and once it exists, it doesn't change.
 	// A user can clear this cached baseVM by `anka delete --yes anka-base-10.15.6-15.7.02`
 	if config.InstallerApp != "" && sourceVM == "" {
+		ui.Say(fmt.Sprintf("Extracting version from installer app %q with %q", config.InstallerApp, config.PListBuddyPath))
 		baseVMName, err := nameFromInstallerApp(config.InstallerApp, config.PListBuddyPath)
 		if err != nil {
 			return onError(err)
