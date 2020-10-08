@@ -2,7 +2,7 @@ example.json
 crash.log
 packer-builder-veertu-anka
 dist/
-
+.gon.hcl
 
 # The following was created by https://www.gitignore.io
 
