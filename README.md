@@ -7,6 +7,7 @@ Note that this builder does not manage images. Once it creates an image, it is u
 to you to use it or delete it.
 
 ### Compatibility
+
 Packer Version | Builder for Anka Version
 --- | ---
 Up to 1.4.5 | 1.1.0
@@ -75,7 +76,7 @@ The time to wait before running packer provisioner commands, defaults to `2s`.
 
 ## Development
 
-You will need a recent golang installed and setup.
+You will need a recent golang installed and setup. See `go.mod` for which version is expected.
 
 ```bash
 make packer-test
@@ -85,6 +86,16 @@ If you've already built a base macOS VM, you can use:
 
 ```bash
 make packer-test SOURCE_VM_NAME=macos-10.12.3-base
+```
+
+## Release
+
+We use [goreleaser](https://goreleaser.com).
+
+To locally try out the release workflow (build, package, but don't sign or publish):
+
+```bash
+make release-dry-run
 ```
 
 [Packer Builder]: https://www.packer.io/docs/extending/custom-builders.html

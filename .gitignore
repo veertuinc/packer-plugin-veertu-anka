@@ -1,7 +1,11 @@
 example.json
 crash.log
 packer-builder-veertu-anka
+mapstructure-to-hcl2
 dist/
+
+# generated code
+builder/anka/config.hcl2spec.go
 .gon.hcl
 
 # The following was created by https://www.gitignore.io
