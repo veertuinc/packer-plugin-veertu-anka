@@ -249,30 +249,41 @@ func randSeq(n int) string {
 }
 
 func nameFromInstallerApp(path string, plb string) (string, error) {
-	info, err := os.Stat(path)
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return "", err
+		return "", fmt.Errorf("installer app did not exist at %q: %w", path, err)
 	}
-	if info.IsDir() {
-		return "", err
+	if err != nil {
+		return "", fmt.Errorf("failed to stat installer at %q: %w", path, err)
 	}
 
 	_, err = os.Stat(plb)
 	if os.IsNotExist(err) {
-		return "", err
+		return "", fmt.Errorf("plistbuddy did not exist at %q: %w", plb, err)
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to stat plistbuddy at %q: %w", path, err)
 	}
 
-	dtPlatformVersion, err := exec.Command(plb, []string{
+	cmd1 := exec.Command(plb, []string{
 		"-c",
 		"'Print DTPlatformVersion:'",
 		filepath.Join(path, "Contents", "Info.plist"),
-	}...).CombinedOutput()
+	}...)
+	dtPlatformVersion, err := cmd1.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed reading DTPlatformVersion, cmd: %v, output: %s, error: %w", cmd1.Args, dtPlatformVersion, err)
+	}
 
-	shortVersion, err := exec.Command(plb, []string{
+	cmd2 := exec.Command(plb, []string{
 		"-c",
 		"'Print CFBundleShortVersionString:'",
 		filepath.Join(path, "Contents", "Info.plist"),
-	}...).CombinedOutput()
+	}...)
+	shortVersion, err := cmd2.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed reading CFBundleShortVersionString, cmd: %v, output: %s error: %w", cmd2.Args, shortVersion, err)
+	}
 
 	return fmt.Sprintf("%s-%s", dtPlatformVersion, shortVersion), nil
 }
