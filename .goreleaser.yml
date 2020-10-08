@@ -10,34 +10,20 @@ builds:
       - amd64
 
 archives:
-  - id: default
-    builds:
-      - builder
-    format: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
-    wrap_in_directory: false
-    files: []
   - id: zip
     builds:
       - builder
     format: zip
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
+    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
     wrap_in_directory: false
-    files: []
+    files:
+      - none*
 
 checksum:
-  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  name_template: "{{ .ProjectName }}_v{{ .Version }}_checksums.txt"
 
 signs:
-  - id: notarize-default
-    signature: "${artifact}.tar.gz"
-    cmd: gon
-    args:
-      - ".gon.hcl"
-    artifacts: all
-    ids:
-      - builder
-  - id: notarize-zip
+  - id: notarize
     signature: "${artifact}.zip"
     cmd: gon
     args:
@@ -48,7 +34,6 @@ signs:
 
 release:
   ids:
-    - default
-    - zip
-  # swap to false once happy with release pipeline.
-  draft: true
+    - none
+  extra_files:
+    - glob: ./dist/*.zip
