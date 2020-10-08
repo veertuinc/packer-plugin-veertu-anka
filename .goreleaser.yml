@@ -10,13 +10,6 @@ builds:
       - amd64
 
 archives:
-  - id: default
-    builds:
-      - builder
-    format: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
-    wrap_in_directory: false
-    files: []
   - id: zip
     builds:
       - builder
@@ -29,14 +22,6 @@ checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
 
 signs:
-  - id: notarize-default
-    signature: "${artifact}.tar.gz"
-    cmd: gon
-    args:
-      - ".gon.hcl"
-    artifacts: all
-    ids:
-      - builder
   - id: notarize-zip
     signature: "${artifact}.zip"
     cmd: gon
@@ -48,7 +33,4 @@ signs:
 
 release:
   ids:
-    - default
     - zip
-  # swap to false once happy with release pipeline.
-  draft: true
