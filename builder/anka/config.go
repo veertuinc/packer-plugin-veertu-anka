@@ -24,9 +24,11 @@ type Config struct {
 	RAMSize  string `mapstructure:"ram_size"`
 	CPUCount string `mapstructure:"cpu_count"`
 
-	BootDelay string `mapstructure:"boot_delay"`
-	EnableHtt bool   `mapstructure:"enable_htt"`
-	DisableHtt bool  `mapstructure:"disable_htt"`
+	BootDelay  string `mapstructure:"boot_delay"`
+	EnableHtt  bool   `mapstructure:"enable_htt"`
+	DisableHtt bool   `mapstructure:"disable_htt"`
+
+	PListBuddyPath string `mapstructure:"plist_buddy_path"`
 
 	ctx interpolate.Context
 }
@@ -69,6 +71,10 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 
 	if c.BootDelay == "" {
 		c.BootDelay = "2s"
+	}
+
+	if c.PListBuddyPath == "" {
+		c.PListBuddyPath = "/usr/libexec/PlistBuddy"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {

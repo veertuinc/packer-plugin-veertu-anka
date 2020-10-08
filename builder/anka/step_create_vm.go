@@ -1,15 +1,19 @@
 package anka
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"context"
 	"math/rand"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/hashicorp/packer/helper/multistep"
 	"github.com/hashicorp/packer/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/hashicorp/packer/helper/multistep"
 )
 
 var random *rand.Rand
@@ -44,8 +48,17 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 
 	// If no source name was specified but an installer_app was, generate a source name
+	// based on reading the version strings embedded into the installer app Contents/Info.plist
+	// so that, if this baseVM already exists, we can skip creating it again.
+	// This is beneficial for iteration time, because creating the baseVM takes tens of minutes
+	// and once it exists, it doesn't change.
+	// A user can clear this cached baseVM by `anka delete --yes anka-base-10.15.6-15.7.02`
 	if config.InstallerApp != "" && sourceVM == "" {
-		sourceVM = fmt.Sprintf("anka-base-%s", randSeq(10))
+		baseVMName, err := nameFromInstallerApp(config.InstallerApp, config.PListBuddyPath)
+		if err != nil {
+			return onError(err)
+		}
+		sourceVM = fmt.Sprintf("anka-base-%s", baseVMName)
 		doCreateSourceVM = true
 	}
 
@@ -61,7 +74,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}
 
 		ui.Say(fmt.Sprintf("Creating a new vm (%s) from installer, this will take a while", sourceVM))
-		
+
 		outputStream := make(chan string)
 		go func() {
 			for msg := range outputStream {
@@ -135,7 +148,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 		stopParams := client.StopParams{
 			VMName: showResponse.Name,
-			Force: true,
+			Force:  true,
 		}
 
 		// Disk Size
@@ -145,7 +158,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}
 
 		if diskSizeBytes != showResponse.HardDrive {
-			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name,  config.DiskSize))
+			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
 
 			if diskSizeBytes < showResponse.HardDrive {
 				return onError(fmt.Errorf("Can not set disk size to smaller than source VM"))
@@ -189,7 +202,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}
 
 	}
-	
+
 	state.Put("vm_name", vmName)
 	s.vmName = vmName
 
@@ -232,4 +245,33 @@ func randSeq(n int) string {
 		b[i] = letters[random.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func nameFromInstallerApp(path string, plb string) (string, error) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return "", err
+	}
+	if info.IsDir() {
+		return "", err
+	}
+
+	_, err = os.Stat(plb)
+	if os.IsNotExist(err) {
+		return "", err
+	}
+
+	dtPlatformVersion, err := exec.Command(plb, []string{
+		"-c",
+		"'Print DTPlatformVersion:'",
+		filepath.Join(path, "Contents", "Info.plist"),
+	}...).CombinedOutput()
+
+	shortVersion, err := exec.Command(plb, []string{
+		"-c",
+		"'Print CFBundleShortVersionString:'",
+		filepath.Join(path, "Contents", "Info.plist"),
+	}...).CombinedOutput()
+
+	return fmt.Sprintf("%s-%s", dtPlatformVersion, shortVersion), nil
 }
