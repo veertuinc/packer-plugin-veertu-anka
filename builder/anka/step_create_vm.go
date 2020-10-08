@@ -52,14 +52,14 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	// so that, if this baseVM already exists, we can skip creating it again.
 	// This is beneficial for iteration time, because creating the baseVM takes tens of minutes
 	// and once it exists, it doesn't change.
-	// A user can clear this cached baseVM by `anka delete --yes anka-base-10.15.6-15.7.02`
+	// A user can clear this cached baseVM by `anka delete --yes packer-builder-base-10.15.6-15.7.02`
 	if config.InstallerApp != "" && sourceVM == "" {
 		ui.Say(fmt.Sprintf("Extracting version from installer app %q with %q", config.InstallerApp, config.PListBuddyPath))
 		baseVMName, err := nameFromInstallerApp(config.InstallerApp, config.PListBuddyPath)
 		if err != nil {
 			return onError(err)
 		}
-		sourceVM = fmt.Sprintf("anka-base-%s", baseVMName)
+		sourceVM = fmt.Sprintf("packer-builder-base-%s", baseVMName)
 		doCreateSourceVM = true
 	}
 
