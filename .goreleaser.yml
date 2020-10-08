@@ -8,26 +8,29 @@ builds:
       - darwin
     goarch:
       - amd64
-      
-archives:
-- files:
-  - none*
 
-  
+archives:
+  - id: zip
+    builds:
+      - builder
+    format: zip
+    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
+    wrap_in_directory: false
+    files: []
+
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
-  
+
 signs:
-  - id: notarize
+  - id: notarize-zip
     signature: "${artifact}.zip"
     cmd: gon
-    args: [".gon.hcl"]
+    args:
+      - ".gon.hcl"
     artifacts: all
     ids:
       - builder
 
 release:
   ids:
-    - none
-  extra_files:
-    - glob: ./dist/packer-builder-veertu-v{{ .Version }}*.zip
+    - zip
