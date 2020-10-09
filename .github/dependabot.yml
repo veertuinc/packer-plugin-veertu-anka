@@ -1,0 +1,15 @@
+---
+# https://docs.github.com/en/github/administering-a-repository/enabling-and-disabling-version-updates
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    assignees:
+      - "NorseGaud"
+      - "asafg6"
+    reviewers:
+      - "NorseGaud"
+      - "asafg6"
