@@ -48,11 +48,7 @@ signs:
 
 release:
   ids:
-<<<<<<< HEAD
-    - zip
-=======
     - default
     - zip
   # swap to false once happy with release pipeline.
   draft: true
->>>>>>> 55a36f3... Take more advantage of goreleaser
