@@ -13,7 +13,7 @@ build: $(BIN)
 
 $(BIN): $(SOURCES)
 	GOOS=darwin GOBIN=$(shell pwd) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
-	GOOS=darwin PATH=$(shell pwd):${PATH} go generate builder/anka/config.go
+	GOOS=darwin PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
 	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN) $(PREFIX)
 
 install: $(BIN)
@@ -32,3 +32,6 @@ clean-images:
 wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
 	-rm -rf ~/.anka
+
+release-dry-run: build test
+	goreleaser --snapshot --skip-sign --skip-publish --rm-dist

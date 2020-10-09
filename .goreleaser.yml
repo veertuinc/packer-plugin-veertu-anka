@@ -1,31 +1,36 @@
 builds:
   - id: builder
     binary: packer-builder-veertu-anka
+    env:
+      # Because we want to avoid coupling to system libraries.
+      - CGO_ENABLED=0
     goos:
       - darwin
     goarch:
       - amd64
 
 archives:
-- files:
-  - none*
+  - id: zip
+    builds:
+      - builder
+    format: zip
+    name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
+    wrap_in_directory: false
+    files: []
 
- 
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
-  
+
 signs:
-  - id: notarize
+  - id: notarize-zip
     signature: "${artifact}.zip"
     cmd: gon
-    args: [".gon.hcl"]
+    args:
+      - ".gon.hcl"
     artifacts: all
     ids:
       - builder
 
 release:
   ids:
-    - none
-  extra_files:
-    - glob: ./dist/packer-builder-veertu-anka.zip
-
+    - zip
