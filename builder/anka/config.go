@@ -28,8 +28,6 @@ type Config struct {
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`
 
-	PListBuddyPath string `mapstructure:"plist_buddy_path"`
-
 	ctx interpolate.Context
 }
 
@@ -71,10 +69,6 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 
 	if c.BootDelay == "" {
 		c.BootDelay = "2s"
-	}
-
-	if c.PListBuddyPath == "" {
-		c.PListBuddyPath = "/usr/libexec/PlistBuddy"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {

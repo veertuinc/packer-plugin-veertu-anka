@@ -6,11 +6,12 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/groob/plist"
 	"github.com/hashicorp/packer/helper/multistep"
 	"github.com/hashicorp/packer/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
@@ -54,12 +55,15 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	// and once it exists, it doesn't change.
 	// A user can clear this cached baseVM by `anka delete --yes packer-builder-base-10.15.6-15.7.02`
 	if config.InstallerApp != "" && sourceVM == "" {
-		ui.Say(fmt.Sprintf("Extracting version from installer app %q with %q", config.InstallerApp, config.PListBuddyPath))
-		baseVMName, err := nameFromInstallerApp(config.InstallerApp, config.PListBuddyPath)
+		ui.Say(fmt.Sprintf("Extracting version from installer app %q", config.InstallerApp))
+		baseVMName, err := nameFromInstallerApp(config.InstallerApp)
 		if err != nil {
 			return onError(err)
 		}
 		sourceVM = fmt.Sprintf("packer-builder-base-%s", baseVMName)
+		if strings.ContainsAny(sourceVM, " \n") {
+			return onError(fmt.Errorf("illegal source VM generated, contained spaces - %q", sourceVM))
+		}
 		doCreateSourceVM = true
 	}
 
@@ -248,7 +252,7 @@ func randSeq(n int) string {
 	return string(b)
 }
 
-func nameFromInstallerApp(path string, plb string) (string, error) {
+func nameFromInstallerApp(path string) (string, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("installer app did not exist at %q: %w", path, err)
@@ -257,40 +261,21 @@ func nameFromInstallerApp(path string, plb string) (string, error) {
 		return "", fmt.Errorf("failed to stat installer at %q: %w", path, err)
 	}
 
-	_, err = os.Stat(plb)
+	plistPath := filepath.Join(path, "Contents", "Info.plist")
+	_, err = os.Stat(plistPath)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("plistbuddy did not exist at %q: %w", plb, err)
+		return "", fmt.Errorf("installer app info plist did not exist at %q: %w", plistPath, err)
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to stat plistbuddy at %q: %w", plb, err)
+		return "", fmt.Errorf("failed to stat installer app info plist at %q: %w", plistPath, err)
 	}
+	plistContent, err := os.Open(plistPath)
 
-	plist := filepath.Join(path, "Contents", "Info.plist")
-	_, err = os.Stat(plist)
-	if os.IsNotExist(err) {
-		return "", fmt.Errorf("installer app info plist did not exist at %q: %w", plist, err)
+	var installAppPlist struct {
+		PlatformVersion string `plist:"DTPlatformVersion"`
+		ShortVersion    string `plist:"CFBundleShortVersionString"`
 	}
-	if err != nil {
-		return "", fmt.Errorf("failed to stat installer app info plist at %q: %w", plist, err)
-	}
+	plist.NewXMLDecoder(plistContent).Decode(&installAppPlist)
 
-	cmd1 := exec.Command(plb, []string{
-		fmt.Sprintf("-c 'Print :DTPlatformVersion' '%s'", plist),
-	}...)
-	log.Printf("Reading DTPlatformVersion via %v", cmd1.Args)
-	dtPlatformVersion, err := cmd1.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("failed reading DTPlatformVersion, cmd: %v, output: %s, error: %w", cmd1.Args, dtPlatformVersion, err)
-	}
-
-	cmd2 := exec.Command(plb, []string{
-		fmt.Sprintf("-c 'Print :CFBundleShortVersionString' '%s'", plist),
-	}...)
-	log.Printf("Reading CFBundleShortVersionString via %v", cmd2.Args)
-	shortVersion, err := cmd2.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("failed reading CFBundleShortVersionString, cmd: %v, output: %s error: %w", cmd2.Args, shortVersion, err)
-	}
-
-	return fmt.Sprintf("%s-%s", dtPlatformVersion, shortVersion), nil
+	return fmt.Sprintf("%s-%s", installAppPlist.PlatformVersion, installAppPlist.ShortVersion), nil
 }
