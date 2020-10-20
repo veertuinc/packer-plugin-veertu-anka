@@ -1,0 +1,19 @@
+{
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sleep 5",
+        "echo hello world",
+        "echo llamas rock"
+      ]
+    }
+  ],
+  "builders": [{
+    "type": "veertu-anka",
+    "cpu_count": 8,
+    "ram_size": "10G",
+    "disk_size": "150G",
+    "source_vm_name": "10.15.6"
+  }]
+}

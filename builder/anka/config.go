@@ -56,19 +56,19 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	}
 
 	if c.DiskSize == "" {
-		c.DiskSize = "25G"
+		c.DiskSize = "80G"
 	}
 
 	if c.CPUCount == "" {
-		c.CPUCount = "2"
+		c.CPUCount = "4"
 	}
 
 	if c.RAMSize == "" {
-		c.RAMSize = "2G"
+		c.RAMSize = "8G"
 	}
 
 	if c.BootDelay == "" {
-		c.BootDelay = "2s"
+		c.BootDelay = "10s"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
