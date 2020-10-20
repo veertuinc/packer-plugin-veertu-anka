@@ -16,13 +16,15 @@ archives:
     format: zip
     name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if .Mips }}_{{ .Mips }}{{ end }}"
     wrap_in_directory: false
-    files: []
+    files:
+      - none*
 
 checksum:
-  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  disable: true
+  name_template: "{{ .ProjectName }}_v{{ .Version }}_checksums.txt"
 
 signs:
-  - id: notarize-zip
+  - id: notarize
     signature: "${artifact}.zip"
     cmd: gon
     args:
@@ -33,4 +35,6 @@ signs:
 
 release:
   ids:
-    - zip
+    - none
+  extra_files:
+    - glob: ./dist/*.zip
