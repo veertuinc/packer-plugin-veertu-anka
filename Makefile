@@ -23,6 +23,9 @@ install: $(BIN)
 packer-test: install
 	PACKER_LOG=1 packer build -var "source_vm_name=$(SOURCE_VM_NAME)" examples/macos-sierra.json
 
+packer-test2: build
+	PACKER_LOG=1 packer build examples/macos-catalina.json
+
 clean:
 	rm -f $(BIN)
 

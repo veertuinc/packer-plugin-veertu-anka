@@ -1,15 +1,20 @@
 package anka
 
 import (
+	"context"
 	"fmt"
 	"log"
-	"context"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/groob/plist"
+	"github.com/hashicorp/packer/helper/multistep"
 	"github.com/hashicorp/packer/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/hashicorp/packer/helper/multistep"
 )
 
 var random *rand.Rand
@@ -44,8 +49,21 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 
 	// If no source name was specified but an installer_app was, generate a source name
+	// based on reading the version strings embedded into the installer app Contents/Info.plist
+	// so that, if this baseVM already exists, we can skip creating it again.
+	// This is beneficial for iteration time, because creating the baseVM takes tens of minutes
+	// and once it exists, it doesn't change.
+	// A user can clear this cached baseVM by `anka delete --yes packer-builder-base-10.15.6-15.7.02`
 	if config.InstallerApp != "" && sourceVM == "" {
-		sourceVM = fmt.Sprintf("anka-base-%s", randSeq(10))
+		ui.Say(fmt.Sprintf("Extracting version from installer app %q", config.InstallerApp))
+		baseVMName, err := nameFromInstallerApp(config.InstallerApp)
+		if err != nil {
+			return onError(err)
+		}
+		sourceVM = fmt.Sprintf("packer-builder-base-%s", baseVMName)
+		if strings.ContainsAny(sourceVM, " \n") {
+			return onError(fmt.Errorf("illegal source VM generated, contained spaces - %q", sourceVM))
+		}
 		doCreateSourceVM = true
 	}
 
@@ -61,7 +79,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}
 
 		ui.Say(fmt.Sprintf("Creating a new vm (%s) from installer, this will take a while", sourceVM))
-		
+
 		outputStream := make(chan string)
 		go func() {
 			for msg := range outputStream {
@@ -135,7 +153,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 		stopParams := client.StopParams{
 			VMName: showResponse.Name,
-			Force: true,
+			Force:  true,
 		}
 
 		// Disk Size
@@ -145,7 +163,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}
 
 		if diskSizeBytes != showResponse.HardDrive {
-			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name,  config.DiskSize))
+			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
 
 			if diskSizeBytes < showResponse.HardDrive {
 				return onError(fmt.Errorf("Can not set disk size to smaller than source VM"))
@@ -189,7 +207,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}
 
 	}
-	
+
 	state.Put("vm_name", vmName)
 	s.vmName = vmName
 
@@ -232,4 +250,32 @@ func randSeq(n int) string {
 		b[i] = letters[random.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func nameFromInstallerApp(path string) (string, error) {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return "", fmt.Errorf("installer app did not exist at %q: %w", path, err)
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to stat installer at %q: %w", path, err)
+	}
+
+	plistPath := filepath.Join(path, "Contents", "Info.plist")
+	_, err = os.Stat(plistPath)
+	if os.IsNotExist(err) {
+		return "", fmt.Errorf("installer app info plist did not exist at %q: %w", plistPath, err)
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to stat installer app info plist at %q: %w", plistPath, err)
+	}
+	plistContent, err := os.Open(plistPath)
+
+	var installAppPlist struct {
+		PlatformVersion string `plist:"DTPlatformVersion"`
+		ShortVersion    string `plist:"CFBundleShortVersionString"`
+	}
+	plist.NewXMLDecoder(plistContent).Decode(&installAppPlist)
+
+	return fmt.Sprintf("%s-%s", installAppPlist.PlatformVersion, installAppPlist.ShortVersion), nil
 }
