@@ -24,18 +24,52 @@ Up to 1.4.5 | 1.1.0
     * The current working directory.
 5. Change to a directory where you have packer templates, and run as usual.
 
-## Configuration
+## Usage
+
+The most basic json file you can build from is:
 
 ```json
 {
+  "builders": [
+    {
+      "installer_app": "/Applications/Install macOS Catalina.app",
+      "type": "veertu-anka"
+    }
+  ]
+}
+```
+
+This will create a base VM template using the `.app` you specified in `installer_app` (using the version values from the installer's Info.plist file). Once the base VM template is created, it will create a clone from it (that shares the underlying layers from the base VM template, minimizing the amount of disk space used).
+
+You can also skip the creation of the base VM template and use an existing:
+
+```json
+{
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sleep 5",
+        "echo hello world",
+        "echo llamas rock"
+      ]
+    }
+  ],
   "builders": [{
     "type": "veertu-anka",
-    "installer_app": "/Applications/Install macOS Sierra.app/",
-    "disk_size": "25G",
-    "source_vm_name": "{{user `source_vm_name`}}"
+    "cpu_count": 8,
+    "ram_size": "10G",
+    "disk_size": "150G",
+    "source_vm_name": "10.15.6"
   }]
 }
 ```
+
+> `installer_app` is ignored if you've specified `source_vm_name` and it exists already
+
+This will clone `10.15.6` to a new VM and modify CPU, RAM, and DISK.
+
+## Configuration
 
 * `type` (required)
 
@@ -48,23 +82,21 @@ provided. This process takes about 20 minutes
 
 * `disk_size` (optional)
 
-The size in "[0-9]+G" format, defaults to `25G`
+The size in "[0-9]+G" format, defaults to `80G`
+
+> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
 
 * `ram_size` (optional)
 
-The size in "[0-9]+G" format, defaults to `2G`
+The size in "[0-9]+G" format, defaults to `8G`
 
 * `cpu_count` (optional)
 
-The number of CPU cores, defaults to `2`
+The number of CPU cores, defaults to `4`
 
 * `source_vm_name` (optional)
 
 The VM to clone for provisioning, either stopped or suspended.
-
-If you specify both `source_vm_name` and `installer_app`, and a VM image with `source_vm_name`
-does not exist locally, a VM image with that name is created for you using the `installer_app`.
-This process takes about 20 minutes.
 
 * `vm_name` (optional)
 
@@ -72,7 +104,7 @@ The name for the VM that is created. One is generated if not provided.
 
 * `boot_delay` (optional)
 
-The time to wait before running packer provisioner commands, defaults to `2s`.
+The time to wait before running packer provisioner commands, defaults to `10s`.
 
 ## Development
 
@@ -89,7 +121,7 @@ make packer-test SOURCE_VM_NAME=macos-10.12.3-base
 ```
 
 ```bash
-make build-and-install
+make build-and-install && PACKER_LOG=1 packer build examples/macos-catalina-existing.json
 ```
 
 ## Release

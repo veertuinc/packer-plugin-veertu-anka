@@ -33,7 +33,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	ui := state.Get("ui").(packer.Ui)
 
 	s.client = state.Get("client").(*client.Client)
-	sourceVM := config.SourceVMName
 
 	onError := func(err error) multistep.StepAction {
 		return stepError(ui, state, err)
@@ -42,43 +41,39 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	// By default, do not create a new sourceVM
 	doCreateSourceVM := false
 
-	// If users specifies both a source name and installer app, assume they wish us to create the
-	// source image using the installer app
-	if config.InstallerApp != "" && sourceVM != "" {
+	if config.InstallerApp != "" { // If users specifies an InstallerApp, assume they want to build a new VM template
 		doCreateSourceVM = true
+		if config.SourceVMName == "" { // If user doesn't specify vm_name or source_vm_name, they obviously want a new VM created
+			ui.Say(fmt.Sprintf("Extracting version from installer app: %q", config.InstallerApp))
+			macOSVersionFromInstallerApp, err := obtainMacOSVersionFromInstallerApp(config.InstallerApp) // Grab the version details from the Info.plist inside of the Installer package
+			if err != nil {
+				return onError(err)
+			}
+			config.SourceVMName = fmt.Sprintf("anka-packer-base-%s", macOSVersionFromInstallerApp) // We need to set the SourceVMName since the user didn't and the logic below creates a VM using it
+			if strings.ContainsAny(config.SourceVMName, " \n") {
+				return onError(fmt.Errorf("illegal SourceVMName from installer generated: contains spaces %q", config.SourceVMName))
+			}
+			s.vmName = config.SourceVMName // Used for cleanup BEFORE THE CLONE
+		}
 	}
 
-	// If no source name was specified but an installer_app was, generate a source name
-	// based on reading the version strings embedded into the installer app Contents/Info.plist
-	// so that, if this baseVM already exists, we can skip creating it again.
-	// This is beneficial for iteration time, because creating the baseVM takes tens of minutes
-	// and once it exists, it doesn't change.
-	// A user can clear this cached baseVM by `anka delete --yes packer-builder-base-10.15.6-15.7.02`
-	if config.InstallerApp != "" && sourceVM == "" {
-		ui.Say(fmt.Sprintf("Extracting version from installer app %q", config.InstallerApp))
-		baseVMName, err := nameFromInstallerApp(config.InstallerApp)
-		if err != nil {
-			return onError(err)
-		}
-		sourceVM = fmt.Sprintf("packer-builder-base-%s", baseVMName)
-		if strings.ContainsAny(sourceVM, " \n") {
-			return onError(fmt.Errorf("illegal source VM generated, contained spaces - %q", sourceVM))
-		}
-		doCreateSourceVM = true
+	if config.VMName == "" { // If user doesn't give a vm_name, generate one
+		config.VMName = fmt.Sprintf("anka-packer-%s", randSeq(10))
 	}
 
 	// Do not create the source vm if it already exists
-	if sourceVMExists, _ := s.client.Exists(sourceVM); sourceVMExists {
+	if sourceVMExists, _ := s.client.Exists(config.SourceVMName); sourceVMExists {
 		doCreateSourceVM = false
 	}
 
+	// If we need to create the base/source VM
 	if doCreateSourceVM {
 		cpuCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
 		if err != nil {
 			return onError(err)
 		}
 
-		ui.Say(fmt.Sprintf("Creating a new vm (%s) from installer, this will take a while", sourceVM))
+		ui.Say(fmt.Sprintf("Creating a new vm (%s) from installer, this will take a while", config.SourceVMName))
 
 		outputStream := make(chan string)
 		go func() {
@@ -92,7 +87,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			InstallerApp: config.InstallerApp,
 			RAMSize:      config.RAMSize,
 			CPUCount:     int(cpuCount),
-			Name:         sourceVM,
+			Name:         config.SourceVMName,
 		}, outputStream)
 		if err != nil {
 			return onError(err)
@@ -100,43 +95,41 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 		close(outputStream)
 
-		ui.Say(fmt.Sprintf("VM %s was created (%s)", sourceVM, resp.UUID))
-	}
+		ui.Say(fmt.Sprintf("VM %s was created (%s)", config.SourceVMName, resp.UUID))
+	} // doCreateSourceVM
 
-	show, err := s.client.Show(sourceVM)
+	show, err := s.client.Show(config.SourceVMName)
 	if err != nil {
 		return onError(err)
 	}
 
 	if show.IsRunning() {
-		ui.Say(fmt.Sprintf("Suspending VM %s", sourceVM))
+		ui.Say(fmt.Sprintf("Suspending VM %s", config.SourceVMName))
 		err := s.client.Suspend(client.SuspendParams{
-			VMName: sourceVM,
+			VMName: config.SourceVMName,
 		})
 		if err != nil {
 			return onError(err)
 		}
 	}
 
-	vmName := config.VMName
-	if vmName == "" {
-		vmName = fmt.Sprintf("anka-packer-%s", randSeq(10))
-	}
+	s.vmName = config.VMName // Used for cleanup
 
-	exists, _ := s.client.Exists(vmName)
+	// If the user forces the build (packer build --force), delete the existing VM that would fail the build
+	exists, _ := s.client.Exists(config.VMName)
 	if exists && config.PackerConfig.PackerForce {
-		ui.Say(fmt.Sprintf("Deleting existing virtual machine %s", vmName))
+		ui.Say(fmt.Sprintf("Deleting existing virtual machine %s", config.VMName))
 		err = s.client.Delete(client.DeleteParams{
-			VMName: vmName,
+			VMName: config.VMName,
 		})
 		if err != nil {
 			return onError(err)
 		}
 	}
 
-	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine %s", sourceVM, vmName))
+	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine %s", config.SourceVMName, config.VMName))
 	err = s.client.Clone(client.CloneParams{
-		VMName:     vmName,
+		VMName:     config.VMName,
 		SourceUUID: show.UUID,
 	})
 	if err != nil {
@@ -146,7 +139,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	// If cloned from an existing VM, check if modification is required
 	if !doCreateSourceVM {
 
-		showResponse, err := s.client.Show(vmName)
+		showResponse, err := s.client.Show(config.VMName)
 		if err != nil {
 			return onError(err)
 		}
@@ -210,8 +203,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 	}
 
-	state.Put("vm_name", vmName)
-	s.vmName = vmName
+	state.Put("vm_name", config.VMName)
 
 	return multistep.ActionContinue
 }
@@ -226,7 +218,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	_, canceled := state.GetOk(multistep.StateCancelled)
 
 	if halted || canceled {
-		log.Println("Deleting VM ", s.vmName)
+		log.Println("Deleting VM", s.vmName)
 		err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
 		if err != nil {
 			log.Println(err)
@@ -254,7 +246,7 @@ func randSeq(n int) string {
 	return string(b)
 }
 
-func nameFromInstallerApp(path string) (string, error) {
+func obtainMacOSVersionFromInstallerApp(path string) (string, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("installer app did not exist at %q: %w", path, err)

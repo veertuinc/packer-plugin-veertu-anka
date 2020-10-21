@@ -1,5 +1,5 @@
-PREFIX := github.com/veertuinc/packer-builder-veertu-anka
-VERSION := $(shell git describe --tags --candidates=1 --dirty 2>/dev/null || echo "dev")
+
+VERSION := $(shell cat VERSION)
 FLAGS := -X main.Version=$(VERSION)
 BIN := packer-builder-veertu-anka
 SOURCES := $(shell find . -name '*.go')
@@ -13,7 +13,7 @@ build: $(BIN)
 $(BIN):
 	GOOS=darwin GOBIN=$(shell pwd) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
 	GOOS=darwin PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
-	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN) $(PREFIX)
+	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN)
 
 install: $(BIN)
 	mkdir -p ~/.packer.d/plugins/

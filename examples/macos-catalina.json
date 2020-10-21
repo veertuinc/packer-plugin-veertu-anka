@@ -1,11 +1,8 @@
 {
-    "builders": [
-      {
-        "cpu_count": "2",
-        "disk_size": "100G",
-        "installer_app": "/Applications/Install macOS Catalina.app",
-        "name": "default",
-        "type": "veertu-anka"
-      }
-    ]
-  }
+  "builders": [
+    {
+      "installer_app": "/Users/nathanpierce/Install macOS Catalina.app",
+      "type": "veertu-anka"
+    }
+  ]
+}
