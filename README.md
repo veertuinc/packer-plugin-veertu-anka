@@ -88,6 +88,10 @@ If you've already built a base macOS VM, you can use:
 make packer-test SOURCE_VM_NAME=macos-10.12.3-base
 ```
 
+```bash
+make build-and-install
+```
+
 ## Release
 
 We use [goreleaser](https://goreleaser.com).

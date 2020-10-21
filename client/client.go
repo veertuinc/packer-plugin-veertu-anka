@@ -1,15 +1,15 @@
 package client
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os/exec"
-	"bufio"
 	"strconv"
-	"bytes"
 	"strings"
-	"errors"
 )
 
 type Client struct {
@@ -95,7 +95,7 @@ type DescribeResponse struct {
 	Version int    `json:"version"`
 	UUID    string `json:"uuid"`
 	CPU     struct {
-		Cores int `json:"cores"`
+		Cores   int `json:"cores"`
 		Threads int `json:"threads"`
 	} `json:"cpu"`
 	RAM string `json:"ram"`
@@ -160,13 +160,13 @@ func (c *Client) Describe(vmName string) (DescribeResponse, error) {
 }
 
 type ShowResponse struct {
-	UUID     	string `json:"uuid"`
-	Name     	string `json:"name"`
-	CPUCores 	int    `json:"cpu_cores"`
-	RAM      	string `json:"ram"`
-	ImageID  	string `json:"image_id"`
-	Status   	string `json:"status"`
-	HardDrive 	uint64 `json:"hard_drive"`
+	UUID      string `json:"uuid"`
+	Name      string `json:"name"`
+	CPUCores  int    `json:"cpu_cores"`
+	RAM       string `json:"ram"`
+	ImageID   string `json:"image_id"`
+	Status    string `json:"status"`
+	HardDrive uint64 `json:"hard_drive"`
 }
 
 func (sr ShowResponse) IsRunning() bool {
@@ -264,6 +264,18 @@ func (c *Client) Modify(vmName string, command string, property string, flags ..
 		log.Print("Error executing modify command: ", output.ExceptionType, " ", output.Message)
 		return fmt.Errorf(output.Message)
 	}
+	// Resize the inner VM disk too with diskutil
+	if property == "hard-drive" {
+		ankaCommand = []string{"run", "-n", vmName, "diskutil", "apfs", "resizeContainer", "disk1", "0"}
+		output, err = runAnkaCommand(ankaCommand...)
+		if err != nil {
+			return err
+		}
+		if output.Status != "OK" {
+			log.Print("Error executing", ankaCommand[0], " ", ankaCommand[1], " ", ankaCommand[2], " - ", output.ExceptionType, " ", output.Message)
+			return fmt.Errorf(output.Message)
+		}
+	}
 	return nil
 }
 
@@ -290,7 +302,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 	if outputStreamer == nil {
 		cmd.Stderr = cmd.Stdout
 	}
-	
+
 	if err = cmd.Start(); err != nil {
 		log.Printf("Failed with an error of %v", err)
 		return machineReadableOutput{}, err
@@ -307,6 +319,10 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 		}
 	}
 
+	if args[0] == "run" {
+		return machineReadableOutput{Status: "OK", Message: "complete"}, nil
+	}
+
 	scannerErr := outScanner.Err() // Expecting error on final output
 	if scannerErr == nil {
 		return machineReadableOutput{}, errors.New("missing machine readable output")
@@ -317,7 +333,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 	finalOutput := scannerErr.Error()
 	log.Printf("%s", finalOutput)
-	
+
 	parsed, err := parseOutput([]byte(finalOutput))
 	if err != nil {
 		return machineReadableOutput{}, err
@@ -377,14 +393,14 @@ func dropCR(data []byte) []byte {
 
 func customSplit(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	// A tiny spin off on ScanLines
-	
+
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
 	if i := bytes.IndexByte(data, '\n'); i >= 0 {
 		return i + 1, dropCR(data[0:i]), nil
 	}
-	if atEOF {  // Machine readable data is parsed here
+	if atEOF { // Machine readable data is parsed here
 		out := dropCR(data)
 		return len(data), out, customErr{data: out}
 	}
@@ -392,7 +408,7 @@ func customSplit(data []byte, atEOF bool) (advance int, token []byte, err error)
 }
 
 type customErr struct {
-	data	[]byte
+	data []byte
 }
 
 func (e customErr) Error() string {

@@ -156,6 +156,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			Force:  true,
 		}
 
+		s.vmName = showResponse.Name // needed for cleanup; prevent "No VM name - skipping this part"
+
 		// Disk Size
 		err, diskSizeBytes := convertDiskSizeToBytes(config.DiskSize)
 		if err != nil {
