@@ -1,0 +1,28 @@
+{
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sleep 5",
+        "echo hello world",
+        "echo llamas rock"
+      ]
+    }
+  ],
+  "builders": [{
+    "type": "veertu-anka",
+    "cpu_count": 8,
+    "ram_size": "10G",
+    "source_vm_name": "10.15.6",
+    "port_forwarding_rules": [
+      {
+        "port_forwarding_guest_port": 80,
+        "port_forwarding_host_port": 12345,
+        "port_forwarding_rule_name": "website"
+      },
+      {
+        "port_forwarding_guest_port": 8080
+      }
+    ]
+  }]
+}

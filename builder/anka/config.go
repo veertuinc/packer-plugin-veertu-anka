@@ -3,6 +3,8 @@ package anka
 
 import (
 	"errors"
+	"fmt"
+	"log"
 
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
@@ -23,6 +25,12 @@ type Config struct {
 	DiskSize string `mapstructure:"disk_size"`
 	RAMSize  string `mapstructure:"ram_size"`
 	CPUCount string `mapstructure:"cpu_count"`
+
+	PortForwardingRules []struct {
+		PortForwardingGuestPort string `mapstructure:"port_forwarding_guest_port"`
+		PortForwardingHostPort  string `mapstructure:"port_forwarding_host_port"`
+		PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
+	} `mapstructure:"port_forwarding_rules,omitempty"`
 
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
@@ -55,6 +63,18 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		errs = packer.MultiErrorAppend(errs, errors.New("installer_app or source_vm_name must be specified"))
 	}
 
+	// Handle Port Forwarding Rules
+	if len(c.PortForwardingRules) > 0 {
+		for index, portForwardingRules := range c.PortForwardingRules {
+			if portForwardingRules.PortForwardingGuestPort != "" && portForwardingRules.PortForwardingHostPort == "" {
+				c.PortForwardingRules[index].PortForwardingHostPort = "0"
+				if portForwardingRules.PortForwardingRuleName == "" {
+					c.PortForwardingRules[index].PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
+				}
+			}
+		}
+	}
+
 	if c.DiskSize == "" {
 		c.DiskSize = "80G"
 	}
@@ -74,6 +94,8 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, errs
 	}
+
+	log.Printf("%+v\n", c)
 
 	return &c, nil
 }

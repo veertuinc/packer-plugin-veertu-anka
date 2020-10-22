@@ -114,12 +114,18 @@ type DescribeResponse struct {
 		File       string `json:"file"`
 	} `json:"hard_drives"`
 	NetworkCards []struct {
-		Index               int           `json:"index"`
-		Mode                string        `json:"mode"`
-		MacAddress          string        `json:"mac_address"`
-		PortForwardingRules []interface{} `json:"port_forwarding_rules"`
-		PciSlot             int           `json:"pci_slot"`
-		Type                string        `json:"type"`
+		Index               int    `json:"index"`
+		Mode                string `json:"mode"`
+		MacAddress          string `json:"mac_address"`
+		PortForwardingRules []struct {
+			GuestPort int    `json:"guest_port"`
+			RuleName  string `json:"rule_name"`
+			Protocol  string `json:"protocol"`
+			HostIP    string `json:"host_ip"`
+			HostPort  int    `json:"host_port"`
+		} `json:"port_forwarding_rules"`
+		PciSlot int    `json:"pci_slot"`
+		Type    string `json:"type"`
 	} `json:"network_cards"`
 	Smbios struct {
 		Type string `json:"type"`

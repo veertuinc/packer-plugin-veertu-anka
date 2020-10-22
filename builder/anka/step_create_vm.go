@@ -144,6 +144,11 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			return onError(err)
 		}
 
+		clonedVMDescribeResponse, err := s.client.Describe(config.VMName)
+		if err != nil {
+			return onError(err)
+		}
+
 		stopParams := client.StopParams{
 			VMName: showResponse.Name,
 			Force:  true,
@@ -156,7 +161,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		if err != nil {
 			return onError(err)
 		}
-
 		if diskSizeBytes != showResponse.HardDrive {
 			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
 
@@ -171,6 +175,31 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
 			if err != nil {
 				return onError(err)
+			}
+		}
+
+		// Port Forwarding
+		if len(config.PortForwardingRules) > 0 {
+			if err := s.client.Stop(stopParams); err != nil {
+				return onError(err)
+			}
+			// Check if the rule already exists
+			for _, wantedPortForwardingRule := range config.PortForwardingRules {
+				ui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", showResponse.Name, wantedPortForwardingRule.PortForwardingGuestPort, wantedPortForwardingRule.PortForwardingHostPort, wantedPortForwardingRule.PortForwardingRuleName))
+				for _, existingNetworkCard := range clonedVMDescribeResponse.NetworkCards {
+					for _, existingPortForwardingRule := range existingNetworkCard.PortForwardingRules {
+						// Check if host port is set already and warn the user
+						if wantedPortForwardingRule.PortForwardingHostPort == fmt.Sprint(existingPortForwardingRule.HostPort) {
+							ui.Error(fmt.Sprintf("Found an already existing rule using %s! This can cause VMs to not start!", wantedPortForwardingRule.PortForwardingHostPort))
+						}
+					}
+				}
+				err = s.client.Modify(showResponse.Name, "add", "port-forwarding", "--host-port", wantedPortForwardingRule.PortForwardingHostPort, "--guest-port", wantedPortForwardingRule.PortForwardingGuestPort, wantedPortForwardingRule.PortForwardingRuleName)
+				if config.PackerConfig.PackerForce == false { // If force is enabled, just skip
+					if err != nil {
+						return onError(err)
+					}
+				}
 			}
 		}
 

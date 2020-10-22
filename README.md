@@ -65,9 +65,11 @@ You can also skip the creation of the base VM template and use an existing:
 }
 ```
 
-> `installer_app` is ignored if you've specified `source_vm_name` and it exists already
+> The `installer_app` is ignored if you've specified `source_vm_name` and it exists already
 
 This will clone `10.15.6` to a new VM and modify CPU, RAM, and DISK.
+
+> Check out the [examples directory](./examples) to see how port-forwarding and other options are used
 
 ## Configuration
 
@@ -105,6 +107,29 @@ The name for the VM that is created. One is generated if not provided.
 * `boot_delay` (optional)
 
 The time to wait before running packer provisioner commands, defaults to `10s`.
+
+* `port_forwarding_rules` (optional)
+
+> If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
+
+```json
+  "builders": [{
+    "type": "veertu-anka",
+    "cpu_count": 8,
+    "ram_size": "10G",
+    "source_vm_name": "10.15.6",
+    "port_forwarding_rules": [
+      {
+        "port_forwarding_guest_port": 80,
+        "port_forwarding_host_port": 12345,
+        "port_forwarding_rule_name": "website"
+      },
+      {
+        "port_forwarding_guest_port": 8080
+      }
+    ]
+  }]
+```
 
 ## Development
 
