@@ -1,0 +1,24 @@
+{
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "set -x",
+        "sudo reboot",
+        "echo SHOULD NOT SEE THIS ECHO"
+      ],
+      "expect_disconnect": true
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "set -x",
+        "echo REBOOTED"
+      ]
+    }
+  ],
+  "builders": [{
+    "type": "veertu-anka",
+    "source_vm_name": "10.15.6"
+  }]
+}
