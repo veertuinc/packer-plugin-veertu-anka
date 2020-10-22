@@ -1,7 +1,7 @@
 {
   "builders": [
     {
-      "installer_app": "/Users/nathanpierce/Install macOS Catalina.app",
+      "installer_app": "/Applications/Install macOS Catalina.app",
       "type": "veertu-anka"
     }
   ]
