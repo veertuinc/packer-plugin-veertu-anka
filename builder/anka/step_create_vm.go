@@ -203,6 +203,20 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			}
 		}
 
+		// Custom Variables
+		if config.HWUUID != "" {
+			ui.Say(fmt.Sprintf("Modifying VM custom-variable hw.UUID to %s", config.HWUUID))
+
+			if err := s.client.Stop(stopParams); err != nil {
+				return onError(err)
+			}
+
+			err = s.client.Modify(showResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID)
+			if err != nil {
+				return onError(err)
+			}
+		}
+
 		// RAM
 		if config.RAMSize != showResponse.RAM {
 			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, config.RAMSize))

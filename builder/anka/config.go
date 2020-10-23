@@ -32,6 +32,8 @@ type Config struct {
 		PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
 	} `mapstructure:"port_forwarding_rules,omitempty"`
 
+	HWUUID string `mapstructure:"hw_uuid,omitempty"`
+
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`

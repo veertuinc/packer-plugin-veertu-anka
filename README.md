@@ -108,6 +108,10 @@ The name for the VM that is created. One is generated if not provided.
 
 The time to wait before running packer provisioner commands, defaults to `10s`.
 
+* `hw_uuid` (optional)
+
+The Hardware UUID you wish to set (usually generated with `uuidgen`).
+
 * `port_forwarding_rules` (optional)
 
 > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
