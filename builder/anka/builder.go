@@ -85,7 +85,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	if err != nil {
 		return nil, err
 	}
-
 	// No errors, must've worked
 	return &Artifact{
 		vmId:   descr.UUID,

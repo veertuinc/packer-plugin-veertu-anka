@@ -132,6 +132,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		VMName:     config.VMName,
 		SourceUUID: show.UUID,
 	})
+
 	if err != nil {
 		return onError(err)
 	}
@@ -252,28 +253,42 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
+	ui := state.Get("ui").(packer.Ui)
+
 	log.Println("Cleaning up create VM step")
 	if s.vmName == "" {
-		log.Println("No VM name - skipping this part")
+		ui.Message("No VM name - skipping this part")
 		return
 	}
 	_, halted := state.GetOk(multistep.StateHalted)
 	_, canceled := state.GetOk(multistep.StateCancelled)
 
-	if halted || canceled {
-		log.Println("Deleting VM", s.vmName)
-		err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
-		if err != nil {
-			log.Println(err)
+	errorMessage := state.Get("error")
+	switch errorMessage.(type) {
+	case nil:
+		errorMessage = ""
+	case client.MachineReadableError:
+		errorMessage = errorMessage.(client.MachineReadableError)
+	default:
+		errorMessage = ""
+	}
+
+	if fmt.Sprintf("%s", errorMessage) != fmt.Sprintf("%s: already exists", s.vmName) { // Skip delete if the VM already exists...
+		if halted || canceled {
+			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
+			err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			if err != nil {
+				ui.Error(fmt.Sprint(err))
+			}
+			return
 		}
-		return
 	}
 
 	err := s.client.Suspend(client.SuspendParams{
 		VMName: s.vmName,
 	})
 	if err != nil {
-		log.Println(err)
+		ui.Error(fmt.Sprint(err))
 		s.client.Delete(client.DeleteParams{VMName: s.vmName})
 		panic(err)
 	}
