@@ -7,5 +7,5 @@ require (
 	github.com/hashicorp/hcl/v2 v2.7.0
 	github.com/hashicorp/packer v1.6.4
 	github.com/mitchellh/mapstructure v1.3.3
-	github.com/zclconf/go-cty v1.6.1
+	github.com/zclconf/go-cty v1.7.0
 )
