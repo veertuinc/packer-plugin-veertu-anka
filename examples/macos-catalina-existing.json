@@ -1,4 +1,7 @@
 {
+  "variables": {
+    "source_vm_name": ""
+  },
   "provisioners": [
     {
       "type": "shell",
@@ -14,6 +17,6 @@
   "cpu_count": 8,
   "ram_size": "10G",
   "disk_size": "150G",
-  "source_vm_name": "anka-packer-base-10.15.6-15.7.02"
+  "source_vm_name": "{{user `source_vm_name`}}"
 }]
 }

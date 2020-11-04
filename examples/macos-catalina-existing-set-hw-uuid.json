@@ -1,5 +1,6 @@
 {
   "variables": {
+    "source_vm_name": "",
     "hw_uuid": "{{env `HW_UUID`}}"
   },
   "provisioners": [
@@ -12,9 +13,13 @@
       ]
     }
   ],
-"builders": [{
-  "type": "veertu-anka",
-  "source_vm_name": "anka-packer-base-10.15.6-15.7.02",
-  "hw_uuid": "{{user `hw_uuid`}}"
-}]
+  "builders": [
+    {
+      "type": "veertu-anka",  
+      "hw_uuid": "{{user `hw_uuid`}}",
+      "cpu_count": 10,
+      "ram_size": "12G",
+      "source_vm_name": "{{user `source_vm_name`}}"
+    }
+  ]
 }

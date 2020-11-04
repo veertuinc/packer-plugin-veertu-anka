@@ -65,7 +65,7 @@ You can also skip the creation of the base VM template and use an existing:
 }
 ```
 
-> The `installer_app` is ignored if you've specified `source_vm_name` and it exists already
+> The `installer_app` is ignored if you've specified `source_vm_name` and it does not exist already
 
 This will clone `10.15.6` to a new VM and modify CPU, RAM, and DISK.
 
@@ -121,7 +121,7 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
     "type": "veertu-anka",
     "cpu_count": 8,
     "ram_size": "10G",
-    "source_vm_name": "10.15.6",
+    "source_vm_name": "anka-packer-base-10.15.7",
     "port_forwarding_rules": [
       {
         "port_forwarding_guest_port": 80,

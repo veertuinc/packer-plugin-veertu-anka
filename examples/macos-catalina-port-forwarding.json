@@ -1,4 +1,7 @@
 {
+  "variables": {
+    "source_vm_name": ""
+  },
   "provisioners": [
     {
       "type": "shell",
@@ -13,7 +16,7 @@
     "type": "veertu-anka",
     "cpu_count": 8,
     "ram_size": "10G",
-    "source_vm_name": "10.15.6",
+    "source_vm_name": "{{user `source_vm_name`}}",
     "port_forwarding_rules": [
       {
         "port_forwarding_guest_port": 80,

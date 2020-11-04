@@ -1,9 +1,13 @@
 {
+  "variables": {
+    "source_vm_name": ""
+  },
   "provisioners": [
     {
       "type": "shell",
       "inline": [
         "set -x",
+        "echo PRE REBOOT",
         "sudo reboot",
         "echo SHOULD NOT SEE THIS ECHO"
       ],
@@ -19,6 +23,8 @@
   ],
   "builders": [{
     "type": "veertu-anka",
-    "source_vm_name": "10.15.6"
+    "cpu_count": 9,
+    "ram_size": "9G",
+    "source_vm_name": "{{user `source_vm_name`}}"
   }]
 }

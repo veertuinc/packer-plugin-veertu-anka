@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/hashicorp/packer/packer"
 )
 
 type Client struct {
@@ -246,14 +248,19 @@ func (c *Client) Delete(params DeleteParams) error {
 	return err
 }
 
-func (c *Client) Exists(vmName string) (bool, error) {
+func (c *Client) Exists(vmName string, ui packer.Ui) (bool, error) {
 	_, err := c.Show(vmName)
 	if err == nil {
 		return true, nil
 	}
 
-	if err.(MachineReadableError).ExceptionType == "VMNotFoundException" {
-		return false, nil
+	switch err.(type) {
+	case *json.UnmarshalTypeError: // throw a UI error for any json problems
+		ui.Error(fmt.Sprint(err))
+	case MachineReadableError:
+		if err.(MachineReadableError).ExceptionType == "VMNotFoundException" {
+			return false, nil
+		}
 	}
 
 	return false, err
