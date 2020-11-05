@@ -15,8 +15,6 @@
 "builders": [{
   "type": "veertu-anka",
   "installer_app": "/Applications/Install macOS Catalina.app",
-  "cpu_count": 8,
-  "ram_size": "10G",
   "vm_name": "Testing"
 }]
 }

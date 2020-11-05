@@ -166,20 +166,18 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		if err != nil {
 			return onError(err)
 		}
-		if diskSizeBytes != showResponse.HardDrive {
+		if diskSizeBytes > showResponse.HardDrive {
 			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
-
-			if diskSizeBytes < showResponse.HardDrive {
-				return onError(fmt.Errorf("Can not set disk size to smaller than source VM"))
-			}
-
 			if err := s.client.Stop(stopParams); err != nil {
 				return onError(err)
 			}
-
-			err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
+			err = s.client.Modify(stopParams, showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
 			if err != nil {
 				return onError(err)
+			}
+		} else {
+			if config.DiskSizeUserSet {
+				return onError(fmt.Errorf("Shrinking VM disks is not allowed! Source VM Disk Size (bytes): %v", showResponse.HardDrive))
 			}
 		}
 
@@ -199,7 +197,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 						}
 					}
 				}
-				err = s.client.Modify(showResponse.Name, "add", "port-forwarding", "--host-port", wantedPortForwardingRule.PortForwardingHostPort, "--guest-port", wantedPortForwardingRule.PortForwardingGuestPort, wantedPortForwardingRule.PortForwardingRuleName)
+				err = s.client.Modify(stopParams, showResponse.Name, "add", "port-forwarding", "--host-port", wantedPortForwardingRule.PortForwardingHostPort, "--guest-port", wantedPortForwardingRule.PortForwardingGuestPort, wantedPortForwardingRule.PortForwardingRuleName)
 				if config.PackerConfig.PackerForce == false { // If force is enabled, just skip
 					if err != nil {
 						return onError(err)
@@ -216,34 +214,34 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 				return onError(err)
 			}
 
-			err = s.client.Modify(showResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID)
+			err = s.client.Modify(stopParams, showResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID)
 			if err != nil {
 				return onError(err)
 			}
 		}
 
 		// RAM
-		if config.RAMSize != showResponse.RAM {
+		if config.RAMSizeUserSet && config.RAMSize != showResponse.RAM {
 			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, config.RAMSize))
 			if err := s.client.Stop(stopParams); err != nil {
 				return onError(err)
 			}
 
-			err = s.client.Modify(showResponse.Name, "set", "ram", config.RAMSize)
+			err = s.client.Modify(stopParams, showResponse.Name, "set", "ram", config.RAMSize)
 			if err != nil {
 				return onError(err)
 			}
 		}
 
 		// CPU Core Count
-		if config.CPUCount != strconv.Itoa(showResponse.CPUCores) {
+		if config.CPUCountUserSet && config.CPUCount != strconv.Itoa(showResponse.CPUCores) {
 			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %s", showResponse.Name, config.CPUCount))
 
 			if err := s.client.Stop(stopParams); err != nil {
 				return onError(err)
 			}
 
-			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", config.CPUCount)
+			err = s.client.Modify(stopParams, showResponse.Name, "set", "cpu", "-c", config.CPUCount)
 			if err != nil {
 				return onError(err)
 			}

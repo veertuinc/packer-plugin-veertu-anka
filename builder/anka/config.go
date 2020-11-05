@@ -21,10 +21,13 @@ type Config struct {
 	InstallerApp string `mapstructure:"installer_app"`
 	SourceVMName string `mapstructure:"source_vm_name"`
 
-	VMName   string `mapstructure:"vm_name"`
-	DiskSize string `mapstructure:"disk_size"`
-	RAMSize  string `mapstructure:"ram_size"`
-	CPUCount string `mapstructure:"cpu_count"`
+	VMName          string `mapstructure:"vm_name"`
+	DiskSize        string `mapstructure:"disk_size"`
+	DiskSizeUserSet bool
+	RAMSize         string `mapstructure:"ram_size"`
+	RAMSizeUserSet  bool
+	CPUCount        string `mapstructure:"cpu_count"`
+	CPUCountUserSet bool
 
 	PortForwardingRules []struct {
 		PortForwardingGuestPort string `mapstructure:"port_forwarding_guest_port"`
@@ -32,8 +35,7 @@ type Config struct {
 		PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
 	} `mapstructure:"port_forwarding_rules,omitempty"`
 
-	HWUUID string `mapstructure:"hw_uuid,omitempty"`
-
+	HWUUID     string `mapstructure:"hw_uuid,omitempty"`
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`
@@ -78,15 +80,24 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	}
 
 	if c.DiskSize == "" {
+		c.DiskSizeUserSet = false
 		c.DiskSize = "80G"
+	} else {
+		c.DiskSizeUserSet = true
 	}
 
 	if c.CPUCount == "" {
+		c.CPUCountUserSet = false
 		c.CPUCount = "4"
+	} else {
+		c.CPUCountUserSet = true
 	}
 
 	if c.RAMSize == "" {
+		c.RAMSizeUserSet = false
 		c.RAMSize = "8G"
+	} else {
+		c.RAMSizeUserSet = true
 	}
 
 	if c.BootDelay == "" {
