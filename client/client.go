@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/packer/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/common"
 
 )
@@ -256,21 +255,18 @@ func (c *Client) Delete(params DeleteParams) error {
 	return err
 }
 
-func (c *Client) Exists(vmName string, ui packer.Ui) (bool, error) {
+func (c *Client) Exists(vmName string) (bool, error) {
 	_, err := c.Show(vmName)
 	if err == nil {
 		return true, nil
 	}
-
 	switch err.(type) {
-	case *json.UnmarshalTypeError: // throw a UI error for any json problems
-		ui.Error(fmt.Sprint(err))
+	// case *json.UnmarshalTypeError:
 	case machineReadableError:
 		if err.(machineReadableError).ExceptionType == "VMNotFoundException" {
 			return false, nil
 		}
 	}
-
 	return false, err
 }
 

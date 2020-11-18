@@ -61,7 +61,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		return onError(fmt.Errorf("VM name contains spaces %q", config.SourceVMName))
 	}
 
-	if sourceVMExists, _ := s.client.Exists(config.SourceVMName, ui); sourceVMExists { // Reuse the base VM template if it matches the one from the installer
+	if sourceVMExists, _ := s.client.Exists(config.SourceVMName); sourceVMExists { // Reuse the base VM template if it matches the one from the installer
 		doCreateSourceVM = false
 	}
 
@@ -141,13 +141,13 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	s.vmName = config.VMName // Used for cleanup
 
 	// If the user forces the build (packer build --force), delete the existing VM that would fail the build
-	exists, _ := s.client.Exists(config.VMName, ui)
+	exists, err := s.client.Exists(config.VMName)
+	if err != nil {
+		return onError(err)
+	}
 	if exists && config.PackerConfig.PackerForce {
 		ui.Say(fmt.Sprintf("Deleting existing virtual machine %s", config.VMName))
-		err = s.client.Delete(client.DeleteParams{
-			VMName: config.VMName,
-		})
-		if err != nil {
+		if err = s.client.Delete(client.DeleteParams{ VMName: config.VMName }); err != nil {
 			return onError(err)
 		}
 	}
