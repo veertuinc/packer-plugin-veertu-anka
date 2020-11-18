@@ -50,8 +50,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			return onError(err)
 		}
 		installerAppFullName = fmt.Sprintf("%s-%s", installerAppFullName, macOSVersionFromInstallerApp) // We need to set the SourceVMName since the user didn't and the logic below creates a VM using it
-		// DEFAULTS NEED TO BE SET HERE
-
 	}
 
 	if config.SourceVMName == "" {
@@ -64,8 +62,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 	if sourceVMExists, _ := s.client.Exists(config.SourceVMName, ui); sourceVMExists { // Reuse the base VM template if it matches the one from the installer
 		doCreateSourceVM = false
-
-		///
 	}
 
 	s.vmName = config.SourceVMName // Used for cleanup BEFORE THE CLONE
@@ -76,10 +72,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 	// If we need to create the base/source VM
 	if doCreateSourceVM {
-		cpuCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
-		if err != nil {
-			return onError(err)
-		}
 
 		ui.Say(fmt.Sprintf("Creating a new vm (%s) from installer, this will take a while", config.SourceVMName))
 
@@ -90,18 +82,40 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			}
 		}()
 
+		// If the user doesn't specify CPU, RAM, etc, set the defaults here so that we don't revert them when we go to create a clone from a base
+		var createDiskSize = ""
+		var createRAMSize = ""
+		var createCPUCount = ""
+		if config.DiskSize == "" {
+			createDiskSize = DEFAULT_DISK_SIZE
+		} else {
+			createDiskSize = config.DiskSize
+		}
+		if config.CPUCount == "" {
+			createCPUCount = DEFAULT_CPU_COUNT
+		} else {
+			createCPUCount = config.CPUCount
+		}
+		finalCreateCPUCount, err := strconv.ParseInt(createCPUCount, 10, 32)
+		if err != nil {
+			return onError(err)
+		}
+		if config.RAMSize == "" {
+			createRAMSize = DEFAULT_RAM_SIZE
+		} else {
+			createRAMSize = config.RAMSize
+		}
+
 		resp, err := s.client.Create(client.CreateParams{
-			DiskSize:     config.DiskSize,
+			DiskSize:     createDiskSize,
 			InstallerApp: config.InstallerApp,
-			RAMSize:      config.RAMSize,
-			CPUCount:     int(cpuCount),
+			RAMSize:      createRAMSize,
+			CPUCount:     int(finalCreateCPUCount),
 			Name:         config.SourceVMName,
 		}, outputStream)
 		if err != nil {
 			return onError(err)
 		}
-
-
 
 		close(outputStream)
 
@@ -168,23 +182,21 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		s.vmName = showResponse.Name // needed for cleanup; prevent "No VM name - skipping this part"
 
 		// Disk Size
-		err, diskSizeBytes := convertDiskSizeToBytes(config.DiskSize)
-		if err != nil {
-			return onError(err)
-		}
-		if diskSizeBytes > showResponse.HardDrive {
-			ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
-			if err := s.client.Stop(stopParams); err != nil {
-				return onError(err)
-			}
-			err = s.client.Modify(stopParams, showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
+		if config.DiskSize != "" {
+			err, diskSizeBytes := convertDiskSizeToBytes(config.DiskSize)
 			if err != nil {
 				return onError(err)
 			}
-			//
-
-		} else {
-			if config.DiskSizeUserSet {
+			if diskSizeBytes > showResponse.HardDrive {
+				ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
+				if err := s.client.Stop(stopParams); err != nil {
+					return onError(err)
+				}
+				err = s.client.Modify(stopParams, showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
+				if err != nil {
+					return onError(err)
+				}	
+			} else {
 				return onError(fmt.Errorf("Shrinking VM disks is not allowed! Source VM Disk Size (bytes): %v", showResponse.HardDrive))
 			}
 		}
@@ -273,9 +285,9 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	_, halted := state.GetOk(multistep.StateHalted)
 	_, canceled := state.GetOk(multistep.StateCancelled)
 	errorObj := state.Get("error")
-
 	switch errorObj.(type) {
 	case common.VMAlreadyExistsError:
+		ui.Error(fmt.Sprint(err))
 		return
 	default:
 		if halted || canceled {

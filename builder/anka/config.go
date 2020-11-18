@@ -14,8 +14,12 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const DEFAULT_DISK_SIZE = "80G"
-const DEFAULT_RAM_SIZE = 
+const (
+	DEFAULT_DISK_SIZE = "80G"
+	DEFAULT_RAM_SIZE = "8G"
+	DEFAULT_CPU_COUNT = "4"
+	DEFAULT_BOOT_DELAY = "10s"
+)
 
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
@@ -82,20 +86,8 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		}
 	}
 
-	if c.DiskSize == "" {
-		c.DiskSize = "80G"
-	}
-
-	if c.CPUCount == "" {
-		c.CPUCount = "4"
-	}
-
-	if c.RAMSize == "" {
-		c.RAMSize = "8G"
-	}
-
 	if c.BootDelay == "" {
-		c.BootDelay = "10s"
+		c.BootDelay = DEFAULT_BOOT_DELAY
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
