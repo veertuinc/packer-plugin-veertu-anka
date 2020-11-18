@@ -274,7 +274,7 @@ func (c *Client) Exists(vmName string, ui packer.Ui) (bool, error) {
 	return false, err
 }
 
-func (c *Client) Modify(stopParams StopParams, vmName string, command string, property string, flags ...string) error {
+func (c *Client) Modify(vmName string, command string, property string, flags ...string) error {
 	ankaCommand := []string{"modify", vmName, command, property}
 	ankaCommand = append(ankaCommand, flags...)
 	output, err := runAnkaCommand(ankaCommand...)
@@ -284,21 +284,6 @@ func (c *Client) Modify(stopParams StopParams, vmName string, command string, pr
 	if output.Status != "OK" {
 		log.Print("Error executing modify command: ", output.ExceptionType, " ", output.Message)
 		return fmt.Errorf(output.Message)
-	}
-	// Resize the inner VM disk too with diskutil
-	if property == "hard-drive" {
-		ankaCommand = []string{"run", "-n", vmName, "diskutil", "apfs", "resizeContainer", "disk1", "0"}
-		output, err = runAnkaCommand(ankaCommand...)
-		if err != nil {
-			return err
-		}
-		if output.Status != "OK" {
-			log.Print("Error executing", ankaCommand[0], " ", ankaCommand[1], " ", ankaCommand[2], " - ", output.ExceptionType, " ", output.Message)
-			return fmt.Errorf(output.Message)
-		}
-		if err := c.Stop(stopParams); err != nil { // Prevent 'VM is already running' error
-			return err
-		}
 	}
 	return nil
 }

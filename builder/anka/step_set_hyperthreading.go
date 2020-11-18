@@ -62,10 +62,10 @@ func (s *StepSetHyperThreading) Run(ctx context.Context, state multistep.StateBa
 		}
 	}
 	if config.EnableHtt {
-		err = cmdClient.Modify(stopParams, vmName, "set", "cpu", "--htt")
+		err = cmdClient.Modify(vmName, "set", "cpu", "--htt")
 	}
 	if config.DisableHtt {
-		err = cmdClient.Modify(stopParams, vmName, "set", "cpu", "--no-htt")
+		err = cmdClient.Modify(vmName, "set", "cpu", "--no-htt")
 	}
 	if err != nil {
 		return onError(err)

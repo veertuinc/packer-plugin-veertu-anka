@@ -195,10 +195,21 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			}
 			if diskSizeBytes > showResponse.HardDrive {
 				ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
-				err = s.client.Modify(stopParams, showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
+				err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
 				if err != nil {
 					return onError(err)
 				}	
+				// Resize the inner VM disk too with diskutil
+				err, _ = s.client.Run(client.RunParams{
+					VMName:  showResponse.Name,
+					Command: []string{"diskutil", "apfs", "resizeContainer", "disk1", "0"},
+				})
+				if err != nil {
+					return onError(err)
+				}
+				if err := s.client.Stop(stopParams); err != nil { // Prevent 'VM is already running' error
+					return onError(err)
+				}
 			} else {
 				return onError(fmt.Errorf("Shrinking VM disks is not allowed! Source VM Disk Size (bytes): %v", showResponse.HardDrive))
 			}
@@ -206,7 +217,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		// RAM
 		if config.RAMSize != "" && config.RAMSize != showResponse.RAM {
 			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, config.RAMSize))
-			err = s.client.Modify(stopParams, showResponse.Name, "set", "ram", config.RAMSize)
+			err = s.client.Modify(showResponse.Name, "set", "ram", config.RAMSize)
 			if err != nil {
 				return onError(err)
 			}
@@ -214,7 +225,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		// CPU Core Count
 		if config.CPUCount != "" && config.CPUCount != strconv.Itoa(showResponse.CPUCores) {
 			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %s", showResponse.Name, config.CPUCount))
-			err = s.client.Modify(stopParams, showResponse.Name, "set", "cpu", "-c", config.CPUCount)
+			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", config.CPUCount)
 			if err != nil {
 				return onError(err)
 			}
@@ -235,7 +246,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 				if _, ok := existingForwardedPorts[wantedPortForwardingRule.PortForwardingHostPort]; ok {
 					ui.Error(fmt.Sprintf("Found an already existing rule using %s! This can cause VMs to not start!", wantedPortForwardingRule.PortForwardingHostPort))
 				}
-				err = s.client.Modify(stopParams, showResponse.Name, "add", "port-forwarding", "--host-port", string(wantedPortForwardingRule.PortForwardingHostPort), "--guest-port", string(wantedPortForwardingRule.PortForwardingGuestPort), wantedPortForwardingRule.PortForwardingRuleName)
+				err = s.client.Modify(showResponse.Name, "add", "port-forwarding", "--host-port", string(wantedPortForwardingRule.PortForwardingHostPort), "--guest-port", string(wantedPortForwardingRule.PortForwardingGuestPort), wantedPortForwardingRule.PortForwardingRuleName)
 				if config.PackerConfig.PackerForce == false { // If force is enabled, just skip
 					if err != nil {
 						return onError(err)
@@ -247,7 +258,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		// Custom Variables
 		if config.HWUUID != "" {
 			ui.Say(fmt.Sprintf("Modifying VM custom-variable hw.UUID to %s", config.HWUUID))
-			err = s.client.Modify(stopParams, showResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID)
+			err = s.client.Modify(showResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID)
 			if err != nil {
 				return onError(err)
 			}
