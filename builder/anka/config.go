@@ -34,8 +34,8 @@ type Config struct {
 	CPUCount        string `mapstructure:"cpu_count"`
 
 	PortForwardingRules []struct {
-		PortForwardingGuestPort string `mapstructure:"port_forwarding_guest_port"`
-		PortForwardingHostPort  string `mapstructure:"port_forwarding_host_port"`
+		PortForwardingGuestPort int `mapstructure:"port_forwarding_guest_port"`
+		PortForwardingHostPort  int `mapstructure:"port_forwarding_host_port"`
 		PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
 	} `mapstructure:"port_forwarding_rules,omitempty"`
 

@@ -223,17 +223,19 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		// Port Forwarding
 		if len(config.PortForwardingRules) > 0 {
 			// Check if the rule already exists
+			existingForwardedPorts := make(map[int]struct{}, 0)
+			for _, existingNetworkCard := range clonedVMDescribeResponse.NetworkCards {
+				for _, existingPortForwardingRule := range existingNetworkCard.PortForwardingRules {
+					existingForwardedPorts[existingPortForwardingRule.HostPort] = struct{}{}
+				}
+			}
 			for _, wantedPortForwardingRule := range config.PortForwardingRules {
 				ui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", showResponse.Name, wantedPortForwardingRule.PortForwardingGuestPort, wantedPortForwardingRule.PortForwardingHostPort, wantedPortForwardingRule.PortForwardingRuleName))
-				for _, existingNetworkCard := range clonedVMDescribeResponse.NetworkCards {
-					for _, existingPortForwardingRule := range existingNetworkCard.PortForwardingRules {
-						// Check if host port is set already and warn the user
-						if wantedPortForwardingRule.PortForwardingHostPort == fmt.Sprint(existingPortForwardingRule.HostPort) {
-							ui.Error(fmt.Sprintf("Found an already existing rule using %s! This can cause VMs to not start!", wantedPortForwardingRule.PortForwardingHostPort))
-						}
-					}
+				// Check if host port is set already and warn the user
+				if _, ok := existingForwardedPorts[wantedPortForwardingRule.PortForwardingHostPort]; ok {
+					ui.Error(fmt.Sprintf("Found an already existing rule using %s! This can cause VMs to not start!", wantedPortForwardingRule.PortForwardingHostPort))
 				}
-				err = s.client.Modify(stopParams, showResponse.Name, "add", "port-forwarding", "--host-port", wantedPortForwardingRule.PortForwardingHostPort, "--guest-port", wantedPortForwardingRule.PortForwardingGuestPort, wantedPortForwardingRule.PortForwardingRuleName)
+				err = s.client.Modify(stopParams, showResponse.Name, "add", "port-forwarding", "--host-port", string(wantedPortForwardingRule.PortForwardingHostPort), "--guest-port", string(wantedPortForwardingRule.PortForwardingGuestPort), wantedPortForwardingRule.PortForwardingRuleName)
 				if config.PackerConfig.PackerForce == false { // If force is enabled, just skip
 					if err != nil {
 						return onError(err)
