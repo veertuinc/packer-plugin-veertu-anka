@@ -7,10 +7,7 @@ import (
 	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
 )
 
-var Version = "SNAPSHOT"
-
 func main() {
-	log.Printf(Version)
 	server, err := plugin.Server()
 	if err != nil {
 		panic(err)

@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/hashicorp/packer/packer"
+	"github.com/veertuinc/packer-builder-veertu-anka/common"
+
 )
 
 type Client struct {
@@ -208,6 +210,12 @@ type CloneParams struct {
 func (c *Client) Clone(params CloneParams) error {
 	_, err := runAnkaCommand("clone", params.SourceUUID, params.VMName)
 	if err != nil {
+		merr, ok := err.(machineReadableError)
+		if ok {
+			if merr.Code == AnkaNameAlreadyExistsErrorCode {
+				return &common.VMAlreadyExistsError{}
+			}
+		}
 		return err
 	}
 
@@ -257,8 +265,8 @@ func (c *Client) Exists(vmName string, ui packer.Ui) (bool, error) {
 	switch err.(type) {
 	case *json.UnmarshalTypeError: // throw a UI error for any json problems
 		ui.Error(fmt.Sprint(err))
-	case MachineReadableError:
-		if err.(MachineReadableError).ExceptionType == "VMNotFoundException" {
+	case machineReadableError:
+		if err.(machineReadableError).ExceptionType == "VMNotFoundException" {
 			return false, nil
 		}
 	}
@@ -295,11 +303,11 @@ func (c *Client) Modify(stopParams StopParams, vmName string, command string, pr
 	return nil
 }
 
-func runAnkaCommand(args ...string) (MachineReadableOutput, error) {
+func runAnkaCommand(args ...string) (machineReadableOutput, error) {
 	return runAnkaCommandStreamer(nil, args...)
 }
 
-func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (MachineReadableOutput, error) {
+func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machineReadableOutput, error) {
 
 	if outputStreamer != nil {
 		args = append([]string{"--debug"}, args...)
@@ -312,7 +320,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (Machine
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Println("Err on stdoutpipe")
-		return MachineReadableOutput{}, err
+		return machineReadableOutput{}, err
 	}
 
 	if outputStreamer == nil {
@@ -321,7 +329,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (Machine
 
 	if err = cmd.Start(); err != nil {
 		log.Printf("Failed with an error of %v", err)
-		return MachineReadableOutput{}, err
+		return machineReadableOutput{}, err
 	}
 	outScanner := bufio.NewScanner(outPipe)
 	outScanner.Split(customSplit)
@@ -336,15 +344,15 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (Machine
 	}
 
 	if args[0] == "run" {
-		return MachineReadableOutput{Status: "OK", Message: "complete"}, nil
+		return machineReadableOutput{Status: "OK", Message: "complete"}, nil
 	}
 
 	scannerErr := outScanner.Err() // Expecting error on final output
 	if scannerErr == nil {
-		return MachineReadableOutput{}, errors.New("missing machine readable output")
+		return machineReadableOutput{}, errors.New("missing machine readable output")
 	}
 	if _, ok := scannerErr.(customErr); !ok {
-		return MachineReadableOutput{}, err
+		return machineReadableOutput{}, err
 	}
 
 	finalOutput := scannerErr.Error()
@@ -352,12 +360,12 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (Machine
 
 	parsed, err := parseOutput([]byte(finalOutput))
 	if err != nil {
-		return MachineReadableOutput{}, err
+		return machineReadableOutput{}, err
 	}
 	cmd.Wait()
 
 	if err = parsed.GetError(); err != nil {
-		return MachineReadableOutput{}, err
+		return machineReadableOutput{}, err
 	}
 
 	return parsed, nil
@@ -366,17 +374,18 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (Machine
 const (
 	statusOK    = "OK"
 	statusERROR = "ERROR"
+	AnkaNameAlreadyExistsErrorCode = 18
 )
 
-type MachineReadableError struct {
-	*MachineReadableOutput
+type machineReadableError struct {
+	*machineReadableOutput
 }
 
-func (ae MachineReadableError) Error() string {
+func (ae machineReadableError) Error() string {
 	return ae.Message
 }
 
-type MachineReadableOutput struct {
+type machineReadableOutput struct {
 	Status        string `json:"status"`
 	Body          json.RawMessage
 	Message       string `json:"message"`
@@ -384,15 +393,15 @@ type MachineReadableOutput struct {
 	ExceptionType string `json:"exception_type"`
 }
 
-func (parsed *MachineReadableOutput) GetError() error {
+func (parsed *machineReadableOutput) GetError() error {
 	if parsed.Status != statusOK {
-		return MachineReadableError{parsed}
+		return machineReadableError{parsed}
 	}
 	return nil
 }
 
-func parseOutput(output []byte) (MachineReadableOutput, error) {
-	var parsed MachineReadableOutput
+func parseOutput(output []byte) (machineReadableOutput, error) {
+	var parsed machineReadableOutput
 	if err := json.Unmarshal(output, &parsed); err != nil {
 		return parsed, err
 	}

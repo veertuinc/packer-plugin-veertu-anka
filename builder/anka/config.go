@@ -14,6 +14,9 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+const DEFAULT_DISK_SIZE = "80G"
+const DEFAULT_RAM_SIZE = 
+
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 	Comm                communicator.Config `mapstructure:",squash"`
@@ -23,11 +26,8 @@ type Config struct {
 
 	VMName          string `mapstructure:"vm_name"`
 	DiskSize        string `mapstructure:"disk_size"`
-	DiskSizeUserSet bool
 	RAMSize         string `mapstructure:"ram_size"`
-	RAMSizeUserSet  bool
 	CPUCount        string `mapstructure:"cpu_count"`
-	CPUCountUserSet bool
 
 	PortForwardingRules []struct {
 		PortForwardingGuestPort string `mapstructure:"port_forwarding_guest_port"`
@@ -70,34 +70,28 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	// Handle Port Forwarding Rules
 	if len(c.PortForwardingRules) > 0 {
 		for index, portForwardingRules := range c.PortForwardingRules {
+			if portForwardingRules.PortForwardingGuestPort == "" {
+				errs = packer.MultiErrorAppend(errs, errors.New("guest port is required"))
+			}
+			if portForwardingRules.PortForwardingRuleName == "" {
+				c.PortForwardingRules[index].PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
+			}
 			if portForwardingRules.PortForwardingGuestPort != "" && portForwardingRules.PortForwardingHostPort == "" {
 				c.PortForwardingRules[index].PortForwardingHostPort = "0"
-				if portForwardingRules.PortForwardingRuleName == "" {
-					c.PortForwardingRules[index].PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
-				}
 			}
 		}
 	}
 
 	if c.DiskSize == "" {
-		c.DiskSizeUserSet = false
 		c.DiskSize = "80G"
-	} else {
-		c.DiskSizeUserSet = true
 	}
 
 	if c.CPUCount == "" {
-		c.CPUCountUserSet = false
 		c.CPUCount = "4"
-	} else {
-		c.CPUCountUserSet = true
 	}
 
 	if c.RAMSize == "" {
-		c.RAMSizeUserSet = false
 		c.RAMSize = "8G"
-	} else {
-		c.RAMSizeUserSet = true
 	}
 
 	if c.BootDelay == "" {

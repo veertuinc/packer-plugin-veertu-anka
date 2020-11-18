@@ -50,6 +50,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			return onError(err)
 		}
 		installerAppFullName = fmt.Sprintf("%s-%s", installerAppFullName, macOSVersionFromInstallerApp) // We need to set the SourceVMName since the user didn't and the logic below creates a VM using it
+		// DEFAULTS NEED TO BE SET HERE
+
 	}
 
 	if config.SourceVMName == "" {
@@ -62,6 +64,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 	if sourceVMExists, _ := s.client.Exists(config.SourceVMName, ui); sourceVMExists { // Reuse the base VM template if it matches the one from the installer
 		doCreateSourceVM = false
+
+		///
 	}
 
 	s.vmName = config.SourceVMName // Used for cleanup BEFORE THE CLONE
@@ -96,6 +100,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		if err != nil {
 			return onError(err)
 		}
+
+
 
 		close(outputStream)
 
@@ -175,6 +181,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			if err != nil {
 				return onError(err)
 			}
+			//
+
 		} else {
 			if config.DiskSizeUserSet {
 				return onError(fmt.Errorf("Shrinking VM disks is not allowed! Source VM Disk Size (bytes): %v", showResponse.HardDrive))
@@ -261,20 +269,15 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	if s.vmName == "" {
 		return
 	}
+
 	_, halted := state.GetOk(multistep.StateHalted)
 	_, canceled := state.GetOk(multistep.StateCancelled)
+	errorObj := state.Get("error")
 
-	errorMessage := state.Get("error")
-	switch errorMessage.(type) {
-	case nil:
-		errorMessage = ""
-	case client.MachineReadableError:
-		errorMessage = errorMessage.(client.MachineReadableError)
+	switch errorObj.(type) {
+	case common.VMAlreadyExistsError:
+		return
 	default:
-		errorMessage = ""
-	}
-
-	if fmt.Sprintf("%s", errorMessage) != fmt.Sprintf("%s: already exists", s.vmName) { // Skip delete if the VM already exists...
 		if halted || canceled {
 			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
 			err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
