@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/packer/helper/multistep"
 	"github.com/hashicorp/packer/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-builder-veertu-anka/common"
 )
 
 var random *rand.Rand
@@ -284,7 +285,6 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	errorObj := state.Get("error")
 	switch errorObj.(type) {
 	case common.VMAlreadyExistsError:
-		ui.Error(fmt.Sprint(err))
 		return
 	default:
 		if halted || canceled {

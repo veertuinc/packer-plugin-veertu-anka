@@ -74,14 +74,14 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	// Handle Port Forwarding Rules
 	if len(c.PortForwardingRules) > 0 {
 		for index, portForwardingRules := range c.PortForwardingRules {
-			if portForwardingRules.PortForwardingGuestPort == "" {
+			if portForwardingRules.PortForwardingGuestPort != 0 {
 				errs = packer.MultiErrorAppend(errs, errors.New("guest port is required"))
 			}
 			if portForwardingRules.PortForwardingRuleName == "" {
 				c.PortForwardingRules[index].PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
 			}
-			if portForwardingRules.PortForwardingGuestPort != "" && portForwardingRules.PortForwardingHostPort == "" {
-				c.PortForwardingRules[index].PortForwardingHostPort = "0"
+			if portForwardingRules.PortForwardingGuestPort != 0 && portForwardingRules.PortForwardingHostPort == 0 {
+				c.PortForwardingRules[index].PortForwardingHostPort = 0
 			}
 		}
 	}
