@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	DEFAULT_DISK_SIZE = "80G"
-	DEFAULT_RAM_SIZE = "8G"
-	DEFAULT_CPU_COUNT = "4"
+	DEFAULT_DISK_SIZE  = "80G"
+	DEFAULT_RAM_SIZE   = "8G"
+	DEFAULT_CPU_COUNT  = "4"
 	DEFAULT_BOOT_DELAY = "10s"
 )
 
@@ -28,14 +28,14 @@ type Config struct {
 	InstallerApp string `mapstructure:"installer_app"`
 	SourceVMName string `mapstructure:"source_vm_name"`
 
-	VMName          string `mapstructure:"vm_name"`
-	DiskSize        string `mapstructure:"disk_size"`
-	RAMSize         string `mapstructure:"ram_size"`
-	CPUCount        string `mapstructure:"cpu_count"`
+	VMName   string `mapstructure:"vm_name"`
+	DiskSize string `mapstructure:"disk_size"`
+	RAMSize  string `mapstructure:"ram_size"`
+	CPUCount string `mapstructure:"cpu_count"`
 
 	PortForwardingRules []struct {
-		PortForwardingGuestPort int `mapstructure:"port_forwarding_guest_port"`
-		PortForwardingHostPort  int `mapstructure:"port_forwarding_host_port"`
+		PortForwardingGuestPort int    `mapstructure:"port_forwarding_guest_port"`
+		PortForwardingHostPort  int    `mapstructure:"port_forwarding_host_port"`
 		PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
 	} `mapstructure:"port_forwarding_rules,omitempty"`
 
@@ -74,7 +74,7 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	// Handle Port Forwarding Rules
 	if len(c.PortForwardingRules) > 0 {
 		for index, portForwardingRules := range c.PortForwardingRules {
-			if portForwardingRules.PortForwardingGuestPort != 0 {
+			if portForwardingRules.PortForwardingGuestPort == 0 {
 				errs = packer.MultiErrorAppend(errs, errors.New("guest port is required"))
 			}
 			if portForwardingRules.PortForwardingRuleName == "" {

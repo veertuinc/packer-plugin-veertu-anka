@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"github.com/hashicorp/packer/packer/plugin"
 	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
 )

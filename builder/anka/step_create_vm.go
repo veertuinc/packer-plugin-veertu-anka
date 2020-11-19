@@ -71,6 +71,9 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		config.VMName = fmt.Sprintf("anka-packer-%s", randSeq(10))
 	}
 
+	var createDiskSize = config.DiskSize
+	var createRAMSize = config.RAMSize
+	var createCPUCount = config.CPUCount
 	// If we need to create the base/source VM
 	if doCreateSourceVM {
 
@@ -84,34 +87,20 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}()
 
 		// If the user doesn't specify CPU, RAM, etc, set the defaults here so that we don't revert them when we go to create a clone from a base
-		var createDiskSize = ""
-		var createRAMSize = ""
-		var createCPUCount = ""
 		if config.DiskSize == "" {
 			createDiskSize = DEFAULT_DISK_SIZE
-		} else {
-			createDiskSize = config.DiskSize
 		}
 		if config.CPUCount == "" {
 			createCPUCount = DEFAULT_CPU_COUNT
-		} else {
-			createCPUCount = config.CPUCount
-		}
-		finalCreateCPUCount, err := strconv.ParseInt(createCPUCount, 10, 32)
-		if err != nil {
-			return onError(err)
 		}
 		if config.RAMSize == "" {
 			createRAMSize = DEFAULT_RAM_SIZE
-		} else {
-			createRAMSize = config.RAMSize
 		}
-
 		resp, err := s.client.Create(client.CreateParams{
 			DiskSize:     createDiskSize,
 			InstallerApp: config.InstallerApp,
 			RAMSize:      createRAMSize,
-			CPUCount:     int(finalCreateCPUCount),
+			CPUCount:     createCPUCount,
 			Name:         config.SourceVMName,
 		}, outputStream)
 		if err != nil {
@@ -147,12 +136,12 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 	if exists && config.PackerConfig.PackerForce {
 		ui.Say(fmt.Sprintf("Deleting existing virtual machine %s", config.VMName))
-		if err = s.client.Delete(client.DeleteParams{ VMName: config.VMName }); err != nil {
+		if err = s.client.Delete(client.DeleteParams{VMName: config.VMName}); err != nil {
 			return onError(err)
 		}
 	}
 
-	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine %s", config.SourceVMName, config.VMName))
+	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", config.SourceVMName, config.VMName))
 	err = s.client.Clone(client.CloneParams{
 		VMName:     config.VMName,
 		SourceUUID: show.UUID,
@@ -162,44 +151,46 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		return onError(err)
 	}
 
-	// If cloned from an existing VM, check if modification is required
+	///////////////////////////////////////////////////////////////////
+	// Check if modification is required
+
+	showResponse, err := s.client.Show(config.VMName)
+	if err != nil {
+		return onError(err)
+	}
+
+	clonedVMDescribeResponse, err := s.client.Describe(config.VMName)
+	if err != nil {
+		return onError(err)
+	}
+
+	s.vmName = showResponse.Name // needed for cleanup; prevent "No VM name - skipping this part"
+
 	if !doCreateSourceVM {
-
-		showResponse, err := s.client.Show(config.VMName)
-		if err != nil {
-			return onError(err)
-		}
-
-		clonedVMDescribeResponse, err := s.client.Describe(config.VMName)
-		if err != nil {
-			return onError(err)
-		}
-
-		s.vmName = showResponse.Name // needed for cleanup; prevent "No VM name - skipping this part"
 
 		// Stop the VM if anything needs to be modified, but only do it once
 		stopParams := client.StopParams{
 			VMName: showResponse.Name,
 			Force:  true,
 		}
-		if config.DiskSize != "" || config.CPUCount != "" || config.RAMSize != "" || len(config.PortForwardingRules) > 0 || config.HWUUID != "" {
+		if config.DiskSize != "" || createDiskSize != "" || config.CPUCount != "" || createCPUCount != "" || config.RAMSize != "" || createRAMSize != "" || len(config.PortForwardingRules) > 0 || config.HWUUID != "" {
 			if err := s.client.Stop(stopParams); err != nil {
 				return onError(err)
 			}
 		}
 
 		// Disk Size
-		if config.DiskSize != "" {
-			err, diskSizeBytes := convertDiskSizeToBytes(config.DiskSize)
+		if config.DiskSize != "" || createDiskSize != "" {
+			err, diskSizeBytes := convertDiskSizeToBytes(createDiskSize)
 			if err != nil {
 				return onError(err)
 			}
-			if diskSizeBytes > showResponse.HardDrive {
-				ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
-				err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
+			if diskSizeBytes >= showResponse.HardDrive {
+				ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, createDiskSize))
+				err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", createDiskSize)
 				if err != nil {
 					return onError(err)
-				}	
+				}
 				// Resize the inner VM disk too with diskutil
 				err, _ = s.client.Run(client.RunParams{
 					VMName:  showResponse.Name,
@@ -216,17 +207,21 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			}
 		}
 		// RAM
-		if config.RAMSize != "" && config.RAMSize != showResponse.RAM {
-			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, config.RAMSize))
-			err = s.client.Modify(showResponse.Name, "set", "ram", config.RAMSize)
+		if (config.RAMSize != "" || createRAMSize != "") && createRAMSize != showResponse.RAM {
+			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, createRAMSize))
+			err = s.client.Modify(showResponse.Name, "set", "ram", createRAMSize)
 			if err != nil {
 				return onError(err)
 			}
 		}
 		// CPU Core Count
-		if config.CPUCount != "" && config.CPUCount != strconv.Itoa(showResponse.CPUCores) {
-			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %s", showResponse.Name, config.CPUCount))
-			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", config.CPUCount)
+		finalCreateCPUCount, err := strconv.ParseInt(createCPUCount, 10, 32)
+		if err != nil {
+			return onError(err)
+		}
+		if (config.CPUCount != "" || createCPUCount != "") && int(finalCreateCPUCount) != showResponse.CPUCores {
+			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %v", showResponse.Name, finalCreateCPUCount))
+			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", strconv.Itoa(int(finalCreateCPUCount)))
 			if err != nil {
 				return onError(err)
 			}
@@ -242,12 +237,12 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 				}
 			}
 			for _, wantedPortForwardingRule := range config.PortForwardingRules {
-				ui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", showResponse.Name, wantedPortForwardingRule.PortForwardingGuestPort, wantedPortForwardingRule.PortForwardingHostPort, wantedPortForwardingRule.PortForwardingRuleName))
+				ui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", showResponse.Name, strconv.Itoa(wantedPortForwardingRule.PortForwardingGuestPort), strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort), wantedPortForwardingRule.PortForwardingRuleName))
 				// Check if host port is set already and warn the user
 				if _, ok := existingForwardedPorts[wantedPortForwardingRule.PortForwardingHostPort]; ok {
-					ui.Error(fmt.Sprintf("Found an already existing rule using %s! This can cause VMs to not start!", wantedPortForwardingRule.PortForwardingHostPort))
+					ui.Error(fmt.Sprintf("Found an existing host port rule (%s)! Skipping without setting...", strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort)))
 				}
-				err = s.client.Modify(showResponse.Name, "add", "port-forwarding", "--host-port", string(wantedPortForwardingRule.PortForwardingHostPort), "--guest-port", string(wantedPortForwardingRule.PortForwardingGuestPort), wantedPortForwardingRule.PortForwardingRuleName)
+				err = s.client.Modify(showResponse.Name, "add", "port-forwarding", "--host-port", strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort), "--guest-port", strconv.Itoa(wantedPortForwardingRule.PortForwardingGuestPort), wantedPortForwardingRule.PortForwardingRuleName)
 				if config.PackerConfig.PackerForce == false { // If force is enabled, just skip
 					if err != nil {
 						return onError(err)
@@ -284,7 +279,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	_, canceled := state.GetOk(multistep.StateCancelled)
 	errorObj := state.Get("error")
 	switch errorObj.(type) {
-	case common.VMAlreadyExistsError:
+	case *common.VMAlreadyExistsError:
 		return
 	default:
 		if halted || canceled {

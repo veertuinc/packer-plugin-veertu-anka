@@ -8,11 +8,9 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/veertuinc/packer-builder-veertu-anka/common"
-
 )
 
 type Client struct {
@@ -58,7 +56,7 @@ type CreateParams struct {
 	OpticalDrive string
 	RAMSize      string
 	DiskSize     string
-	CPUCount     int
+	CPUCount     string
 }
 
 type CreateResponse struct {
@@ -75,7 +73,7 @@ func (c *Client) Create(params CreateParams, outputStreamer chan string) (Create
 		"create",
 		"--app", params.InstallerApp,
 		"--ram-size", params.RAMSize,
-		"--cpu-count", strconv.Itoa(params.CPUCount),
+		"--cpu-count", params.CPUCount,
 		"--disk-size", params.DiskSize,
 		params.Name,
 	}
@@ -210,6 +208,7 @@ func (c *Client) Clone(params CloneParams) error {
 	_, err := runAnkaCommand("clone", params.SourceUUID, params.VMName)
 	if err != nil {
 		merr, ok := err.(machineReadableError)
+		fmt.Printf("\nHERE: %+v\n", merr)
 		if ok {
 			if merr.Code == AnkaNameAlreadyExistsErrorCode {
 				return &common.VMAlreadyExistsError{}
@@ -353,8 +352,8 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 }
 
 const (
-	statusOK    = "OK"
-	statusERROR = "ERROR"
+	statusOK                       = "OK"
+	statusERROR                    = "ERROR"
 	AnkaNameAlreadyExistsErrorCode = 18
 )
 
