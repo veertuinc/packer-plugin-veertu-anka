@@ -184,6 +184,12 @@ func (sr ShowResponse) IsStopped() bool {
 func (c *Client) Show(vmName string) (ShowResponse, error) {
 	output, err := runAnkaCommand("show", vmName)
 	if err != nil {
+		merr, ok := err.(machineReadableError)
+		if ok {
+			if merr.Code == AnkaVMNotFoundExceptionErrorCode {
+				return ShowResponse{}, &common.VMNotFoundException{}
+			}
+		}
 		return ShowResponse{}, err
 	}
 
@@ -205,7 +211,6 @@ func (c *Client) Clone(params CloneParams) error {
 	_, err := runAnkaCommand("clone", params.SourceUUID, params.VMName)
 	if err != nil {
 		merr, ok := err.(machineReadableError)
-		fmt.Printf("\nHERE: %+v\n", merr)
 		if ok {
 			if merr.Code == AnkaNameAlreadyExistsErrorCode {
 				return &common.VMAlreadyExistsError{}
@@ -258,10 +263,8 @@ func (c *Client) Exists(vmName string) (bool, error) {
 	}
 	switch err.(type) {
 	// case *json.UnmarshalTypeError:
-	case machineReadableError:
-		if err.(machineReadableError).ExceptionType == "VMNotFoundException" {
-			return false, nil
-		}
+	case *common.VMNotFoundException:
+		return false, nil
 	}
 	return false, err
 }
@@ -349,9 +352,10 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 }
 
 const (
-	statusOK                       = "OK"
-	statusERROR                    = "ERROR"
-	AnkaNameAlreadyExistsErrorCode = 18
+	statusOK                         = "OK"
+	statusERROR                      = "ERROR"
+	AnkaNameAlreadyExistsErrorCode   = 18
+	AnkaVMNotFoundExceptionErrorCode = 3
 )
 
 type machineReadableError struct {
