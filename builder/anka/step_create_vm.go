@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/groob/plist"
@@ -57,11 +56,11 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		config.SourceVMName = installerAppFullName
 	}
 
-	if strings.ContainsAny(config.SourceVMName, " \n") {
-		return onError(fmt.Errorf("VM name contains spaces %q", config.SourceVMName))
+	sourceVMExists, err := s.client.Exists(config.SourceVMName)
+	if err != nil {
+		return onError(err)
 	}
-
-	if sourceVMExists, _ := s.client.Exists(config.SourceVMName); sourceVMExists { // Reuse the base VM template if it matches the one from the installer
+	if sourceVMExists { // Reuse the base VM template if it matches the one from the installer
 		doCreateSourceVM = false
 	}
 
@@ -71,9 +70,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		config.VMName = fmt.Sprintf("anka-packer-%s", randSeq(10))
 	}
 
-	var createDiskSize = config.DiskSize
-	var createRAMSize = config.RAMSize
-	var createCPUCount = config.CPUCount
 	// If we need to create the base/source VM
 	if doCreateSourceVM {
 
@@ -86,21 +82,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			}
 		}()
 
-		// If the user doesn't specify CPU, RAM, etc, set the defaults here so that we don't revert them when we go to create a clone from a base
-		if config.DiskSize == "" {
-			createDiskSize = DEFAULT_DISK_SIZE
-		}
-		if config.CPUCount == "" {
-			createCPUCount = DEFAULT_CPU_COUNT
-		}
-		if config.RAMSize == "" {
-			createRAMSize = DEFAULT_RAM_SIZE
-		}
 		resp, err := s.client.Create(client.CreateParams{
-			DiskSize:     createDiskSize,
 			InstallerApp: config.InstallerApp,
-			RAMSize:      createRAMSize,
-			CPUCount:     createCPUCount,
 			Name:         config.SourceVMName,
 		}, outputStream)
 		if err != nil {
@@ -173,21 +156,21 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			VMName: showResponse.Name,
 			Force:  true,
 		}
-		if config.DiskSize != "" || createDiskSize != "" || config.CPUCount != "" || createCPUCount != "" || config.RAMSize != "" || createRAMSize != "" || len(config.PortForwardingRules) > 0 || config.HWUUID != "" {
+		if config.DiskSize != "" || config.CPUCount != "" || config.RAMSize != "" || len(config.PortForwardingRules) > 0 || config.HWUUID != "" {
 			if err := s.client.Stop(stopParams); err != nil {
 				return onError(err)
 			}
 		}
 
 		// Disk Size
-		if config.DiskSize != "" || createDiskSize != "" {
-			err, diskSizeBytes := convertDiskSizeToBytes(createDiskSize)
+		if config.DiskSize != "" {
+			err, diskSizeBytes := convertDiskSizeToBytes(config.DiskSize)
 			if err != nil {
 				return onError(err)
 			}
 			if diskSizeBytes >= showResponse.HardDrive {
-				ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, createDiskSize))
-				err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", createDiskSize)
+				ui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", showResponse.Name, config.DiskSize))
+				err = s.client.Modify(showResponse.Name, "set", "hard-drive", "-s", config.DiskSize)
 				if err != nil {
 					return onError(err)
 				}
@@ -207,21 +190,21 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			}
 		}
 		// RAM
-		if (config.RAMSize != "" || createRAMSize != "") && createRAMSize != showResponse.RAM {
-			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, createRAMSize))
-			err = s.client.Modify(showResponse.Name, "set", "ram", createRAMSize)
+		if config.RAMSize != "" && config.RAMSize != showResponse.RAM {
+			ui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", showResponse.Name, config.RAMSize))
+			err = s.client.Modify(showResponse.Name, "set", "ram", config.RAMSize)
 			if err != nil {
 				return onError(err)
 			}
 		}
 		// CPU Core Count
-		finalCreateCPUCount, err := strconv.ParseInt(createCPUCount, 10, 32)
+		stringCPUCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
 		if err != nil {
 			return onError(err)
 		}
-		if (config.CPUCount != "" || createCPUCount != "") && int(finalCreateCPUCount) != showResponse.CPUCores {
-			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %v", showResponse.Name, finalCreateCPUCount))
-			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", strconv.Itoa(int(finalCreateCPUCount)))
+		if config.CPUCount != "" && int(stringCPUCount) != showResponse.CPUCores {
+			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %v", showResponse.Name, stringCPUCount))
+			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", strconv.Itoa(int(stringCPUCount)))
 			if err != nil {
 				return onError(err)
 			}

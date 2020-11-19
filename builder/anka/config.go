@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
@@ -12,13 +13,6 @@ import (
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/template/interpolate"
 	"github.com/mitchellh/mapstructure"
-)
-
-const (
-	DEFAULT_DISK_SIZE  = "80G"
-	DEFAULT_RAM_SIZE   = "8G"
-	DEFAULT_CPU_COUNT  = "4"
-	DEFAULT_BOOT_DELAY = "10s"
 )
 
 type Config struct {
@@ -73,21 +67,22 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 
 	// Handle Port Forwarding Rules
 	if len(c.PortForwardingRules) > 0 {
-		for index, portForwardingRules := range c.PortForwardingRules {
+		for _, portForwardingRules := range c.PortForwardingRules {
 			if portForwardingRules.PortForwardingGuestPort == 0 {
 				errs = packer.MultiErrorAppend(errs, errors.New("guest port is required"))
 			}
 			if portForwardingRules.PortForwardingRuleName == "" {
-				c.PortForwardingRules[index].PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
-			}
-			if portForwardingRules.PortForwardingGuestPort != 0 && portForwardingRules.PortForwardingHostPort == 0 {
-				c.PortForwardingRules[index].PortForwardingHostPort = 0
+				portForwardingRules.PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
 			}
 		}
 	}
 
+	if strings.ContainsAny(c.SourceVMName, " \n") {
+		errs = packer.MultiErrorAppend(errs, errors.New("source_vm_name name contains spaces"))
+	}
+
 	if c.BootDelay == "" {
-		c.BootDelay = DEFAULT_BOOT_DELAY
+		c.BootDelay = "10s"
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
