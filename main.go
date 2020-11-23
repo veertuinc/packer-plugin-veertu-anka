@@ -10,7 +10,7 @@ import (
 var Version = "SNAPSHOT"
 
 func main() {
-	log.Printf(Version)
+	log.Printf("packer-builder-veertu-anka version: %q", Version)
 	server, err := plugin.Server()
 	if err != nil {
 		panic(err)
