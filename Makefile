@@ -1,6 +1,6 @@
 
-VERSION := $(shell git describe --tags --candidates=1 --dirty 2>/dev/null || echo "dev")
-FLAGS := -X main.Version=$(VERSION)
+LATEST-GIT-SHA := $(shell git rev-parse HEAD)
+FLAGS := -X main.Version=$(LATEST-GIT-SHA)
 BIN := packer-builder-veertu-anka
 SOURCES := $(shell find . -name '*.go')
 
