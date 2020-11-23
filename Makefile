@@ -1,5 +1,5 @@
 
-VERSION := $(shell cat VERSION)
+VERSION := $(shell git describe --tags --candidates=1 --dirty 2>/dev/null || echo "dev")
 FLAGS := -X main.Version=$(VERSION)
 BIN := packer-builder-veertu-anka
 SOURCES := $(shell find . -name '*.go')
