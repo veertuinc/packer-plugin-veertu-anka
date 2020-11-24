@@ -16,12 +16,27 @@ import (
 type Client struct {
 }
 
-func (c *Client) Version() (string, error) {
-	out, err := exec.Command("anka", "version").Output()
+type VersionResponse struct {
+	Status string              `json:"status"`
+	Body   VersionResponseBody `json:"body"`
+}
+
+type VersionResponseBody struct {
+	Product string `json:"product"`
+	Version string `json:"version"`
+	Build   string `json:"build"`
+}
+
+func (c *Client) Version() (VersionResponse, error) {
+	var response VersionResponse
+
+	out, err := exec.Command("anka", "--machine-readable", "version").Output()
 	if err != nil {
-		return "", err
+		return response, err
 	}
-	return string(out), nil
+
+	err = json.Unmarshal([]byte(out), &response)
+	return response, err
 }
 
 type SuspendParams struct {
@@ -34,11 +49,18 @@ func (c *Client) Suspend(params SuspendParams) error {
 }
 
 type StartParams struct {
-	VMName string
+	VMName       string
+	UpdateAddons bool
 }
 
 func (c *Client) Start(params StartParams) error {
-	_, err := runAnkaCommand("start", params.VMName)
+	cmd := []string{"start"}
+	if params.UpdateAddons {
+		cmd = append(cmd, "--update-addons")
+	}
+	cmd = append(cmd, params.VMName)
+
+	_, err := runAnkaCommand(cmd...)
 	return err
 }
 
@@ -200,6 +222,16 @@ func (c *Client) Show(vmName string) (ShowResponse, error) {
 	}
 
 	return response, nil
+}
+
+type CopyParams struct {
+	Src string
+	Dst string
+}
+
+func (c *Client) Copy(params CopyParams) error {
+	_, err := runAnkaCommand("cp", "-a", params.Src, params.Dst)
+	return err
 }
 
 type CloneParams struct {

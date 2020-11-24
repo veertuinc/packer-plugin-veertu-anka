@@ -267,11 +267,27 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
+	var err error
+
 	ui := state.Get("ui").(packer.Ui)
 
 	log.Println("Cleaning up create VM step")
 	if s.vmName == "" {
 		return
+	}
+
+	dir, dir_err := os.Getwd()
+	if dir_err == nil {
+		err = s.client.Copy(client.CopyParams{
+			Src: s.vmName + ":/var/log/install.log",
+			Dst: dir + "/install-" + s.vmName + ".log",
+		})
+
+		if err != nil {
+			log.Println("Error downloading install log from VM")
+		}
+
+		ui.Say(fmt.Sprintf("Saved install.log from %s to ./install-%s.log", s.vmName, s.vmName))
 	}
 
 	_, halted := state.GetOk(multistep.StateHalted)
@@ -285,7 +301,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	default:
 		if halted || canceled {
 			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
-			err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			err = s.client.Delete(client.DeleteParams{VMName: s.vmName})
 			if err != nil {
 				ui.Error(fmt.Sprint(err))
 			}
@@ -293,7 +309,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 		}
 	}
 
-	err := s.client.Suspend(client.SuspendParams{
+	err = s.client.Suspend(client.SuspendParams{
 		VMName: s.vmName,
 	})
 	if err != nil {
