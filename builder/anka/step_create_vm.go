@@ -40,7 +40,7 @@ func (s *StepCreateVM) modifyVMResources(showResponse client.ShowResponse, confi
 		if err != nil {
 			return err
 		}
-		if diskSizeBytes >= showResponse.HardDrive {
+		if diskSizeBytes > showResponse.HardDrive {
 			if err := s.client.Stop(stopParams); err != nil {
 				return err
 			}
