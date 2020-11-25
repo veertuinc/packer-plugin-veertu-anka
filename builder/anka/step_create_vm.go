@@ -40,7 +40,7 @@ func (s *StepCreateVM) modifyVMResources(showResponse client.ShowResponse, confi
 		if err != nil {
 			return err
 		}
-		if diskSizeBytes >= showResponse.HardDrive {
+		if diskSizeBytes > showResponse.HardDrive {
 			if err := s.client.Stop(stopParams); err != nil {
 				return err
 			}
@@ -60,7 +60,8 @@ func (s *StepCreateVM) modifyVMResources(showResponse client.ShowResponse, confi
 			if err := s.client.Stop(stopParams); err != nil { // Prevent 'VM is already running' error
 				return err
 			}
-		} else {
+		}
+		if diskSizeBytes < showResponse.HardDrive {
 			return fmt.Errorf("Shrinking VM disks is not allowed! Source VM Disk Size (bytes): %v", showResponse.HardDrive)
 		}
 	}
