@@ -82,7 +82,7 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	}
 
 	if c.BootDelay == "" {
-		c.BootDelay = "10s"
+		c.BootDelay = DEFAULT_BOOT_DELAY
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {

@@ -28,6 +28,13 @@ type StepCreateVM struct {
 	vmName string
 }
 
+const (
+	DEFAULT_DISK_SIZE  = "25G"
+	DEFAULT_RAM_SIZE   = "2G"
+	DEFAULT_CPU_COUNT  = "2"
+	DEFAULT_BOOT_DELAY = "10s"
+)
+
 func (s *StepCreateVM) modifyVMResources(showResponse client.ShowResponse, config *Config, ui packer.Ui) error {
 
 	stopParams := client.StopParams{
@@ -207,6 +214,16 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		showResponse, err := s.client.Show(sourceVMName)
 		if err != nil {
 			return onError(err)
+		}
+		// Set defaults for base image only
+		if config.DiskSize == "" {
+			config.DiskSize = DEFAULT_DISK_SIZE
+		}
+		if config.CPUCount == "" {
+			config.CPUCount = DEFAULT_CPU_COUNT
+		}
+		if config.RAMSize == "" {
+			config.RAMSize = DEFAULT_RAM_SIZE
 		}
 		if err := s.modifyVMResources(showResponse, config, ui); err != nil {
 			return onError(err)
