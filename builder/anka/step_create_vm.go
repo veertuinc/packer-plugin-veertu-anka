@@ -198,7 +198,13 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 				ui.Say(msg)
 			}
 		}()
-		if resp, err := s.client.Create(client.CreateParams{InstallerApp: config.InstallerApp, Name: sourceVMName}, outputStream); err != nil {
+		if resp, err := s.client.Create(client.CreateParams{
+			CPUCount:     config.CPUCount,
+			DiskSize:     config.DiskSize,
+			InstallerApp: config.InstallerApp,
+			Name:         sourceVMName,
+			RAMSize:      config.RAMSize,
+		}, outputStream); err != nil {
 			return onError(err)
 		} else {
 			ui.Say(fmt.Sprintf("VM %s was created (%s)", sourceVMName, resp.UUID))
