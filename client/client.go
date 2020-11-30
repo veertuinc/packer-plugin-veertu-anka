@@ -323,10 +323,6 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 		}
 	}
 
-	if args[0] == "run" {
-		return machineReadableOutput{Status: "OK", Message: "complete"}, nil
-	}
-
 	scannerErr := outScanner.Err() // Expecting error on final output
 	if scannerErr == nil {
 		return machineReadableOutput{}, errors.New("missing machine readable output")
