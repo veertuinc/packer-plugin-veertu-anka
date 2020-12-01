@@ -39,7 +39,7 @@ The most basic json file you can build from is:
 
 This will create a base VM template using the `.app` you specified in `installer_app` with a name like `anka-packer-base-{macOSVersion}`. Once the base VM template is created, it will create a clone from it (that shares the underlying layers from the base VM template, minimizing the amount of disk space used).
 
-> You can modify the base VM default resource values with `disk_size`, `ram_size`, and `cpu_count`. **These will only impact the base VM at the time of creation**
+> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `cpu_count`. Otherwise, defaults will be used (see "Configuration" section).
 
 You can also skip the creation of the base VM template and use an existing VM template (`10.15.6`):
 
