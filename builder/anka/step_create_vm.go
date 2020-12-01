@@ -29,10 +29,9 @@ type StepCreateVM struct {
 }
 
 const (
-	DEFAULT_DISK_SIZE  = "25G"
-	DEFAULT_RAM_SIZE   = "2G"
-	DEFAULT_CPU_COUNT  = "2"
-	DEFAULT_BOOT_DELAY = "10s"
+	DEFAULT_DISK_SIZE = "25G"
+	DEFAULT_RAM_SIZE  = "2G"
+	DEFAULT_CPU_COUNT = "2"
 )
 
 func (s *StepCreateVM) modifyVMResources(showResponse client.ShowResponse, config *Config, ui packer.Ui) error {
@@ -205,7 +204,27 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 				ui.Say(msg)
 			}
 		}()
-		if resp, err := s.client.Create(client.CreateParams{InstallerApp: config.InstallerApp, Name: sourceVMName}, outputStream); err != nil {
+		createParams := client.CreateParams{
+			InstallerApp: config.InstallerApp,
+			Name:         sourceVMName,
+			DiskSize:     config.DiskSize,
+			CPUCount:     config.CPUCount,
+			RAMSize:      config.RAMSize,
+		}
+
+		if createParams.DiskSize == "" {
+			createParams.DiskSize = DEFAULT_DISK_SIZE
+		}
+
+		if createParams.CPUCount == "" {
+			createParams.CPUCount = DEFAULT_CPU_COUNT
+		}
+
+		if createParams.RAMSize == "" {
+			createParams.RAMSize = DEFAULT_RAM_SIZE
+		}
+
+		if resp, err := s.client.Create(createParams, outputStream); err != nil {
 			return onError(err)
 		} else {
 			ui.Say(fmt.Sprintf("VM %s was created (%s)", sourceVMName, resp.UUID))
@@ -213,19 +232,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		close(outputStream)
 		showResponse, err := s.client.Show(sourceVMName)
 		if err != nil {
-			return onError(err)
-		}
-		// Set defaults for base image only
-		if config.DiskSize == "" {
-			config.DiskSize = DEFAULT_DISK_SIZE
-		}
-		if config.CPUCount == "" {
-			config.CPUCount = DEFAULT_CPU_COUNT
-		}
-		if config.RAMSize == "" {
-			config.RAMSize = DEFAULT_RAM_SIZE
-		}
-		if err := s.modifyVMResources(showResponse, config, ui); err != nil {
 			return onError(err)
 		}
 	}

@@ -15,6 +15,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+const DEFAULT_BOOT_DELAY = "10s"
+
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 	Comm                communicator.Config `mapstructure:",squash"`
