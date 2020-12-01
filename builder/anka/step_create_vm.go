@@ -230,10 +230,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 			ui.Say(fmt.Sprintf("VM %s was created (%s)", sourceVMName, resp.UUID))
 		}
 		close(outputStream)
-		showResponse, err := s.client.Show(sourceVMName)
-		if err != nil {
-			return onError(err)
-		}
 	}
 
 	show, err := s.client.Show(sourceVMName)
