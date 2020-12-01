@@ -1,10 +1,8 @@
 # Packer Builder for Anka
 
-This is a [Packer Builder] for building images that work with [Veertu Anka], a
-macOS virtualization tool.
+This is a [Packer Builder] for building images that work with [Veertu Anka], a macOS virtualization tool.
 
-Note that this builder does not manage images. Once it creates an image, it is up
-to you to use it or delete it.
+Note that this builder does not manage images. Once it creates an image, it is up to you to use it or delete it.
 
 ### Compatibility
 
@@ -39,9 +37,11 @@ The most basic json file you can build from is:
 }
 ```
 
-This will create a base VM template using the `.app` you specified in `installer_app` (using the version values from the installer's Info.plist file). Once the base VM template is created, it will create a clone from it (that shares the underlying layers from the base VM template, minimizing the amount of disk space used).
+This will create a base VM template using the `.app` you specified in `installer_app` with a name like `anka-packer-base-{macOSVersion}`. Once the base VM template is created, it will create a clone from it (that shares the underlying layers from the base VM template, minimizing the amount of disk space used).
 
-You can also skip the creation of the base VM template and use an existing:
+> You can modify the base VM default resource values with `disk_size`, `ram_size`, and `cpu_count`. **These will only impact the base VM at the time of creation**
+
+You can also skip the creation of the base VM template and use an existing VM template (`10.15.6`):
 
 ```json
 {
@@ -65,9 +65,11 @@ You can also skip the creation of the base VM template and use an existing:
 }
 ```
 
+Or, create a variable inside for the `source_vm_name` and then run: `packer build -var 'source_vm_name=10.15.6' examples/macos-catalina-existing.json`.
+
 > The `installer_app` is ignored if you've specified `source_vm_name` and it does not exist already
 
-This will clone `10.15.6` to a new VM and modify CPU, RAM, and DISK.
+This will clone `10.15.6` to a new VM and, if there are differences from the base VM, modify CPU, RAM, and DISK.
 
 > Check out the [examples directory](./examples) to see how port-forwarding and other options are used
 
@@ -75,26 +77,25 @@ This will clone `10.15.6` to a new VM and modify CPU, RAM, and DISK.
 
 * `type` (required)
 
-Must be `veertu-anka`
+Must be `veertu-anka`.
 
 * `installer_app` (optional)
 
-The path to a macOS installer. This must be provided if `source_vm_name` isn't
-provided. This process takes about 20 minutes
+The path to a macOS installer. This must be provided if `source_vm_name` isn't provided. This process takes about 20 minutes. The resulting VM template name will be `anka-packer-base-{macOSVersion}`.
 
 * `disk_size` (optional)
 
-The size in "[0-9]+G" format, defaults to `80G`
+The size in "[0-9]+G" format, defaults to `25G`.
 
 > We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
 
 * `ram_size` (optional)
 
-The size in "[0-9]+G" format, defaults to `8G`
+The size in "[0-9]+G" format, defaults to `2G`.
 
 * `cpu_count` (optional)
 
-The number of CPU cores, defaults to `4`
+The number of CPU cores, defaults to `2`.
 
 * `source_vm_name` (optional)
 
@@ -102,7 +103,7 @@ The VM to clone for provisioning, either stopped or suspended.
 
 * `vm_name` (optional)
 
-The name for the VM that is created. One is generated if not provided.
+The name for the VM that is created. One is generated if not provided (`anka-packer-{10RandomCharacters}`).
 
 * `boot_delay` (optional)
 
