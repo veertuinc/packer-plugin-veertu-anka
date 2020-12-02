@@ -1,15 +1,15 @@
 package anka
 
 import (
-	"log"
 	"context"
 	"errors"
+	"log"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
-	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/helper/multistep"
+	"github.com/hashicorp/packer/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 )
 
@@ -85,7 +85,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	if err != nil {
 		return nil, err
 	}
-
 	// No errors, must've worked
 	return &Artifact{
 		vmId:   descr.UUID,

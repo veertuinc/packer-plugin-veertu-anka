@@ -3,6 +3,9 @@ package anka
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/communicator"
@@ -11,6 +14,8 @@ import (
 	"github.com/hashicorp/packer/template/interpolate"
 	"github.com/mitchellh/mapstructure"
 )
+
+const DEFAULT_BOOT_DELAY = "10s"
 
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
@@ -24,9 +29,16 @@ type Config struct {
 	RAMSize  string `mapstructure:"ram_size"`
 	CPUCount string `mapstructure:"cpu_count"`
 
-	BootDelay string `mapstructure:"boot_delay"`
-	EnableHtt bool   `mapstructure:"enable_htt"`
-	DisableHtt bool  `mapstructure:"disable_htt"`
+	PortForwardingRules []struct {
+		PortForwardingGuestPort int    `mapstructure:"port_forwarding_guest_port"`
+		PortForwardingHostPort  int    `mapstructure:"port_forwarding_host_port"`
+		PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
+	} `mapstructure:"port_forwarding_rules,omitempty"`
+
+	HWUUID     string `mapstructure:"hw_uuid,omitempty"`
+	BootDelay  string `mapstructure:"boot_delay"`
+	EnableHtt  bool   `mapstructure:"enable_htt"`
+	DisableHtt bool   `mapstructure:"disable_htt"`
 
 	ctx interpolate.Context
 }
@@ -55,25 +67,31 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		errs = packer.MultiErrorAppend(errs, errors.New("installer_app or source_vm_name must be specified"))
 	}
 
-	if c.DiskSize == "" {
-		c.DiskSize = "25G"
+	// Handle Port Forwarding Rules
+	if len(c.PortForwardingRules) > 0 {
+		for index, rule := range c.PortForwardingRules {
+			if rule.PortForwardingGuestPort == 0 {
+				errs = packer.MultiErrorAppend(errs, errors.New("guest port is required"))
+			}
+			if rule.PortForwardingRuleName == "" {
+				c.PortForwardingRules[index].PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
+			}
+		}
 	}
 
-	if c.CPUCount == "" {
-		c.CPUCount = "2"
-	}
-
-	if c.RAMSize == "" {
-		c.RAMSize = "2G"
+	if strings.ContainsAny(c.SourceVMName, " \n") {
+		errs = packer.MultiErrorAppend(errs, errors.New("source_vm_name name contains spaces"))
 	}
 
 	if c.BootDelay == "" {
-		c.BootDelay = "2s"
+		c.BootDelay = DEFAULT_BOOT_DELAY
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, errs
 	}
+
+	log.Printf("%+v\n", c)
 
 	return &c, nil
 }

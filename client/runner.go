@@ -14,7 +14,7 @@ import (
 
 type RunParams struct {
 	VMName         string
-	Volume    string
+	Volume         string
 	Command        []string
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
@@ -57,12 +57,11 @@ func NewRunner(params RunParams) *Runner {
 	cmd := exec.Command("anka", args...)
 	cmd.Stdout = params.Stdout
 	cmd.Stderr = params.Stderr
-	
+
 	// cmd.SysProcAttr = &syscall.SysProcAttr{
 	// 	Setpgid: true,
 	// 	Pgid:    0,
 	// }
-
 
 	return &Runner{
 		params: params,
@@ -73,8 +72,14 @@ func NewRunner(params RunParams) *Runner {
 func (r *Runner) Start() error {
 	log.Printf("Starting command: %s", strings.Join(r.cmd.Args, " "))
 	r.started = time.Now()
-	stdin, err := r.cmd.StdinPipe(); if err != nil {return err}
-	err = r.cmd.Start(); if err != nil {return err}
+	stdin, err := r.cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	err = r.cmd.Start()
+	if err != nil {
+		return err
+	}
 	cmdString := strings.Join(r.params.Command, " ")
 	log.Print("Executing on sh: ", cmdString)
 	stdin.Write([]byte(cmdString))
@@ -94,7 +99,7 @@ func getExitCode(err error) int {
 	if err == nil {
 		return 0
 	}
- 	if eerr, ok := err.(*exec.ExitError); ok {
+	if eerr, ok := err.(*exec.ExitError); ok {
 		code := eerr.ExitCode()
 		if code == 125 {
 			code = packer.CmdDisconnect

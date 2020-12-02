@@ -1,15 +1,16 @@
 package client
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os/exec"
-	"bufio"
-	"strconv"
-	"bytes"
 	"strings"
-	"errors"
+
+	"github.com/veertuinc/packer-builder-veertu-anka/common"
 )
 
 type Client struct {
@@ -55,7 +56,7 @@ type CreateParams struct {
 	OpticalDrive string
 	RAMSize      string
 	DiskSize     string
-	CPUCount     int
+	CPUCount     string
 }
 
 type CreateResponse struct {
@@ -71,9 +72,6 @@ func (c *Client) Create(params CreateParams, outputStreamer chan string) (Create
 	args := []string{
 		"create",
 		"--app", params.InstallerApp,
-		"--ram-size", params.RAMSize,
-		"--cpu-count", strconv.Itoa(params.CPUCount),
-		"--disk-size", params.DiskSize,
 		params.Name,
 	}
 	output, err := runAnkaCommandStreamer(outputStreamer, args...)
@@ -95,7 +93,7 @@ type DescribeResponse struct {
 	Version int    `json:"version"`
 	UUID    string `json:"uuid"`
 	CPU     struct {
-		Cores int `json:"cores"`
+		Cores   int `json:"cores"`
 		Threads int `json:"threads"`
 	} `json:"cpu"`
 	RAM string `json:"ram"`
@@ -114,12 +112,18 @@ type DescribeResponse struct {
 		File       string `json:"file"`
 	} `json:"hard_drives"`
 	NetworkCards []struct {
-		Index               int           `json:"index"`
-		Mode                string        `json:"mode"`
-		MacAddress          string        `json:"mac_address"`
-		PortForwardingRules []interface{} `json:"port_forwarding_rules"`
-		PciSlot             int           `json:"pci_slot"`
-		Type                string        `json:"type"`
+		Index               int    `json:"index"`
+		Mode                string `json:"mode"`
+		MacAddress          string `json:"mac_address"`
+		PortForwardingRules []struct {
+			GuestPort int    `json:"guest_port"`
+			RuleName  string `json:"rule_name"`
+			Protocol  string `json:"protocol"`
+			HostIP    string `json:"host_ip"`
+			HostPort  int    `json:"host_port"`
+		} `json:"port_forwarding_rules"`
+		PciSlot int    `json:"pci_slot"`
+		Type    string `json:"type"`
 	} `json:"network_cards"`
 	Smbios struct {
 		Type string `json:"type"`
@@ -160,13 +164,13 @@ func (c *Client) Describe(vmName string) (DescribeResponse, error) {
 }
 
 type ShowResponse struct {
-	UUID     	string `json:"uuid"`
-	Name     	string `json:"name"`
-	CPUCores 	int    `json:"cpu_cores"`
-	RAM      	string `json:"ram"`
-	ImageID  	string `json:"image_id"`
-	Status   	string `json:"status"`
-	HardDrive 	uint64 `json:"hard_drive"`
+	UUID      string `json:"uuid"`
+	Name      string `json:"name"`
+	CPUCores  int    `json:"cpu_cores"`
+	RAM       string `json:"ram"`
+	ImageID   string `json:"image_id"`
+	Status    string `json:"status"`
+	HardDrive uint64 `json:"hard_drive"`
 }
 
 func (sr ShowResponse) IsRunning() bool {
@@ -180,6 +184,12 @@ func (sr ShowResponse) IsStopped() bool {
 func (c *Client) Show(vmName string) (ShowResponse, error) {
 	output, err := runAnkaCommand("show", vmName)
 	if err != nil {
+		merr, ok := err.(machineReadableError)
+		if ok {
+			if merr.Code == AnkaVMNotFoundExceptionErrorCode {
+				return ShowResponse{}, &common.VMNotFoundException{}
+			}
+		}
 		return ShowResponse{}, err
 	}
 
@@ -200,6 +210,12 @@ type CloneParams struct {
 func (c *Client) Clone(params CloneParams) error {
 	_, err := runAnkaCommand("clone", params.SourceUUID, params.VMName)
 	if err != nil {
+		merr, ok := err.(machineReadableError)
+		if ok {
+			if merr.Code == AnkaNameAlreadyExistsErrorCode {
+				return &common.VMAlreadyExistsError{}
+			}
+		}
 		return err
 	}
 
@@ -245,11 +261,11 @@ func (c *Client) Exists(vmName string) (bool, error) {
 	if err == nil {
 		return true, nil
 	}
-
-	if err.(machineReadableError).ExceptionType == "VMNotFoundException" {
+	switch err.(type) {
+	// case *json.UnmarshalTypeError:
+	case *common.VMNotFoundException:
 		return false, nil
 	}
-
 	return false, err
 }
 
@@ -290,7 +306,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 	if outputStreamer == nil {
 		cmd.Stderr = cmd.Stdout
 	}
-	
+
 	if err = cmd.Start(); err != nil {
 		log.Printf("Failed with an error of %v", err)
 		return machineReadableOutput{}, err
@@ -317,7 +333,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 	finalOutput := scannerErr.Error()
 	log.Printf("%s", finalOutput)
-	
+
 	parsed, err := parseOutput([]byte(finalOutput))
 	if err != nil {
 		return machineReadableOutput{}, err
@@ -332,8 +348,10 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 }
 
 const (
-	statusOK    = "OK"
-	statusERROR = "ERROR"
+	statusOK                         = "OK"
+	statusERROR                      = "ERROR"
+	AnkaNameAlreadyExistsErrorCode   = 18
+	AnkaVMNotFoundExceptionErrorCode = 3
 )
 
 type machineReadableError struct {
@@ -377,14 +395,14 @@ func dropCR(data []byte) []byte {
 
 func customSplit(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	// A tiny spin off on ScanLines
-	
+
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
 	if i := bytes.IndexByte(data, '\n'); i >= 0 {
 		return i + 1, dropCR(data[0:i]), nil
 	}
-	if atEOF {  // Machine readable data is parsed here
+	if atEOF { // Machine readable data is parsed here
 		out := dropCR(data)
 		return len(data), out, customErr{data: out}
 	}
@@ -392,7 +410,7 @@ func customSplit(data []byte, atEOF bool) (advance int, token []byte, err error)
 }
 
 type customErr struct {
-	data	[]byte
+	data []byte
 }
 
 func (e customErr) Error() string {

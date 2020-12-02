@@ -1,6 +1,6 @@
-PREFIX := github.com/veertuinc/packer-builder-veertu-anka
-VERSION := $(shell git describe --tags --candidates=1 --dirty 2>/dev/null || echo "dev")
-FLAGS := -X main.Version=$(VERSION)
+
+LATEST-GIT-SHA := $(shell git rev-parse HEAD)
+FLAGS := -X main.Version=$(LATEST-GIT-SHA)
 BIN := packer-builder-veertu-anka
 SOURCES := $(shell find . -name '*.go')
 
@@ -10,18 +10,25 @@ test:
 	go test -v builder/anka/*.go
 
 build: $(BIN)
-
-$(BIN): $(SOURCES)
+$(BIN):
 	GOOS=darwin GOBIN=$(shell pwd) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
 	GOOS=darwin PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
-	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN) $(PREFIX)
+	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN)
 
 install: $(BIN)
 	mkdir -p ~/.packer.d/plugins/
 	cp $(BIN) ~/.packer.d/plugins/
 
+build-and-install: $(BIN)
+	$(MAKE) clean
+	$(MAKE) build
+	$(MAKE) install
+
 packer-test: install
 	PACKER_LOG=1 packer build -var "source_vm_name=$(SOURCE_VM_NAME)" examples/macos-sierra.json
+
+packer-test2: build
+	PACKER_LOG=1 packer build examples/macos-catalina.json
 
 clean:
 	rm -f $(BIN)

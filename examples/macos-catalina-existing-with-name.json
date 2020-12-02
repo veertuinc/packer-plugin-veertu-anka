@@ -1,0 +1,20 @@
+{
+  "variables": {
+    "source_vm_name": ""
+  },
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sleep 5",
+        "echo hello world",
+        "echo llamas rock"
+      ]
+    }
+  ],
+"builders": [{
+  "type": "veertu-anka",
+  "installer_app": "/Applications/Install macOS Catalina.app",
+  "vm_name": "Testing"
+}]
+}

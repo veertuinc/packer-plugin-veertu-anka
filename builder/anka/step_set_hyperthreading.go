@@ -1,13 +1,14 @@
 package anka
 
 import (
-	"fmt"
-	"github.com/hashicorp/packer/packer"
-	"log"
 	"context"
+	"fmt"
+	"log"
 
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/hashicorp/packer/packer"
+
 	"github.com/hashicorp/packer/helper/multistep"
+	"github.com/veertuinc/packer-builder-veertu-anka/client"
 )
 
 type StepSetHyperThreading struct{}
@@ -19,7 +20,7 @@ func (s *StepSetHyperThreading) Run(ctx context.Context, state multistep.StateBa
 	onError := func(err error) multistep.StepAction {
 		return stepError(ui, state, err)
 	}
-	
+
 	if !config.EnableHtt && !config.DisableHtt { // configuration did not set enable or disable hyper threading
 		log.Printf("enable/disable htt not specified. moving on.")
 		return multistep.ActionContinue
@@ -31,12 +32,13 @@ func (s *StepSetHyperThreading) Run(ctx context.Context, state multistep.StateBa
 	cmdClient := state.Get("client").(*client.Client)
 	vmName := state.Get("vm_name").(string)
 
+	stopParams := client.StopParams{VMName: vmName, Force: true}
 
 	describeResponse, err := cmdClient.Describe(vmName)
 	if err != nil {
 		return onError(err)
 	}
-	if describeResponse.CPU.Threads > 0 && config.EnableHtt{
+	if describeResponse.CPU.Threads > 0 && config.EnableHtt {
 		log.Print("Htt already on")
 		return multistep.ActionContinue
 	}
@@ -54,7 +56,7 @@ func (s *StepSetHyperThreading) Run(ctx context.Context, state multistep.StateBa
 		rerun = true
 	}
 	if !showResponse.IsStopped() {
-		err := cmdClient.Stop(client.StopParams{VMName: vmName, Force: true})
+		err := cmdClient.Stop(stopParams)
 		if err != nil {
 			return onError(err)
 		}
