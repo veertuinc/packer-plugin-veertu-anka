@@ -1,14 +1,14 @@
 package anka
 
 import (
-	"time"
-	"fmt"
 	"context"
-	"github.com/hashicorp/packer/packer"
+	"fmt"
 	"log"
+	"time"
 
+	"github.com/hashicorp/packer/packer-plugin-sdk/multistep"
+	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/hashicorp/packer/helper/multistep"
 )
 
 type StepStartVM struct{}
