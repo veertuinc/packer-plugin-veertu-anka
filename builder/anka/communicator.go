@@ -1,18 +1,18 @@
 package anka
 
 import (
-	"fmt"
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
-	"context"
-	
+
+	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/hashicorp/packer/packer"
 )
 
 type Communicator struct {
