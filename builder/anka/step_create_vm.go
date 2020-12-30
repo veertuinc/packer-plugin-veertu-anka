@@ -29,7 +29,7 @@ type StepCreateVM struct {
 }
 
 const (
-	DEFAULT_DISK_SIZE = "25G"
+	DEFAULT_DISK_SIZE = "30G"
 	DEFAULT_RAM_SIZE  = "2G"
 	DEFAULT_CPU_COUNT = "2"
 )
@@ -296,20 +296,6 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 		return
 	}
 
-	dir, dir_err := os.Getwd()
-	if dir_err == nil {
-		err = s.client.Copy(client.CopyParams{
-			Src: s.vmName + ":/var/log/install.log",
-			Dst: dir + "/install-" + s.vmName + ".log",
-		})
-
-		if err != nil {
-			log.Println("Error downloading install log from VM")
-		}
-
-		ui.Say(fmt.Sprintf("Saved install.log from %s to ./install-%s.log", s.vmName, s.vmName))
-	}
-
 	_, halted := state.GetOk(multistep.StateHalted)
 	_, canceled := state.GetOk(multistep.StateCancelled)
 	errorObj := state.Get("error")
@@ -326,6 +312,18 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 				ui.Error(fmt.Sprint(err))
 			}
 			return
+		} else {
+			dir, dir_err := os.Getwd()
+			if dir_err == nil {
+				err = s.client.Copy(client.CopyParams{
+					Src: s.vmName + ":/var/log/install.log",
+					Dst: dir + "/install-" + s.vmName + ".log",
+				})
+				if err != nil {
+					log.Println("Error downloading install log from VM")
+				}
+				ui.Say(fmt.Sprintf("Saved install.log from %s to ./install-%s.log", s.vmName, s.vmName))
+			}
 		}
 	}
 
