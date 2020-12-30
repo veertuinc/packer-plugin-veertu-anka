@@ -14,8 +14,9 @@
   ],
   "builders": [{
     "type": "veertu-anka",
-    "installer_app": "/Applications/Install macOS Sierra.app/",
-    "disk_size": "25G",
+    "cpu_count": 8,
+    "ram_size": "10G",
+    "disk_size": "150G",
     "source_vm_name": "{{user `source_vm_name`}}"
   }]
 }

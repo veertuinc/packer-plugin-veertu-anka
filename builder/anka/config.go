@@ -15,7 +15,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const DEFAULT_BOOT_DELAY = "10s"
+const DEFAULT_BOOT_DELAY = "20s"
 
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
@@ -39,6 +39,7 @@ type Config struct {
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`
+	CopyOutGuestInstallLog     bool `mapstructure:"copy_out_guest_install_log"`
 
 	ctx interpolate.Context
 }

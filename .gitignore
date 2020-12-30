@@ -43,3 +43,4 @@ _testmain.go
 *.prof
 
 .DS_Store
+install-anka-packer*.log

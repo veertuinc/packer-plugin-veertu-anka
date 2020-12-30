@@ -12,9 +12,9 @@
       ]
     }
   ],
-"builders": [{
-  "type": "veertu-anka",
-  "installer_app": "/Applications/Install macOS Catalina.app",
-  "vm_name": "Testing"
-}]
+  "builders": [{
+    "type": "veertu-anka",
+    "copy_out_guest_install_log": true,
+    "source_vm_name": "{{user `source_vm_name`}}"
+  }]
 }
