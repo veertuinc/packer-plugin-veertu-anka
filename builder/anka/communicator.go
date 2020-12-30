@@ -1,18 +1,14 @@
 package anka
 
 import (
-	"fmt"
-	"errors"
+	"context"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
-	"path/filepath"
-	"context"
-	
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
+
 	"github.com/hashicorp/packer/packer"
+	"github.com/veertuinc/packer-builder-veertu-anka/client"
 )
 
 type Communicator struct {
@@ -52,15 +48,17 @@ func (c *Communicator) Start(ctx context.Context, remote *packer.RemoteCmd) erro
 }
 
 func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error {
-	log.Printf("Communicator Upload")
+	log.Printf("Uploading file to VM: %s", dst)
+
 	// Create a temporary file to store the upload
 	tempfile, err := ioutil.TempFile(c.HostDir, "upload")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tempfile.Name())
+	defer tempfile.Close()
 
-	// Copy the contents to the temporary file
+	log.Printf("Copying from reader to %s", tempfile.Name())
 	w, err := io.Copy(tempfile, src)
 	if err != nil {
 		return err
@@ -71,106 +69,20 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	}
 	tempfile.Close()
 
-	log.Printf("Created temp dir in %s", tempfile.Name())
-	log.Printf("Copying %d bytes from %s to %s", w, tempfile.Name(), dst)
-
-	log.Printf("Destination os %v", dst)
-
-	err, _ = c.Client.Run(client.RunParams{
-		VMName:  c.VMName,
-		Command: []string{"cp", path.Base(tempfile.Name()), dst},
-		Volume:  c.HostDir,
+	err = c.Client.Copy(client.CopyParams{
+		Src: tempfile.Name(),
+		Dst: c.VMName + ":" + dst,
 	})
 
+	log.Printf("Copied %d bytes from %s to %s", w, tempfile.Name(), dst)
 	return err
 }
 
 func (c *Communicator) UploadDir(dst string, src string, exclude []string) error {
-	// Create the temporary directory that will store the contents of "src"
-	// for copying into the container.
-	td, err := ioutil.TempDir(c.HostDir, "dirupload")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(td)
-
-	walkFn := func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relpath, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		hostpath := filepath.Join(td, relpath)
-
-		// If it is a directory, just create it
-		if info.IsDir() {
-			return os.MkdirAll(hostpath, info.Mode())
-		}
-
-		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
-			dest, err := os.Readlink(path)
-
-			if err != nil {
-				return err
-			}
-
-			return os.Symlink(dest, hostpath)
-		}
-
-		// It is a file, copy it over, including mode.
-		src, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer src.Close()
-
-		dst, err := os.Create(hostpath)
-		if err != nil {
-			return err
-		}
-		defer dst.Close()
-
-		log.Printf("Copying %s to %s", src.Name(), dst.Name())
-		if _, err := io.Copy(dst, src); err != nil {
-			return err
-		}
-
-		si, err := src.Stat()
-		if err != nil {
-			return err
-		}
-
-		return dst.Chmod(si.Mode())
-	}
-
-	// Copy the entire directory tree to the temporary directory
-	if err := filepath.Walk(src, walkFn); err != nil {
-		return err
-	}
-
-	// Determine the destination directory
-	// containerSrc := filepath.Join(c.ContainerDir, filepath.Base(td))
-	containerDst := dst
-	if src[len(src)-1] != '/' {
-		containerDst = filepath.Join(dst, filepath.Base(src))
-	}
-
-	log.Printf("from %#v to %#v", td, containerDst)
-
-	// Make the directory, then copy into it
-	command := fmt.Sprintf("set -e; mkdir -p %s; command cp -R %s/* %s",
-		containerDst, filepath.Base(td), containerDst,
-	)
-	err, _ = c.Client.Run(client.RunParams{
-		VMName:  c.VMName,
-		Command: []string{"bash", "-c", command},
-		Volume:  c.HostDir,
+	return c.Client.Copy(client.CopyParams{
+		Src: src,
+		Dst: c.VMName + ":" + dst,
 	})
-
-	return err
 }
 
 func (c *Communicator) Download(src string, dst io.Writer) error {
@@ -182,12 +94,11 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 		return err
 	}
 	defer os.Remove(tempfile.Name())
+	defer tempfile.Close()
 
-	// Copy it to a local file mounted on shared fs
-	err, _ = c.Client.Run(client.RunParams{
-		VMName:  c.VMName,
-		Command: []string{"cp", src, "./" + path.Base(tempfile.Name())},
-		Volume:  c.HostDir,
+	err = c.Client.Copy(client.CopyParams{
+		Src: c.VMName + ":" + src,
+		Dst: tempfile.Name(),
 	})
 
 	log.Printf("Copying from %s to writer", tempfile.Name())
@@ -201,5 +112,8 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 }
 
 func (c *Communicator) DownloadDir(src string, dst string, exclude []string) error {
-	return errors.New("communicator.DownloadDir isn't implemented")
+	return c.Client.Copy(client.CopyParams{
+		Src: c.VMName + ":" + src,
+		Dst: dst,
+	})
 }
