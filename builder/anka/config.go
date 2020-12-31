@@ -39,7 +39,6 @@ type Config struct {
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`
-	CopyOutGuestInstallLog     bool `mapstructure:"copy_out_guest_install_log"`
 
 	ctx interpolate.Context
 }
