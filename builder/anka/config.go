@@ -4,7 +4,6 @@ package anka
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/hashicorp/packer/common"
@@ -90,8 +89,6 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, errs
 	}
-
-	log.Printf("%+v\n", c)
-
+	
 	return &c, nil
 }
