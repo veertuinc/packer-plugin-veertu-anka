@@ -23,8 +23,18 @@ func (s *StepStartVM) Run(ctx context.Context, state multistep.StateBag) multist
 	cmdClient := state.Get("client").(*client.Client)
 	vmName := state.Get("vm_name").(string)
 
+	if config.UpdateAddons {
+		err := cmdClient.Stop(client.StopParams{
+			VMName: vmName,
+			Force: true,
+		})
+		if err != nil {
+			return onError(err)
+		}
+	}
 	err := cmdClient.Start(client.StartParams{
 		VMName: vmName,
+		UpdateAddons: config.UpdateAddons,
 	})
 	if err != nil {
 		return onError(err)

@@ -50,10 +50,16 @@ func (c *Client) Suspend(params SuspendParams) error {
 
 type StartParams struct {
 	VMName       string
+	UpdateAddons bool
 }
 
 func (c *Client) Start(params StartParams) error {
-	_, err := runAnkaCommand("start", params.VMName)
+	cmd := []string{"start"}
+	if params.UpdateAddons {
+		cmd = append(cmd, "--update-addons")
+	}
+	cmd = append(cmd, params.VMName)
+	_, err := runAnkaCommand(cmd...)
 	return err
 }
 

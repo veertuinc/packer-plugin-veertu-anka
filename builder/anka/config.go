@@ -38,6 +38,7 @@ type Config struct {
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`
+	UpdateAddons bool `mapstructure:"update_addons"`
 
 	ctx interpolate.Context
 }

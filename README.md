@@ -75,41 +75,41 @@ This will clone `10.15.6` to a new VM and, if there are differences from the bas
 
 ## Configuration
 
-* `type` (required)
+* `type` (required) (string)
 
 Must be `veertu-anka`.
 
-* `installer_app` (optional)
+* `installer_app` (optional) (string)
 
 The path to a macOS installer. This must be provided if `source_vm_name` isn't provided. This process takes about 20 minutes. The resulting VM template name will be `anka-packer-base-{macOSVersion}`.
 
-* `disk_size` (optional)
+* `disk_size` (optional) (string)
 
 The size in "[0-9]+G" format, defaults to `25G`.
 
 > We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
 
-* `ram_size` (optional)
+* `ram_size` (optional) (string)
 
 The size in "[0-9]+G" format, defaults to `2G`.
 
-* `cpu_count` (optional)
+* `cpu_count` (optional) (integer)
 
 The number of CPU cores, defaults to `2`.
 
-* `source_vm_name` (optional)
+* `source_vm_name` (optional) (string)
 
 The VM to clone for provisioning, either stopped or suspended.
 
-* `vm_name` (optional)
+* `vm_name` (optional) (string)
 
 The name for the VM that is created. One is generated if not provided (`anka-packer-{10RandomCharacters}`).
 
-* `boot_delay` (optional)
+* `boot_delay` (optional) (string)
 
 The time to wait before running packer provisioner commands, defaults to `10s`.
 
-* `hw_uuid` (optional)
+* `hw_uuid` (optional) (string)
 
 The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
@@ -135,6 +135,12 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
     ]
   }]
 ```
+
+* `update_addons` (optional) (boolean)
+
+Whether or not to update addons when starting the cloned VM.
+
+> This will force stop the VM, causing your suspended state to be lost.
 
 ## Development
 
