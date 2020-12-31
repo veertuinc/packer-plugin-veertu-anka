@@ -26,6 +26,7 @@ func init() {
 type StepCreateVM struct {
 	client *client.Client
 	vmName string
+	config *Config
 }
 
 const (
@@ -154,6 +155,8 @@ func (s *StepCreateVM) modifyVMProperties(describeResponse client.DescribeRespon
 
 func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
+	s.config = config
+
 	ui := state.Get("ui").(packer.Ui)
 
 	s.client = state.Get("client").(*client.Client)
@@ -305,14 +308,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	case *common.VMNotFoundException:
 		return
 	default:
-		if halted || canceled {
-			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
-			err = s.client.Delete(client.DeleteParams{VMName: s.vmName})
-			if err != nil {
-				ui.Error(fmt.Sprint(err))
-			}
-			return
-		} else {
+		if s.config.CopyOutGuestInstallLog {
 			dir, dir_err := os.Getwd()
 			if dir_err == nil {
 				err = s.client.Copy(client.CopyParams{
@@ -324,6 +320,14 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 				}
 				ui.Say(fmt.Sprintf("Saved install.log from %s to ./install-%s.log", s.vmName, s.vmName))
 			}
+		}
+		if halted || canceled {
+			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
+			err = s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			if err != nil {
+				ui.Error(fmt.Sprint(err))
+			}
+			return
 		}
 	}
 

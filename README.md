@@ -136,6 +136,10 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
   }]
 ```
 
+* `copy_out_guest_install_log` (optional)
+
+Will run `anka cp` and copy out the guest's `/var/log/install.log` to the current working directory (where you run packer build) on the host.
+
 ## Development
 
 You will need a recent golang installed and setup. See `go.mod` for which version is expected.
