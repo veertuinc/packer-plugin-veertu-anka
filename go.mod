@@ -8,5 +8,4 @@ require (
 	github.com/hashicorp/packer v1.6.5
 	github.com/mitchellh/mapstructure v1.4.0
 	github.com/zclconf/go-cty v1.7.1
-  golang.org/x/mod v0.3.0
 )
