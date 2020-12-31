@@ -1,7 +1,4 @@
 {
-  "variables": {
-    "source_vm_name": ""
-  },
   "provisioners": [
     {
       "type": "shell",
@@ -14,9 +11,6 @@
   ],
   "builders": [{
     "type": "veertu-anka",
-    "cpu_count": 8,
-    "ram_size": "10G",
-    "disk_size": "150G",
-    "source_vm_name": "{{user `source_vm_name`}}"
+    "installer_app": "/Applications/Install macOS Big Sur.app/"
   }]
 }
