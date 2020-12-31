@@ -1,8 +1,0 @@
-{
-  "builders": [
-    {
-      "installer_app": "/Applications/Install macOS Catalina.app",
-      "type": "veertu-anka"
-    }
-  ]
-}
