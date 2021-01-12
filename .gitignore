@@ -3,6 +3,8 @@ crash.log
 packer-builder-veertu-anka
 mapstructure-to-hcl2
 dist/
+pkg
+bin
 
 # generated code
 builder/anka/config.hcl2spec.go
