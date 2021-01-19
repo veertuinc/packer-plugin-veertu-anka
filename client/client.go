@@ -330,7 +330,13 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 	cmdArgs := append([]string{"--machine-readable"}, args...)
 	log.Printf("Executing anka %s", strings.Join(cmdArgs, " "))
+
 	cmd := exec.Command("anka", cmdArgs...)
+
+	newEnv := append(cmd.Env, "DEBUG=1")
+	cmd.Env = newEnv
+
+	log.Printf("ENV: %s", cmd.Env)
 
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
