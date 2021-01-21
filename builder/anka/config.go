@@ -38,7 +38,7 @@ type Config struct {
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`
-	UseAnkaCP bool `mapstructure:"use_anka_cp`
+	UseAnkaCP bool `mapstructure:"use_anka_cp"`
 
 	ctx interpolate.Context
 }

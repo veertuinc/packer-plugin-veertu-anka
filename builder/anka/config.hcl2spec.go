@@ -11,6 +11,7 @@ import (
 type FlatConfig struct {
 	PackerBuildName           *string           `mapstructure:"packer_build_name" cty:"packer_build_name" hcl:"packer_build_name"`
 	PackerBuilderType         *string           `mapstructure:"packer_builder_type" cty:"packer_builder_type" hcl:"packer_builder_type"`
+	PackerCoreVersion         *string           `mapstructure:"packer_core_version" cty:"packer_core_version" hcl:"packer_core_version"`
 	PackerDebug               *bool             `mapstructure:"packer_debug" cty:"packer_debug" hcl:"packer_debug"`
 	PackerForce               *bool             `mapstructure:"packer_force" cty:"packer_force" hcl:"packer_force"`
 	PackerOnError             *string           `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
@@ -80,6 +81,7 @@ type FlatConfig struct {
 	BootDelay  *string `mapstructure:"boot_delay" cty:"boot_delay" hcl:"boot_delay"`
 	EnableHtt  *bool   `mapstructure:"enable_htt" cty:"enable_htt" hcl:"enable_htt"`
 	DisableHtt *bool   `mapstructure:"disable_htt" cty:"disable_htt" hcl:"disable_htt"`
+	UseAnkaCP  *bool   `mapstructure:"use_anka_cp" cty:"use_anka_cp" hcl:"use_anka_cp"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -96,6 +98,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
 		"packer_build_name":            &hcldec.AttrSpec{Name: "packer_build_name", Type: cty.String, Required: false},
 		"packer_builder_type":          &hcldec.AttrSpec{Name: "packer_builder_type", Type: cty.String, Required: false},
+		"packer_core_version":          &hcldec.AttrSpec{Name: "packer_core_version", Type: cty.String, Required: false},
 		"packer_debug":                 &hcldec.AttrSpec{Name: "packer_debug", Type: cty.Bool, Required: false},
 		"packer_force":                 &hcldec.AttrSpec{Name: "packer_force", Type: cty.Bool, Required: false},
 		"packer_on_error":              &hcldec.AttrSpec{Name: "packer_on_error", Type: cty.String, Required: false},
@@ -161,6 +164,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"boot_delay":                   &hcldec.AttrSpec{Name: "boot_delay", Type: cty.String, Required: false},
 		"enable_htt":                   &hcldec.AttrSpec{Name: "enable_htt", Type: cty.Bool, Required: false},
 		"disable_htt":                  &hcldec.AttrSpec{Name: "disable_htt", Type: cty.Bool, Required: false},
+		"use_anka_cp":                  &hcldec.AttrSpec{Name: "use_anka_cp", Type: cty.Bool, Required: false},
 	}
 	return s
 }
