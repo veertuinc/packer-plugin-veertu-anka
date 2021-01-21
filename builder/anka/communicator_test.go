@@ -65,7 +65,6 @@ func TestUploadDownload(t *testing.T) {
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
 		&packer.ProvisionHook{
-			packer.ProvisionH
 			Provisioners: []*packer.HookedProvisioner{
 				{Provisioner: upload, Config: nil, TypeName: ""},
 				{Provisioner: download, Config: nil, TypeName: ""},
