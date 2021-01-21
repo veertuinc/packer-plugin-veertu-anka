@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"context"
+	"github.com/hashicorp/packer/packer"
+	"github.com/hashicorp/packer/packer-plugin-sdk/"
 	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer/provisioner/file"
 	"github.com/hashicorp/packer/provisioner/shell"
@@ -60,6 +62,7 @@ func TestUploadDownload(t *testing.T) {
 	defer os.Remove("my-strawberry-cake")
 
 	// Add hooks so the provisioners run during the build
+	
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
 		&packer.ProvisionHook{
