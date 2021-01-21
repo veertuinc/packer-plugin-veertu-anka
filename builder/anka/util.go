@@ -1,12 +1,13 @@
 package anka
 
 import (
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/helper/multistep"
-	"strconv"
-	"regexp"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/hashicorp/packer/packer-plugin-sdk/multistep"
+	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 )
 
 func stepError(ui packer.Ui, state multistep.StateBag, err error) multistep.StepAction {
@@ -16,7 +17,7 @@ func stepError(ui packer.Ui, state multistep.StateBag, err error) multistep.Step
 }
 
 func convertDiskSizeToBytes(diskSize string) (error, uint64) {
-	match, err := regexp.MatchString("^[0-9]+[g|G|m|M]$",diskSize)
+	match, err := regexp.MatchString("^[0-9]+[g|G|m|M]$", diskSize)
 	if err != nil {
 		return err, uint64(0)
 	}

@@ -14,9 +14,7 @@
   ],
 "builders": [{
   "type": "veertu-anka",
-  "cpu_count": 8,
-  "ram_size": "10G",
-  "disk_size": "150G",
+  "use_anka_cp": true,
   "source_vm_name": "{{user `source_vm_name`}}"
 }]
 }

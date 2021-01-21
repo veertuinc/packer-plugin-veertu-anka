@@ -4,14 +4,13 @@ package anka
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
-	"github.com/hashicorp/packer/common"
-	"github.com/hashicorp/packer/helper/communicator"
-	"github.com/hashicorp/packer/helper/config"
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/template/interpolate"
+	"github.com/hashicorp/packer/packer-plugin-sdk/common"
+	"github.com/hashicorp/packer/packer-plugin-sdk/communicator"
+	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer/packer-plugin-sdk/template/config"
+	"github.com/hashicorp/packer/packer-plugin-sdk/template/interpolate"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -39,6 +38,7 @@ type Config struct {
 	BootDelay  string `mapstructure:"boot_delay"`
 	EnableHtt  bool   `mapstructure:"enable_htt"`
 	DisableHtt bool   `mapstructure:"disable_htt"`
+	UseAnkaCP bool `mapstructure:"use_anka_cp`
 
 	ctx interpolate.Context
 }
@@ -90,8 +90,6 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, errs
 	}
-
-	log.Printf("%+v\n", c)
-
+	
 	return &c, nil
 }

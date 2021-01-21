@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/packer/packer"
+	"context"
+	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer/provisioner/file"
 	"github.com/hashicorp/packer/provisioner/shell"
 	"github.com/hashicorp/packer/template"
-	"context"
 )
 
 func TestCommunicator_impl(t *testing.T) {
