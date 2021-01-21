@@ -147,7 +147,7 @@ make packer-test
 If you've already built a base macOS VM, you can use:
 
 ```bash
-make packer-test-existing SOURCE_VM_NAME=11.0.1
+make packer-test-existing SOURCE_VM_NAME=11.1.0
 ```
 
 -or-
