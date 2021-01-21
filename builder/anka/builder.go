@@ -17,9 +17,6 @@ import (
 // The unique ID for this builder.
 const BuilderId = "packer.veertu-anka"
 
-// The oldest version of the Anka Build utility this plugin supports ; disabled as we have backwards compatibility ; may be useful in the future
-// const OldestSupportedVersion = "2.3.0"
-
 // Builder represents a Packer Builder.
 type Builder struct {
 	config *Config
@@ -45,10 +42,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 		return nil, err
 	}
 	log.Printf("[DEBUG] Anka version: %s version %s (build %s)", version.Body.Product, version.Body.Version, version.Body.Build)
-
-	// if semver.Compare(version.Body.Version, OldestSupportedVersion) < 0 {
-	// 	return nil, errors.New("This plugin requires at least Anka " + OldestSupportedVersion + ". You are running " + version.Body.Version)
-	// }
 
 	steps := []multistep.Step{
 		&StepTempDir{},

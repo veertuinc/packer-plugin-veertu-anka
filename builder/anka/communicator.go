@@ -39,6 +39,13 @@ func (c *Communicator) Start(ctx context.Context, remote *packer.RemoteCmd) erro
 		return err
 	}
 
+	if c.Config.UseAnkaCP == false {
+		errFindingFUSE := c.findFUSE()
+		if errFindingFUSE != nil {
+			c.Config.UseAnkaCP = true
+		}
+	}
+
 	go func() {
 		err, exitCode := runner.Wait()
 		if err != nil {
@@ -82,16 +89,16 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	tempfile.Close()
 
 	// check if fuse exists, and use that instead of anka cp
-	if errFindingFUSE := c.findFUSE(); errFindingFUSE == nil {
+	if c.Config.UseAnkaCP {
+		err = c.Client.Copy(client.CopyParams{
+			Src: tempfile.Name(),
+			Dst: c.VMName + ":" + dst,
+		})
+	} else {
 		err, _ = c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", path.Base(tempfile.Name()), dst},
 			Volume:  c.HostDir,
-		})
-	} else {
-		err = c.Client.Copy(client.CopyParams{
-			Src: tempfile.Name(),
-			Dst: c.VMName + ":" + dst,
 		})
 	}
 
@@ -100,7 +107,7 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 }
 
 func (c *Communicator) UploadDir(dst string, src string, exclude []string) error {
-	if errFindingFUSE := c.findFUSE(); errFindingFUSE == nil {
+	if c.Config.UseAnkaCP {
 		// Create the temporary directory that will store the contents of "src"
 		// for copying into the container.
 		td, err := ioutil.TempDir(c.HostDir, "dirupload")
@@ -204,9 +211,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	defer os.Remove(tempfile.Name())
 	defer tempfile.Close()
 
-	errFindingFUSE := c.findFUSE()
-
-	if errFindingFUSE != nil {
+	if c.Config.UseAnkaCP {
 		err = c.Client.Copy(client.CopyParams{
 			Src: c.VMName + ":" + src,
 			Dst: tempfile.Name(),
@@ -219,7 +224,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 		return err
 	}
 
-	if errFindingFUSE == nil {
+	if c.Config.UseAnkaCP == false {
 		err, _ = c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", src, "./" + path.Base(tempfile.Name())},
@@ -232,7 +237,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 }
 
 func (c *Communicator) DownloadDir(src string, dst string, exclude []string) error {
-	if errFindingFUSE := c.findFUSE(); errFindingFUSE == nil {
+	if c.Config.UseAnkaCP == false {
 		return errors.New("communicator.DownloadDir isn't implemented")
 	} else {
 		return c.Client.Copy(client.CopyParams{
