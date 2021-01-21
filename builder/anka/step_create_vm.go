@@ -29,7 +29,7 @@ type StepCreateVM struct {
 }
 
 const (
-	DEFAULT_DISK_SIZE = "25G"
+	DEFAULT_DISK_SIZE = "30G"
 	DEFAULT_RAM_SIZE  = "2G"
 	DEFAULT_CPU_COUNT = "2"
 )
@@ -287,6 +287,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 }
 
 func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
+	var err error
+
 	ui := state.Get("ui").(packer.Ui)
 
 	log.Println("Cleaning up create VM step")
@@ -305,7 +307,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	default:
 		if halted || canceled {
 			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
-			err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			err = s.client.Delete(client.DeleteParams{VMName: s.vmName})
 			if err != nil {
 				ui.Error(fmt.Sprint(err))
 			}
@@ -313,7 +315,7 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 		}
 	}
 
-	err := s.client.Suspend(client.SuspendParams{
+	err = s.client.Suspend(client.SuspendParams{
 		VMName: s.vmName,
 	})
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/packer/packer-plugin-sdk/multistep/commonsteps"
 	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	// "golang.org/x/mod/semver"
 )
 
 // The unique ID for this builder.
@@ -40,7 +41,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[DEBUG] Anka version: %s", version)
+	log.Printf("[DEBUG] Anka version: %s version %s (build %s)", version.Body.Product, version.Body.Version, version.Body.Build)
 
 	steps := []multistep.Step{
 		&StepTempDir{},
@@ -91,16 +92,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 		vmName: descr.Name,
 	}, nil
 }
-
-// Cancel.
-// Not used after packer 1.3
-
-// func (b *Builder) Cancel() {
-// 	if b.runner != nil {
-// 		log.Println("Cancelling the step runner...")
-// 		b.runner.Cleanup()
-// 	}
-// }
 
 func (b *Builder) ConfigSpec() hcldec.ObjectSpec {
 	return b.config.FlatMapstructure().HCL2Spec()
