@@ -12,10 +12,9 @@
       ]
     }
   ],
-  "builders": [{
-    "type": "veertu-anka",
-    "installer_app": "/Applications/Install macOS Sierra.app/",
-    "disk_size": "25G",
-    "source_vm_name": "{{user `source_vm_name`}}"
-  }]
+"builders": [{
+  "type": "veertu-anka",
+  "installer_app": "/Applications/Install macOS Big Sur.app",
+  "vm_name": "Testing"
+}]
 }

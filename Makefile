@@ -1,4 +1,3 @@
-
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
 VERSION := $(shell cat VERSION)
 FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
@@ -28,8 +27,8 @@ build-and-install: $(BIN)
 packer-test: install
 	PACKER_LOG=1 packer build examples/macos-catalina.json
 
-packer-test-existing: build
-	PACKER_LOG=1 packer build -var "source_vm_name=$(SOURCE_VM_NAME)" examples/macos-catalina-existing.json
+big-sur: install
+	PACKER_LOG=1 packer build examples/macos-bigsur.json
 
 clean:
 	rm -f $(BIN)

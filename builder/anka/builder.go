@@ -6,11 +6,12 @@ import (
 	"log"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/packer/common"
-	"github.com/hashicorp/packer/helper/communicator"
-	"github.com/hashicorp/packer/helper/multistep"
-	"github.com/hashicorp/packer/packer"
+	"github.com/hashicorp/packer/packer-plugin-sdk/communicator"
+	"github.com/hashicorp/packer/packer-plugin-sdk/multistep"
+	"github.com/hashicorp/packer/packer-plugin-sdk/multistep/commonsteps"
+	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	// "golang.org/x/mod/semver"
 )
 
 // The unique ID for this builder.
@@ -40,7 +41,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[DEBUG] Anka version: %s", version)
+	log.Printf("[DEBUG] Anka version: %s version %s (build %s)", version.Body.Product, version.Body.Version, version.Body.Build)
 
 	steps := []multistep.Step{
 		&StepTempDir{},
@@ -56,7 +57,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 				return "", errors.New("No host implemented for anka builder (which is ok)")
 			},
 		},
-		&common.StepProvision{},
+		&commonsteps.StepProvision{},
 	}
 
 	// Setup the state bag and initial state for the steps
@@ -67,7 +68,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	state.Put("client", client)
 
 	// Run!
-	b.runner = common.NewRunner(steps, b.config.PackerConfig, ui)
+	b.runner = commonsteps.NewRunner(steps, b.config.PackerConfig, ui)
 	b.runner.Run(ctx, state)
 
 	// If there was an error, return that
@@ -91,16 +92,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 		vmName: descr.Name,
 	}, nil
 }
-
-// Cancel.
-// Not used after packer 1.3
-
-// func (b *Builder) Cancel() {
-// 	if b.runner != nil {
-// 		log.Println("Cancelling the step runner...")
-// 		b.runner.Cleanup()
-// 	}
-// }
 
 func (b *Builder) ConfigSpec() hcldec.ObjectSpec {
 	return b.config.FlatMapstructure().HCL2Spec()
