@@ -147,21 +147,13 @@ make packer-test
 If you've already built a base macOS VM, you can use:
 
 ```bash
-make packer-test SOURCE_VM_NAME=macos-10.12.3-base
+make packer-test-existing SOURCE_VM_NAME=11.1.0
 ```
+
+-or-
 
 ```bash
 make build-and-install && PACKER_LOG=1 packer build examples/macos-catalina-existing.json
-```
-
-## Release
-
-We use [goreleaser](https://goreleaser.com).
-
-To locally try out the release workflow (build, package, but don't sign or publish):
-
-```bash
-make release-dry-run
 ```
 
 [Packer Builder]: https://www.packer.io/docs/extending/custom-builders.html

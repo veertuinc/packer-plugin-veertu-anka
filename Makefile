@@ -1,6 +1,6 @@
-
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
-FLAGS := -X main.Version=$(LATEST-GIT-SHA)
+VERSION := $(shell cat VERSION)
+FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
 BIN := packer-builder-veertu-anka
 SOURCES := $(shell find . -name '*.go')
 
@@ -25,9 +25,6 @@ build-and-install: $(BIN)
 	$(MAKE) install
 
 packer-test: install
-	PACKER_LOG=1 packer build -var "source_vm_name=$(SOURCE_VM_NAME)" examples/macos-sierra.json
-
-packer-test2: build
 	PACKER_LOG=1 packer build examples/macos-catalina.json
 
 big-sur: install
@@ -42,6 +39,3 @@ clean-images:
 wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
 	-rm -rf ~/.anka
-
-release-dry-run: build test
-	goreleaser --snapshot --skip-sign --skip-publish --rm-dist
