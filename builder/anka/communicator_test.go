@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer/provisioner/file"
 	"github.com/hashicorp/packer/provisioner/shell"
-	"github.com/hashicorp/packer/template"
+	"github.com/hashicorp/packer/packer-plugin-sdk/template"
 )
 
 func TestCommunicator_impl(t *testing.T) {
