@@ -30,7 +30,7 @@ The most basic json file you can build from is:
 {
   "builders": [
     {
-      "installer_app": "/Applications/Install macOS Catalina.app",
+      "installer_app": "/Applications/Install macOS Big Sur.app",
       "type": "veertu-anka"
     }
   ]

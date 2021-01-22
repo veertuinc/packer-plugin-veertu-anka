@@ -25,10 +25,7 @@ build-and-install: $(BIN)
 	$(MAKE) install
 
 packer-test: install
-	PACKER_LOG=1 packer build examples/macos-catalina.json
-
-big-sur: install
-	PACKER_LOG=1 packer build examples/macos-bigsur.json
+	PACKER_LOG=1 packer build examples/create-from-installer.json
 
 clean:
 	rm -f $(BIN)
