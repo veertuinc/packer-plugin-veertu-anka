@@ -30,7 +30,7 @@ type StepCreateVM struct {
 
 const (
 	DEFAULT_DISK_SIZE = "30G"
-	DEFAULT_RAM_SIZE  = "2G"
+	DEFAULT_RAM_SIZE  = "4G"
 	DEFAULT_CPU_COUNT = "2"
 )
 
