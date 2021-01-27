@@ -179,7 +179,7 @@ const ankaBuilderConfig = `
   "builders": [
     {
       "type": "veertu-anka",
-      "disk_size": "25G",
+      "disk_size": "40G",
       "source_vm_name": "blah"
     }
   ],
@@ -204,7 +204,7 @@ const ankaBuilderShellConfig = `
   "builders": [
     {
       "type": "veertu-anka",
-      "disk_size": "25G",
+      "disk_size": "40G",
       "source_vm_name": "blah"
     }
   ],
