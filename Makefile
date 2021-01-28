@@ -8,7 +8,6 @@ SOURCES := $(shell find . -name '*.go')
 
 test:
 	go test -v builder/anka/*.go
-	$(MAKE) clean-clones
 
 build: $(BIN)
 $(BIN):
@@ -32,10 +31,10 @@ clean:
 	rm -f $(BIN)
 
 clean-images:
-	anka --machine-readable list | jq '.body[].name' | grep anka-packer | xargs -n1 anka delete --yes
+	anka --machine-readable list | jq -r '.body[].name' | grep anka-packer | xargs -n1 anka delete --yes
 
 clean-clones:
-	anka --machine-readable list | jq '.body[].name' | grep anka-packer | grep -v base | xargs -n1 anka delete --yes
+	anka --machine-readable list | jq -r '.body[].name' | grep anka-packer | grep -v base | xargs -n1 anka delete --yes
 
 wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
