@@ -32,10 +32,10 @@ clean:
 	rm -f $(BIN)
 
 clean-images:
-	anka --machine-readable list | jq '.body[].name' | grep anka-packer | xargs -n1 anka delete --force
+	anka --machine-readable list | jq '.body[].name' | grep anka-packer | xargs -n1 anka delete --yes
 
 clean-clones:
-	anka --machine-readable list | jq '.body[].name' | grep anka-packer | grep -v base | xargs -n1 anka delete --force
+	anka --machine-readable list | jq '.body[].name' | grep anka-packer | grep -v base | xargs -n1 anka delete --yes
 
 wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
