@@ -240,7 +240,18 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	if show.IsRunning() {
 		ui.Say(fmt.Sprintf("Suspending VM %s", sourceVMName))
 		if err := s.client.Suspend(client.SuspendParams{VMName: sourceVMName}); err != nil {
-			return onError(err)
+			license, licenseErr := s.client.License()
+		    if licenseErr != nil {
+				return onError(licenseErr)
+			}
+			if license.LicenseType == "com.veertu.anka.develop" {
+				ui.Say(fmt.Sprintf("Develop license present. Performing stop..."))
+				if stopErr := s.client.Stop(client.StopParams{VMName: sourceVMName}); stopErr != nil {
+					return onError(stopErr)
+				}
+			} else {
+				return onError(err)
+			}
 		}
 	}
 
@@ -319,9 +330,25 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 		VMName: s.vmName,
 	})
 	if err != nil {
-		ui.Error(fmt.Sprint(err))
-		s.client.Delete(client.DeleteParams{VMName: s.vmName})
-		panic(err)
+		license, licenseErr := s.client.License()
+		if licenseErr != nil {
+			panic(licenseErr)
+		}
+		if license.LicenseType == "com.veertu.anka.develop" {
+			ui.Say(fmt.Sprintf("Develop license present. Performing stop..."))
+			stopErr := s.client.Stop(client.StopParams{
+				VMName: s.vmName,
+			})
+			if stopErr != nil {
+				ui.Error(fmt.Sprint(stopErr))
+				s.client.Delete(client.DeleteParams{VMName: s.vmName})
+				panic(stopErr)
+			}
+		} else {
+			ui.Error(fmt.Sprint(err))
+			s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			panic(err)
+		}
 	}
 }
 
