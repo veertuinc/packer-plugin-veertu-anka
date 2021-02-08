@@ -1,20 +1,27 @@
-# Packer Builder for Anka
+# Packer Plugin for Anka
 
 This is a [Packer Builder] for building images that work with [Veertu Anka], a macOS virtualization tool.
 
 Note that this builder does not manage images. Once it creates an image, it is up to you to use it or delete it.
 
+### v2.0.0 Breaking Changes
+
+* Plugin will only work with Packer v1.7 or later.
+* Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
+* The `veertu-anka` builder has been split into two builders: `veertu-anka-create` and `veertu-anka-clone`
+
 ### Compatibility
 
-Packer Version | Builder for Anka Version
+Packer Version | Veertu Anka Plugin Version
 --- | ---
 Up to 1.4.5 | 1.1.0
 1.5.x and above | 1.2.0
+1.7.x and above | 2.0.0
 
 ## Installing from Binary
 
-1. Install Packer
-2. Install Veertu Anka
+1. [Install Packer v1.7 or newer](https://www.packer.io/downloads)
+2. [Install Veertu Anka v2.3.1 or newer](https://veertu.com/download-anka-build/)
 3. Download the [latest release](https://github.com/veertuinc/packer-builder-veertu-anka/releases) for your host environment
 4. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
     * The directory where the packer binary is.

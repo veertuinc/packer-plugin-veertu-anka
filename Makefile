@@ -1,7 +1,7 @@
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
 VERSION := $(shell cat VERSION)
 FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
-BIN := packer-builder-veertu-anka
+BIN := packer-plugin-veertu-anka
 SOURCES := $(shell find . -name '*.go')
 
 .PHONY: test packer-test clean clean-images

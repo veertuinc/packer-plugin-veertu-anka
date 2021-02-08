@@ -1,6 +1,7 @@
 example.json
 crash.log
 packer-builder-veertu-anka
+packer-plugin-veertu-anka
 mapstructure-to-hcl2
 dist/
 pkg
