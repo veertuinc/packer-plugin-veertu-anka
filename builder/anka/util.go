@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/packer/packer-plugin-sdk/multistep"
-	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/multistep"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
 )
 
 func stepError(ui packer.Ui, state multistep.StateBag, err error) multistep.StepAction {
@@ -39,6 +39,4 @@ func convertDiskSizeToBytes(diskSize string) (error, uint64) {
 	default:
 		return fmt.Errorf("Invalid disk size suffix: %s", suffix), uint64(0)
 	}
-
-	return fmt.Errorf("Unkown error"), uint64(0)
 }

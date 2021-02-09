@@ -11,7 +11,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 )
 
@@ -62,7 +62,7 @@ func (c *Communicator) findFUSE() error {
 func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error {
 	log.Printf("Uploading file to VM: %s", dst)
 
-	if c.Config.UseAnkaCP == false {
+	if !c.Config.UseAnkaCP {
 		errFindingFUSE := c.findFUSE()
 		if errFindingFUSE != nil {
 			c.Config.UseAnkaCP = true
@@ -84,7 +84,7 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	}
 
 	if fi != nil {
-		tempfile.Chmod((*fi).Mode())
+		_ = tempfile.Chmod((*fi).Mode())
 	}
 	tempfile.Close()
 
@@ -108,14 +108,14 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 
 func (c *Communicator) UploadDir(dst string, src string, exclude []string) error {
 
-	if c.Config.UseAnkaCP == false {
+	if !c.Config.UseAnkaCP {
 		errFindingFUSE := c.findFUSE()
 		if errFindingFUSE != nil {
 			c.Config.UseAnkaCP = true
 		}
 	}
 
-	if c.Config.UseAnkaCP == false {
+	if !c.Config.UseAnkaCP {
 		// Create the temporary directory that will store the contents of "src"
 		// for copying into the container.
 		td, err := ioutil.TempDir(c.HostDir, "dirupload")
@@ -220,10 +220,12 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	defer tempfile.Close()
 
 	if c.Config.UseAnkaCP {
-		err = c.Client.Copy(client.CopyParams{
+		if err = c.Client.Copy(client.CopyParams{
 			Src: c.VMName + ":" + src,
 			Dst: tempfile.Name(),
-		})
+		}); err != nil {
+			return err
+		}
 	}
 
 	log.Printf("Copying from %s to writer", tempfile.Name())
@@ -232,19 +234,21 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 		return err
 	}
 
-	if c.Config.UseAnkaCP == false {
+	if !c.Config.UseAnkaCP {
 		errFindingFUSE := c.findFUSE()
 		if errFindingFUSE != nil {
 			c.Config.UseAnkaCP = true
 		}
 	}
 
-	if c.Config.UseAnkaCP == false {
-		err, _ = c.Client.Run(client.RunParams{
+	if !c.Config.UseAnkaCP {
+		if err, _ = c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", src, "./" + path.Base(tempfile.Name())},
 			Volume:  c.HostDir,
-		})
+		}); err != nil {
+			return err
+		}
 	}
 
 	log.Printf("Copied %d bytes", w)
@@ -252,13 +256,13 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 }
 
 func (c *Communicator) DownloadDir(src string, dst string, exclude []string) error {
-	if c.Config.UseAnkaCP == false {
+	if !c.Config.UseAnkaCP {
 		errFindingFUSE := c.findFUSE()
 		if errFindingFUSE != nil {
 			c.Config.UseAnkaCP = true
 		}
 	}
-	if c.Config.UseAnkaCP == false {
+	if !c.Config.UseAnkaCP {
 		return errors.New("communicator.DownloadDir isn't implemented")
 	} else {
 		return c.Client.Copy(client.CopyParams{

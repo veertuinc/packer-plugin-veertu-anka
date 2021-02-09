@@ -49,7 +49,7 @@ func (c *Client) Suspend(params SuspendParams) error {
 }
 
 type StartParams struct {
-	VMName       string
+	VMName string
 }
 
 func (c *Client) Start(params StartParams) error {
@@ -59,7 +59,9 @@ func (c *Client) Start(params StartParams) error {
 
 func (c *Client) Run(params RunParams) (error, int) {
 	runner := NewRunner(params)
-	runner.Start()
+	if err := runner.Start(); err != nil {
+		return err, 1
+	}
 
 	log.Printf("Waiting for command to run")
 	return runner.Wait()
@@ -366,7 +368,9 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 	if err != nil {
 		return machineReadableOutput{}, err
 	}
-	cmd.Wait()
+	if err := cmd.Wait(); err != nil {
+		return machineReadableOutput{}, err
+	}
 
 	if err = parsed.GetError(); err != nil {
 		return machineReadableOutput{}, err
@@ -377,7 +381,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 const (
 	statusOK                         = "OK"
-	statusERROR                      = "ERROR"
+	statusERROR                      = "ERROR" //nolint:deadcode,varcheck
 	AnkaNameAlreadyExistsErrorCode   = 18
 	AnkaVMNotFoundExceptionErrorCode = 3
 )

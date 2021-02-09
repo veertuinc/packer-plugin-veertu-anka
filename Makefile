@@ -4,15 +4,20 @@ FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
 BIN := packer-plugin-veertu-anka
 SOURCES := $(shell find . -name '*.go')
 
-.PHONY: test packer-test clean clean-images
+.PHONY: lint test packer-test clean clean-images
+
+lint:
+	golangci-lint run --fast
 
 test:
 	go test -v builder/anka/*.go
 
-build: $(BIN)
-$(BIN):
+hcl2spec:
 	GOOS=darwin GOBIN=$(shell pwd) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
-	GOOS=darwin PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
+	GOOS=darwin PATH="$(shell pwd):${PATH}" go generate builder/ankavm/config.go
+
+build: $(BIN)
+$(BIN): hcl2spec
 	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN)
 
 install: $(BIN)

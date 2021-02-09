@@ -2,7 +2,6 @@ package anka
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,11 +9,12 @@ import (
 	"testing"
 
 	"context"
-	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
+
+	"github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/template"
 	oldPacker "github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/provisioner/file"
 	"github.com/hashicorp/packer/provisioner/shell"
-	"github.com/hashicorp/packer/packer-plugin-sdk/template"
 )
 
 func TestCommunicator_impl(t *testing.T) {
@@ -61,7 +61,6 @@ func TestUploadDownload(t *testing.T) {
 	defer os.Remove("my-strawberry-cake")
 
 	// Add hooks so the provisioners run during the build
-	
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
 		&oldPacker.ProvisionHook{
@@ -79,7 +78,9 @@ func TestUploadDownload(t *testing.T) {
 		t.Fatalf("Error running build %s", err)
 	}
 	// Preemptive cleanup
-	defer artifact.Destroy()
+	defer func() {
+		_ = artifact.Destroy()
+	}()
 
 	// Verify that the thing we downloaded is the same thing we sent up.
 	inputFile, err := ioutil.ReadFile("test-fixtures/onecakes/strawberry")
@@ -162,14 +163,16 @@ func TestExecuteShellCommand(t *testing.T) {
 	}
 
 	// Preemptive cleanup
-	defer artifact.Destroy()
+	defer func() {
+		_ = artifact.Destroy()
+	}()
 
 	outputFile, err := ioutil.ReadFile("provisioner_log")
 	if err != nil {
 		t.Fatalf("Unable to read output file: %s", err)
 	}
 
-	if string(outputFile) != fmt.Sprintf("inline\nanka\nroot\nscript1\nscript2\n") {
+	if string(outputFile) != "inline\nanka\nroot\nscript1\nscript2\n" {
 		t.Fatalf("Didn't expect output of %q", outputFile)
 	}
 }
