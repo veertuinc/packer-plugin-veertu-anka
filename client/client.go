@@ -13,7 +13,30 @@ import (
 	"github.com/veertuinc/packer-builder-veertu-anka/common"
 )
 
-type Client struct {
+const (
+	statusOK                         = "OK"
+	statusERROR                      = "ERROR" //nolint:deadcode,varcheck
+	AnkaNameAlreadyExistsErrorCode   = 18
+	AnkaVMNotFoundExceptionErrorCode = 3
+)
+
+type Client interface {
+	Version() (VersionResponse, error)
+	Suspend(params SuspendParams) error
+	Start(params StartParams) error
+	Run(params RunParams) (error, int)
+	Create(params CreateParams, outputStreamer chan string) (CreateResponse, error)
+	Describe(vmName string) (DescribeResponse, error)
+	Show(vmName string) (ShowResponse, error)
+	Copy(params CopyParams) error
+	Clone(params CloneParams) error
+	Stop(params StopParams) error
+	Delete(params DeleteParams) error
+	Exists(vmName string) (bool, error)
+	Modify(vmName string, command string, property string, flags ...string) error
+}
+
+type AnkaClient struct {
 }
 
 type VersionResponse struct {
@@ -27,7 +50,7 @@ type VersionResponseBody struct {
 	Build   string `json:"build"`
 }
 
-func (c *Client) Version() (VersionResponse, error) {
+func (c *AnkaClient) Version() (VersionResponse, error) {
 	var response VersionResponse
 
 	out, err := exec.Command("anka", "--machine-readable", "version").Output()
@@ -43,8 +66,8 @@ type SuspendParams struct {
 	VMName string
 }
 
-func (c *Client) Suspend(params SuspendParams) error {
-	_, err := runAnkaCommand("suspend", params.VMName)
+func (c *AnkaClient) Suspend(params SuspendParams) error {
+	_, err := runCommand("suspend", params.VMName)
 	return err
 }
 
@@ -52,12 +75,12 @@ type StartParams struct {
 	VMName string
 }
 
-func (c *Client) Start(params StartParams) error {
-	_, err := runAnkaCommand("start", params.VMName)
+func (c *AnkaClient) Start(params StartParams) error {
+	_, err := runCommand("start", params.VMName)
 	return err
 }
 
-func (c *Client) Run(params RunParams) (error, int) {
+func (c *AnkaClient) Run(params RunParams) (error, int) {
 	runner := NewRunner(params)
 	if err := runner.Start(); err != nil {
 		return err, 1
@@ -85,7 +108,7 @@ type CreateResponse struct {
 	Status   string `json:"status"`
 }
 
-func (c *Client) Create(params CreateParams, outputStreamer chan string) (CreateResponse, error) {
+func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (CreateResponse, error) {
 	args := []string{
 		"create",
 		"--app", params.InstallerApp,
@@ -94,7 +117,7 @@ func (c *Client) Create(params CreateParams, outputStreamer chan string) (Create
 		"--disk-size", params.DiskSize,
 		params.Name,
 	}
-	output, err := runAnkaCommandStreamer(outputStreamer, args...)
+	output, err := runCommandStreamer(outputStreamer, args...)
 	if err != nil {
 		return CreateResponse{}, err
 	}
@@ -168,8 +191,8 @@ type DescribeResponse struct {
 	} `json:"display"`
 }
 
-func (c *Client) Describe(vmName string) (DescribeResponse, error) {
-	output, err := runAnkaCommand("describe", vmName)
+func (c *AnkaClient) Describe(vmName string) (DescribeResponse, error) {
+	output, err := runCommand("describe", vmName)
 	if err != nil {
 		return DescribeResponse{}, err
 	}
@@ -201,10 +224,10 @@ func (sr ShowResponse) IsStopped() bool {
 	return sr.Status == "stopped"
 }
 
-func (c *Client) Show(vmName string) (ShowResponse, error) {
-	output, err := runAnkaCommand("show", vmName)
+func (c *AnkaClient) Show(vmName string) (ShowResponse, error) {
+	output, err := runCommand("show", vmName)
 	if err != nil {
-		merr, ok := err.(machineReadableError)
+		merr, ok := err.(MachineReadableError)
 		if ok {
 			if merr.Code == AnkaVMNotFoundExceptionErrorCode {
 				return ShowResponse{}, &common.VMNotFoundException{}
@@ -227,8 +250,8 @@ type CopyParams struct {
 	Dst string
 }
 
-func (c *Client) Copy(params CopyParams) error {
-	_, err := runAnkaCommand("cp", "-af", params.Src, params.Dst)
+func (c *AnkaClient) Copy(params CopyParams) error {
+	_, err := runCommand("cp", "-af", params.Src, params.Dst)
 	return err
 }
 
@@ -237,10 +260,10 @@ type CloneParams struct {
 	SourceUUID string
 }
 
-func (c *Client) Clone(params CloneParams) error {
-	_, err := runAnkaCommand("clone", params.SourceUUID, params.VMName)
+func (c *AnkaClient) Clone(params CloneParams) error {
+	_, err := runCommand("clone", params.SourceUUID, params.VMName)
 	if err != nil {
-		merr, ok := err.(machineReadableError)
+		merr, ok := err.(MachineReadableError)
 		if ok {
 			if merr.Code == AnkaNameAlreadyExistsErrorCode {
 				return &common.VMAlreadyExistsError{}
@@ -257,7 +280,7 @@ type StopParams struct {
 	Force  bool
 }
 
-func (c *Client) Stop(params StopParams) error {
+func (c *AnkaClient) Stop(params StopParams) error {
 	args := []string{
 		"stop",
 	}
@@ -267,7 +290,7 @@ func (c *Client) Stop(params StopParams) error {
 	}
 
 	args = append(args, params.VMName)
-	_, err := runAnkaCommand(args...)
+	_, err := runCommand(args...)
 	return err
 }
 
@@ -275,18 +298,18 @@ type DeleteParams struct {
 	VMName string
 }
 
-func (c *Client) Delete(params DeleteParams) error {
+func (c *AnkaClient) Delete(params DeleteParams) error {
 	args := []string{
 		"delete",
 		"--yes",
 	}
 
 	args = append(args, params.VMName)
-	_, err := runAnkaCommand(args...)
+	_, err := runCommand(args...)
 	return err
 }
 
-func (c *Client) Exists(vmName string) (bool, error) {
+func (c *AnkaClient) Exists(vmName string) (bool, error) {
 	_, err := c.Show(vmName)
 	if err == nil {
 		return true, nil
@@ -299,10 +322,10 @@ func (c *Client) Exists(vmName string) (bool, error) {
 	return false, err
 }
 
-func (c *Client) Modify(vmName string, command string, property string, flags ...string) error {
+func (c *AnkaClient) Modify(vmName string, command string, property string, flags ...string) error {
 	ankaCommand := []string{"modify", vmName, command, property}
 	ankaCommand = append(ankaCommand, flags...)
-	output, err := runAnkaCommand(ankaCommand...)
+	output, err := runCommand(ankaCommand...)
 	if err != nil {
 		return err
 	}
@@ -313,12 +336,11 @@ func (c *Client) Modify(vmName string, command string, property string, flags ..
 	return nil
 }
 
-func runAnkaCommand(args ...string) (machineReadableOutput, error) {
-	return runAnkaCommandStreamer(nil, args...)
+func runCommand(args ...string) (MachineReadableOutput, error) {
+	return runCommandStreamer(nil, args...)
 }
 
-func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machineReadableOutput, error) {
-
+func runCommandStreamer(outputStreamer chan string, args ...string) (MachineReadableOutput, error) {
 	if outputStreamer != nil {
 		args = append([]string{"--debug"}, args...)
 	}
@@ -330,7 +352,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Println("Err on stdoutpipe")
-		return machineReadableOutput{}, err
+		return MachineReadableOutput{}, err
 	}
 
 	if outputStreamer == nil {
@@ -339,7 +361,7 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 	if err = cmd.Start(); err != nil {
 		log.Printf("Failed with an error of %v", err)
-		return machineReadableOutput{}, err
+		return MachineReadableOutput{}, err
 	}
 	outScanner := bufio.NewScanner(outPipe)
 	outScanner.Split(customSplit)
@@ -355,10 +377,10 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 	scannerErr := outScanner.Err() // Expecting error on final output
 	if scannerErr == nil {
-		return machineReadableOutput{}, errors.New("missing machine readable output")
+		return MachineReadableOutput{}, errors.New("missing machine readable output")
 	}
 	if _, ok := scannerErr.(customErr); !ok {
-		return machineReadableOutput{}, err
+		return MachineReadableOutput{}, err
 	}
 
 	finalOutput := scannerErr.Error()
@@ -366,35 +388,26 @@ func runAnkaCommandStreamer(outputStreamer chan string, args ...string) (machine
 
 	parsed, err := parseOutput([]byte(finalOutput))
 	if err != nil {
-		return machineReadableOutput{}, err
+		return MachineReadableOutput{}, err
 	}
-	if err := cmd.Wait(); err != nil {
-		return machineReadableOutput{}, err
-	}
+	cmd.Wait()
 
 	if err = parsed.GetError(); err != nil {
-		return machineReadableOutput{}, err
+		return MachineReadableOutput{}, err
 	}
 
 	return parsed, nil
 }
 
-const (
-	statusOK                         = "OK"
-	statusERROR                      = "ERROR" //nolint:deadcode,varcheck
-	AnkaNameAlreadyExistsErrorCode   = 18
-	AnkaVMNotFoundExceptionErrorCode = 3
-)
-
-type machineReadableError struct {
-	*machineReadableOutput
+type MachineReadableError struct {
+	*MachineReadableOutput
 }
 
-func (ae machineReadableError) Error() string {
+func (ae MachineReadableError) Error() string {
 	return ae.Message
 }
 
-type machineReadableOutput struct {
+type MachineReadableOutput struct {
 	Status        string `json:"status"`
 	Body          json.RawMessage
 	Message       string `json:"message"`
@@ -402,15 +415,15 @@ type machineReadableOutput struct {
 	ExceptionType string `json:"exception_type"`
 }
 
-func (parsed *machineReadableOutput) GetError() error {
+func (parsed *MachineReadableOutput) GetError() error {
 	if parsed.Status != statusOK {
-		return machineReadableError{parsed}
+		return MachineReadableError{parsed}
 	}
 	return nil
 }
 
-func parseOutput(output []byte) (machineReadableOutput, error) {
-	var parsed machineReadableOutput
+func parseOutput(output []byte) (MachineReadableOutput, error) {
+	var parsed MachineReadableOutput
 	if err := json.Unmarshal(output, &parsed); err != nil {
 		return parsed, err
 	}

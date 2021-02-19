@@ -24,7 +24,7 @@ func init() {
 }
 
 type StepCreateVM struct {
-	client *client.Client
+	client client.Client
 	vmName string
 }
 
@@ -35,7 +35,6 @@ const (
 )
 
 func (s *StepCreateVM) modifyVMResources(showResponse client.ShowResponse, config *Config, ui packer.Ui) error {
-
 	stopParams := client.StopParams{
 		VMName: showResponse.Name,
 		Force:  true,
@@ -156,7 +155,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packer.Ui)
 
-	s.client = state.Get("client").(*client.Client)
+	s.client = state.Get("client").(client.Client)
 	sourceVMName := config.SourceVMName
 
 	onError := func(err error) multistep.StepAction {

@@ -17,7 +17,7 @@ import (
 
 type Communicator struct {
 	Config  *Config
-	Client  *client.Client
+	Client  client.Client
 	HostDir string
 	VMDir   string
 	VMName  string

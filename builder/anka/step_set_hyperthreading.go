@@ -29,7 +29,7 @@ func (s *StepSetHyperThreading) Run(ctx context.Context, state multistep.StateBa
 		return onError(fmt.Errorf("Conflicting setting enable_htt and disable_htt both true"))
 	}
 
-	cmdClient := state.Get("client").(*client.Client)
+	cmdClient := state.Get("client").(client.Client)
 	vmName := state.Get("vm_name").(string)
 
 	stopParams := client.StopParams{VMName: vmName, Force: true}

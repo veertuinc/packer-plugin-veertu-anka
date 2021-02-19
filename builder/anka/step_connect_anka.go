@@ -12,7 +12,7 @@ type StepConnectAnka struct{}
 
 func (s *StepConnectAnka) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
-	client := state.Get("client").(*client.Client)
+	client := state.Get("client").(client.Client)
 	tempDir := state.Get("temp_dir").(string)
 	vmName := state.Get("vm_name").(string)
 

@@ -19,7 +19,7 @@ func (s *StepStartVM) Run(ctx context.Context, state multistep.StateBag) multist
 	onError := func(err error) multistep.StepAction {
 		return stepError(ui, state, err)
 	}
-	cmdClient := state.Get("client").(*client.Client)
+	cmdClient := state.Get("client").(client.Client)
 	vmName := state.Get("vm_name").(string)
 
 	err := cmdClient.Start(client.StartParams{

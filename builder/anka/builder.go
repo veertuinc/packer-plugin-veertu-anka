@@ -35,7 +35,7 @@ func (b *Builder) Prepare(raws ...interface{}) (params []string, warns []string,
 
 // Run executes an Anka Packer build and returns a packer.Artifact
 func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (packer.Artifact, error) {
-	client := &client.Client{}
+	client := &client.AnkaClient{}
 
 	version, err := client.Version()
 	if err != nil {
