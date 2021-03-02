@@ -13,7 +13,7 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestRun(t *testing.T) {
+func TestHyperthreadingRun(t *testing.T) {
 	// gomock implementation for testing the client
 	// used for tracking and asserting expectations
 	mockCtrl := gomock.NewController(t)
