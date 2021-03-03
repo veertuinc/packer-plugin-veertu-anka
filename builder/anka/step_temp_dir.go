@@ -1,15 +1,16 @@
 package anka
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
-	"log"
 
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/helper/multistep"
+	"github.com/hashicorp/packer-plugin-sdk/multistep"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/pathing"
 )
 
 // StepTempDir creates a temporary directory that we use in order to
@@ -49,7 +50,7 @@ func (s *StepTempDir) Cleanup(state multistep.StateBag) {
 }
 
 func ConfigTmpDir() (string, error) {
-	configdir, err := packer.ConfigDir()
+	configdir, err := pathing.ConfigDir()
 	if err != nil {
 		return "", err
 	}

@@ -30,7 +30,7 @@ The most basic json file you can build from is:
 {
   "builders": [
     {
-      "installer_app": "/Applications/Install macOS Catalina.app",
+      "installer_app": "/Applications/Install macOS Big Sur.app",
       "type": "veertu-anka"
     }
   ]
@@ -71,7 +71,9 @@ Or, create a variable inside for the `source_vm_name` and then run: `packer buil
 
 This will clone `10.15.6` to a new VM and, if there are differences from the base VM, modify CPU, RAM, and DISK.
 
-> Check out the [examples directory](./examples) to see how port-forwarding and other options are used
+> Check out the [examples directory](./examples) to see how port-forwarding and other options are used.
+
+> If you'd like for the base packer VM to be in a stopped state on creation, you can use `ANKA_CREATE_SUSPEND=0 packer build . . .`
 
 ## Configuration
 
@@ -153,21 +155,13 @@ make packer-test
 If you've already built a base macOS VM, you can use:
 
 ```bash
-make packer-test SOURCE_VM_NAME=macos-10.12.3-base
+make packer-test-existing SOURCE_VM_NAME=11.1.0
 ```
+
+-or-
 
 ```bash
 make build-and-install && PACKER_LOG=1 packer build examples/macos-catalina-existing.json
-```
-
-## Release
-
-We use [goreleaser](https://goreleaser.com).
-
-To locally try out the release workflow (build, package, but don't sign or publish):
-
-```bash
-make release-dry-run
 ```
 
 [Packer Builder]: https://www.packer.io/docs/extending/custom-builders.html

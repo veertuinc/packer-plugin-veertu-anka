@@ -12,9 +12,9 @@
       ]
     }
   ],
-  "builders": [{
-    "type": "veertu-anka",
-    "copy_out_guest_install_log": true,
-    "source_vm_name": "{{user `source_vm_name`}}"
-  }]
+"builders": [{
+  "type": "veertu-anka",
+  "use_anka_cp": true,
+  "source_vm_name": "{{user `source_vm_name`}}"
+}]
 }

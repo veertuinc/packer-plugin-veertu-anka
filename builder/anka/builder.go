@@ -6,19 +6,16 @@ import (
 	"log"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
-	"github.com/hashicorp/packer/common"
-	"github.com/hashicorp/packer/helper/communicator"
-	"github.com/hashicorp/packer/helper/multistep"
-	"github.com/hashicorp/packer/packer"
+	"github.com/hashicorp/packer-plugin-sdk/communicator"
+	"github.com/hashicorp/packer-plugin-sdk/multistep"
+	"github.com/hashicorp/packer-plugin-sdk/multistep/commonsteps"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	// "golang.org/x/mod/semver"
 )
 
 // The unique ID for this builder.
 const BuilderId = "packer.veertu-anka"
-
-// The oldest version of the Anka Build utility this plugin supports ; disabled as we have backwards compatibility ; may be useful in the future
-// const OldestSupportedVersion = "2.3.0"
 
 // Builder represents a Packer Builder.
 type Builder struct {
@@ -46,10 +43,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	}
 	log.Printf("[DEBUG] Anka version: %s version %s (build %s)", version.Body.Product, version.Body.Version, version.Body.Build)
 
-	// if semver.Compare(version.Body.Version, OldestSupportedVersion) < 0 {
-	// 	return nil, errors.New("This plugin requires at least Anka " + OldestSupportedVersion + ". You are running " + version.Body.Version)
-	// }
-
 	steps := []multistep.Step{
 		&StepTempDir{},
 		&StepCreateVM{},
@@ -64,7 +57,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 				return "", errors.New("No host implemented for anka builder (which is ok)")
 			},
 		},
-		&common.StepProvision{},
+		&commonsteps.StepProvision{},
 	}
 
 	// Setup the state bag and initial state for the steps
@@ -75,7 +68,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	state.Put("client", client)
 
 	// Run!
-	b.runner = common.NewRunner(steps, b.config.PackerConfig, ui)
+	b.runner = commonsteps.NewRunner(steps, b.config.PackerConfig, ui)
 	b.runner.Run(ctx, state)
 
 	// If there was an error, return that

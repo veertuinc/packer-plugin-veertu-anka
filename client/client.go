@@ -39,6 +39,26 @@ func (c *Client) Version() (VersionResponse, error) {
 	return response, err
 }
 
+type LicenseResponse struct {
+	LicenseType string `json:"license_type"`
+	Status      string `json:"status"`
+}
+
+func (c *Client) License() (LicenseResponse, error) {
+	output, err := runAnkaCommand("license", "show")
+	if err != nil {
+		return LicenseResponse{}, err
+	}
+
+	var response LicenseResponse
+	err = json.Unmarshal(output.Body, &response)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
+}
+
 type SuspendParams struct {
 	VMName string
 }
@@ -232,7 +252,7 @@ type CopyParams struct {
 }
 
 func (c *Client) Copy(params CopyParams) error {
-	_, err := runAnkaCommand("cp", "-a", params.Src, params.Dst)
+	_, err := runAnkaCommand("cp", "-af", params.Src, params.Dst)
 	return err
 }
 

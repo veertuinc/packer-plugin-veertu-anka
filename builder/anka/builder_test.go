@@ -7,7 +7,7 @@ import (
 func testConfig() map[string]interface{} {
 	return map[string]interface{}{
 		"type":          "veertu-anka",
-		"installer_app": "/Applications/Install macOS Catalina.app",
+		"installer_app": "/Applications/Install macOS Big Sur.app",
 		"disk_size":     80,
 	}
 }

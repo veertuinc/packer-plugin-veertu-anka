@@ -3,14 +3,19 @@ package main
 import (
 	"log"
 
-	"github.com/hashicorp/packer/packer/plugin"
+	"github.com/hashicorp/packer-plugin-sdk/plugin"
 	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
 )
 
-var Version = "SNAPSHOT"
+var version = "SNAPSHOT"
+var commit = ""
 
 func main() {
-	log.Printf("packer-builder-veertu-anka version: %q", Version)
+	if commit == "" {
+		log.Printf("packer-builder-veertu-anka version: %s", version)
+	} else {
+		log.Printf("packer-builder-veertu-anka version: %s+%s", version, commit)
+	}
 	server, err := plugin.Server()
 	if err != nil {
 		panic(err)

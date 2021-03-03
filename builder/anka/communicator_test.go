@@ -9,11 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/packer/packer"
+	"context"
+
+	"github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/template"
+	oldPacker "github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/provisioner/file"
 	"github.com/hashicorp/packer/provisioner/shell"
-	"github.com/hashicorp/packer/template"
-	"context"
 )
 
 func TestCommunicator_impl(t *testing.T) {
@@ -60,10 +62,11 @@ func TestUploadDownload(t *testing.T) {
 	defer os.Remove("my-strawberry-cake")
 
 	// Add hooks so the provisioners run during the build
+
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
-		&packer.ProvisionHook{
-			Provisioners: []*packer.HookedProvisioner{
+		&oldPacker.ProvisionHook{
+			Provisioners: []*oldPacker.HookedProvisioner{
 				{Provisioner: upload, Config: nil, TypeName: ""},
 				{Provisioner: download, Config: nil, TypeName: ""},
 			},
@@ -143,8 +146,8 @@ func TestExecuteShellCommand(t *testing.T) {
 	// Add hooks so the provisioners run during the build
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
-		&packer.ProvisionHook{
-			Provisioners: []*packer.HookedProvisioner{
+		&oldPacker.ProvisionHook{
+			Provisioners: []*oldPacker.HookedProvisioner{
 				{Provisioner: inline, Config: nil, TypeName: ""},
 				{Provisioner: scripts, Config: nil, TypeName: ""},
 				{Provisioner: download, Config: nil, TypeName: ""},
@@ -177,7 +180,7 @@ const ankaBuilderConfig = `
   "builders": [
     {
       "type": "veertu-anka",
-      "disk_size": "25G",
+      "disk_size": "40G",
       "source_vm_name": "blah"
     }
   ],
@@ -202,7 +205,7 @@ const ankaBuilderShellConfig = `
   "builders": [
     {
       "type": "veertu-anka",
-      "disk_size": "25G",
+      "disk_size": "40G",
       "source_vm_name": "blah"
     }
   ],

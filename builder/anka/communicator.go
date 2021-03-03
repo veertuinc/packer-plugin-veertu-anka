@@ -1,17 +1,17 @@
 package anka
 
 import (
-	"fmt"
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
-	"context"
 
-	"github.com/hashicorp/packer/packer"
+	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 )
 
@@ -52,15 +52,22 @@ func (c *Communicator) Start(ctx context.Context, remote *packer.RemoteCmd) erro
 }
 
 func (c *Communicator) findFUSE() error {
-	err, _ := c.Client.Run(client.RunParams{
+	notFound, _ := c.Client.Run(client.RunParams{
 		VMName:  c.VMName,
 		Command: []string{"kextstat | grep \"com.veertu.filesystems.vtufs\" &>/dev/null"},
 	})
-	return err
+	return notFound
 }
 
 func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error {
 	log.Printf("Uploading file to VM: %s", dst)
+
+	if c.Config.UseAnkaCP == false {
+		errFindingFUSE := c.findFUSE()
+		if errFindingFUSE != nil {
+			c.Config.UseAnkaCP = true
+		}
+	}
 
 	// Create a temporary file to store the upload
 	tempfile, err := ioutil.TempFile(c.HostDir, "upload")
@@ -82,16 +89,16 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 	tempfile.Close()
 
 	// check if fuse exists, and use that instead of anka cp
-	if errFindingFUSE := c.findFUSE(); errFindingFUSE == nil {
+	if c.Config.UseAnkaCP {
+		err = c.Client.Copy(client.CopyParams{
+			Src: tempfile.Name(),
+			Dst: c.VMName + ":" + dst,
+		})
+	} else {
 		err, _ = c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", path.Base(tempfile.Name()), dst},
 			Volume:  c.HostDir,
-		})
-	} else {
-		err = c.Client.Copy(client.CopyParams{
-			Src: tempfile.Name(),
-			Dst: c.VMName + ":" + dst,
 		})
 	}
 
@@ -100,7 +107,15 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 }
 
 func (c *Communicator) UploadDir(dst string, src string, exclude []string) error {
-	if errFindingFUSE := c.findFUSE(); errFindingFUSE == nil {
+
+	if c.Config.UseAnkaCP == false {
+		errFindingFUSE := c.findFUSE()
+		if errFindingFUSE != nil {
+			c.Config.UseAnkaCP = true
+		}
+	}
+
+	if c.Config.UseAnkaCP == false {
 		// Create the temporary directory that will store the contents of "src"
 		// for copying into the container.
 		td, err := ioutil.TempDir(c.HostDir, "dirupload")
@@ -204,9 +219,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	defer os.Remove(tempfile.Name())
 	defer tempfile.Close()
 
-	errFindingFUSE := c.findFUSE()
-
-	if errFindingFUSE != nil {
+	if c.Config.UseAnkaCP {
 		err = c.Client.Copy(client.CopyParams{
 			Src: c.VMName + ":" + src,
 			Dst: tempfile.Name(),
@@ -219,7 +232,14 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 		return err
 	}
 
-	if errFindingFUSE == nil {
+	if c.Config.UseAnkaCP == false {
+		errFindingFUSE := c.findFUSE()
+		if errFindingFUSE != nil {
+			c.Config.UseAnkaCP = true
+		}
+	}
+
+	if c.Config.UseAnkaCP == false {
 		err, _ = c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", src, "./" + path.Base(tempfile.Name())},
@@ -232,7 +252,13 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 }
 
 func (c *Communicator) DownloadDir(src string, dst string, exclude []string) error {
-	if errFindingFUSE := c.findFUSE(); errFindingFUSE == nil {
+	if c.Config.UseAnkaCP == false {
+		errFindingFUSE := c.findFUSE()
+		if errFindingFUSE != nil {
+			c.Config.UseAnkaCP = true
+		}
+	}
+	if c.Config.UseAnkaCP == false {
 		return errors.New("communicator.DownloadDir isn't implemented")
 	} else {
 		return c.Client.Copy(client.CopyParams{
