@@ -71,7 +71,9 @@ Or, create a variable inside for the `source_vm_name` and then run: `packer buil
 
 This will clone `10.15.6` to a new VM and, if there are differences from the base VM, modify CPU, RAM, and DISK.
 
-> Check out the [examples directory](./examples) to see how port-forwarding and other options are used
+> Check out the [examples directory](./examples) to see how port-forwarding and other options are used.
+
+> If you'd like for the base packer VM to be in a stopped state on creation, you can use `ANKA_CREATE_SUSPEND=0 packer build . . .`
 
 ## Configuration
 

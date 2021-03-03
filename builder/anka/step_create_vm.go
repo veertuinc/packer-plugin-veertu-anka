@@ -24,8 +24,9 @@ func init() {
 }
 
 type StepCreateVM struct {
-	client *client.Client
-	vmName string
+	client  *client.Client
+	vmName  string
+	license client.LicenseResponse
 }
 
 const (
@@ -191,6 +192,13 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 	s.vmName = sourceVMName // Used for cleanup BEFORE THE CLONE
 
+	// Collect license from host
+	license, licenseErr := s.client.License()
+	if licenseErr != nil {
+		return onError(licenseErr)
+	}
+	s.license = license
+
 	clonedVMName := config.VMName
 	if clonedVMName == "" { // If user doesn't give a vm_name, generate one
 		clonedVMName = fmt.Sprintf("anka-packer-%s", randSeq(10))
@@ -238,9 +246,16 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 
 	if show.IsRunning() {
-		ui.Say(fmt.Sprintf("Suspending VM %s", sourceVMName))
-		if err := s.client.Suspend(client.SuspendParams{VMName: sourceVMName}); err != nil {
-			return onError(err)
+		if s.license.LicenseType == "com.veertu.anka.develop" {
+			ui.Say(fmt.Sprintf("Develop License Present! Stopping VM %s", sourceVMName))
+			if stopErr := s.client.Stop(client.StopParams{VMName: sourceVMName}); stopErr != nil {
+				return onError(stopErr)
+			}
+		} else {
+			ui.Say(fmt.Sprintf("Suspending VM %s", sourceVMName))
+			if err := s.client.Suspend(client.SuspendParams{VMName: sourceVMName}); err != nil {
+				return onError(err)
+			}
 		}
 	}
 
@@ -315,13 +330,25 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 		}
 	}
 
-	err = s.client.Suspend(client.SuspendParams{
-		VMName: s.vmName,
-	})
-	if err != nil {
-		ui.Error(fmt.Sprint(err))
-		s.client.Delete(client.DeleteParams{VMName: s.vmName})
-		panic(err)
+	if s.license.LicenseType == "com.veertu.anka.develop" {
+		ui.Say(fmt.Sprintf("Develop License Present! Stopping VM %s", s.vmName))
+		stopErr := s.client.Stop(client.StopParams{
+			VMName: s.vmName,
+		})
+		if stopErr != nil {
+			ui.Error(fmt.Sprint(stopErr))
+			s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			panic(stopErr)
+		}
+	} else {
+		err = s.client.Suspend(client.SuspendParams{
+			VMName: s.vmName,
+		})
+		if err != nil {
+			ui.Error(fmt.Sprint(err))
+			s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			panic(err)
+		}
 	}
 }
 
