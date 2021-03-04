@@ -140,6 +140,49 @@ func (mr *MockClientMockRecorder) Modify(vmName, command, property interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Modify", reflect.TypeOf((*MockClient)(nil).Modify), varargs...)
 }
 
+// RegistryList mocks base method.
+func (m *MockClient) RegistryList(registryParams client.RegistryParams) ([]client.RegistryListResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryList", registryParams)
+	ret0, _ := ret[0].([]client.RegistryListResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegistryList indicates an expected call of RegistryList.
+func (mr *MockClientMockRecorder) RegistryList(registryParams interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryList", reflect.TypeOf((*MockClient)(nil).RegistryList), registryParams)
+}
+
+// RegistryPush mocks base method.
+func (m *MockClient) RegistryPush(registryParams client.RegistryParams, pushParams client.RegistryPushParams) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryPush", registryParams, pushParams)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegistryPush indicates an expected call of RegistryPush.
+func (mr *MockClientMockRecorder) RegistryPush(registryParams, pushParams interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryPush", reflect.TypeOf((*MockClient)(nil).RegistryPush), registryParams, pushParams)
+}
+
+// RegistryRevert mocks base method.
+func (m *MockClient) RegistryRevert(url, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegistryRevert", url, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegistryRevert indicates an expected call of RegistryRevert.
+func (mr *MockClientMockRecorder) RegistryRevert(url, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryRevert", reflect.TypeOf((*MockClient)(nil).RegistryRevert), url, id)
+}
+
 // Run mocks base method.
 func (m *MockClient) Run(params client.RunParams) (error, int) {
 	m.ctrl.T.Helper()

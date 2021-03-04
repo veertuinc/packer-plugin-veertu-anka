@@ -13,7 +13,7 @@
     }
   ],
 "builders": [{
-  "type": "veertu-anka",
+  "type": "veertu-anka-vm",
   "installer_app": "/Applications/Install macOS Big Sur.app",
   "vm_name": "Testing"
 }]

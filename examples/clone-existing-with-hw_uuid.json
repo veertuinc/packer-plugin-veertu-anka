@@ -15,7 +15,7 @@
   ],
   "builders": [
     {
-      "type": "veertu-anka",
+      "type": "veertu-anka-vm",
       "hw_uuid": "{{user `hw_uuid`}}",
       "cpu_count": 10,
       "ram_size": "12G",

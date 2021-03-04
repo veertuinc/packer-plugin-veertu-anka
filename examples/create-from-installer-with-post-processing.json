@@ -12,5 +12,11 @@
   "builders": [{
     "type": "veertu-anka-vm",
     "installer_app": "/Applications/Install macOS Big Sur.app/"
+  }],
+  "post-processors": [{
+    "type": "veertu-anka-registry-push",
+    "registry-path": "http://10.254.55.2:8080",
+    "tag": "veertu-registry-push",
+    "insecure": false
   }]
 }

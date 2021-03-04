@@ -13,7 +13,7 @@
     }
   ],
 "builders": [{
-  "type": "veertu-anka",
+  "type": "veertu-anka-vm",
   "use_anka_cp": true,
   "source_vm_name": "{{user `source_vm_name`}}"
 }]
