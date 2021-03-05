@@ -1,6 +1,6 @@
 module github.com/veertuinc/packer-builder-veertu-anka
 
-go 1.13
+go 1.16
 
 require (
 	github.com/groob/plist v0.0.0-20200425180238-0f631f258c01
