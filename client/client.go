@@ -39,6 +39,26 @@ func (c *Client) Version() (VersionResponse, error) {
 	return response, err
 }
 
+type LicenseResponse struct {
+	LicenseType string `json:"license_type"`
+	Status      string `json:"status"`
+}
+
+func (c *Client) License() (LicenseResponse, error) {
+	output, err := runAnkaCommand("license", "show")
+	if err != nil {
+		return LicenseResponse{}, err
+	}
+
+	var response LicenseResponse
+	err = json.Unmarshal(output.Body, &response)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
+}
+
 type SuspendParams struct {
 	VMName string
 }
@@ -50,10 +70,16 @@ func (c *Client) Suspend(params SuspendParams) error {
 
 type StartParams struct {
 	VMName       string
+	UpdateAddons bool
 }
 
 func (c *Client) Start(params StartParams) error {
-	_, err := runAnkaCommand("start", params.VMName)
+	cmd := []string{"start"}
+	if params.UpdateAddons {
+		cmd = append(cmd, "--update-addons")
+	}
+	cmd = append(cmd, params.VMName)
+	_, err := runAnkaCommand(cmd...)
 	return err
 }
 

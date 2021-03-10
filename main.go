@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/hashicorp/packer/packer-plugin-sdk/plugin"
+	"github.com/hashicorp/packer-plugin-sdk/plugin"
 	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
 )
 
