@@ -10,12 +10,11 @@ import (
 	"testing"
 
 	"context"
-
-	"github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/hashicorp/packer-plugin-sdk/template"
+	"github.com/hashicorp/packer/packer-plugin-sdk/packer"
 	oldPacker "github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/provisioner/file"
 	"github.com/hashicorp/packer/provisioner/shell"
+	"github.com/hashicorp/packer/packer-plugin-sdk/template"
 )
 
 func TestCommunicator_impl(t *testing.T) {
@@ -62,7 +61,7 @@ func TestUploadDownload(t *testing.T) {
 	defer os.Remove("my-strawberry-cake")
 
 	// Add hooks so the provisioners run during the build
-
+	
 	hooks := map[string][]packer.Hook{}
 	hooks[packer.HookProvision] = []packer.Hook{
 		&oldPacker.ProvisionHook{

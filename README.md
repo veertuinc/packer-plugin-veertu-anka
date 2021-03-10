@@ -71,47 +71,45 @@ Or, create a variable inside for the `source_vm_name` and then run: `packer buil
 
 This will clone `10.15.6` to a new VM and, if there are differences from the base VM, modify CPU, RAM, and DISK.
 
-> Check out the [examples directory](./examples) to see how port-forwarding and other options are used.
-
-> If you'd like for the base packer VM to be in a stopped state on creation, you can use `ANKA_CREATE_SUSPEND=0 packer build . . .`
+> Check out the [examples directory](./examples) to see how port-forwarding and other options are used
 
 ## Configuration
 
-* `type` (required) (string)
+* `type` (required)
 
 Must be `veertu-anka`.
 
-* `installer_app` (optional) (string)
+* `installer_app` (optional)
 
 The path to a macOS installer. This must be provided if `source_vm_name` isn't provided. This process takes about 20 minutes. The resulting VM template name will be `anka-packer-base-{macOSVersion}`.
 
-* `disk_size` (optional) (string)
+* `disk_size` (optional)
 
 The size in "[0-9]+G" format, defaults to `25G`.
 
 > We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
 
-* `ram_size` (optional) (string)
+* `ram_size` (optional)
 
 The size in "[0-9]+G" format, defaults to `2G`.
 
-* `cpu_count` (optional) (integer)
+* `cpu_count` (optional)
 
 The number of CPU cores, defaults to `2`.
 
-* `source_vm_name` (optional) (string)
+* `source_vm_name` (optional)
 
 The VM to clone for provisioning, either stopped or suspended.
 
-* `vm_name` (optional) (string)
+* `vm_name` (optional)
 
 The name for the VM that is created. One is generated if not provided (`anka-packer-{10RandomCharacters}`).
 
-* `boot_delay` (optional) (string)
+* `boot_delay` (optional)
 
 The time to wait before running packer provisioner commands, defaults to `10s`.
 
-* `hw_uuid` (optional) (string)
+* `hw_uuid` (optional)
 
 The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
@@ -137,12 +135,6 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
     ]
   }]
 ```
-
-* `update_addons` (optional) (boolean)
-
-Whether or not to update addons when starting the cloned VM.
-
-> This will force stop the VM, causing your suspended state to be lost.
 
 ## Development
 
