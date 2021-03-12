@@ -3,6 +3,7 @@ package anka
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -14,11 +15,10 @@ import (
 )
 
 func TestHyperthreadingRun(t *testing.T) {
-	// gomock implementation for testing the client
-	// used for tracking and asserting expectations
 	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish() // will run assertions at this point for our expectations
+	defer mockCtrl.Finish()
 	client := mocks.NewMockClient(mockCtrl)
+	util := mocks.NewMockUtil(mockCtrl)
 
 	step := StepSetHyperThreading{}
 	ui := packer.TestUi(t)
@@ -26,6 +26,7 @@ func TestHyperthreadingRun(t *testing.T) {
 	state := new(multistep.BasicStateBag)
 
 	state.Put("ui", ui)
+	state.Put("util", util)
 	state.Put("vm_name", "foo")
 
 	t.Run("disabled or nil htt values", func(t *testing.T) {
@@ -50,8 +51,13 @@ func TestHyperthreadingRun(t *testing.T) {
 		state.Put("client", client)
 		state.Put("config", config)
 
+		util.EXPECT().
+			StepError(ui, state, fmt.Errorf("Conflicting setting enable_htt and disable_htt both true")).
+			Return(multistep.ActionHalt).
+			Times(1)
+
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, stepAction, multistep.ActionHalt)
+		assert.Equal(t, multistep.ActionHalt, stepAction)
 	})
 
 	t.Run("configure htt", func(t *testing.T) {
@@ -71,7 +77,7 @@ func TestHyperthreadingRun(t *testing.T) {
 		)
 
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, stepAction, multistep.ActionContinue)
+		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
 	t.Run("enable htt when already configured", func(t *testing.T) {
@@ -92,7 +98,7 @@ func TestHyperthreadingRun(t *testing.T) {
 		client.EXPECT().Describe("foo").Return(describeResponse, nil).Times(1)
 
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, stepAction, multistep.ActionContinue)
+		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
 	t.Run("disable htt when not configured", func(t *testing.T) {
@@ -107,7 +113,7 @@ func TestHyperthreadingRun(t *testing.T) {
 		client.EXPECT().Describe("foo").Return(c.DescribeResponse{}, nil).Times(1)
 
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, stepAction, multistep.ActionContinue)
+		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
 	t.Run("disable htt", func(t *testing.T) {
@@ -133,7 +139,7 @@ func TestHyperthreadingRun(t *testing.T) {
 		)
 
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, stepAction, multistep.ActionContinue)
+		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
 	t.Run("test rerun when vm is currently running", func(t *testing.T) {
@@ -160,6 +166,6 @@ func TestHyperthreadingRun(t *testing.T) {
 		)
 
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, stepAction, multistep.ActionContinue)
+		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 }

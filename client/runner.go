@@ -1,7 +1,6 @@
 package client
 
 import (
-	// "syscall"
 	"io"
 	"log"
 	"os"
@@ -57,11 +56,6 @@ func NewRunner(params RunParams) *Runner {
 	cmd := exec.Command("anka", args...)
 	cmd.Stdout = params.Stdout
 	cmd.Stderr = params.Stderr
-
-	// cmd.SysProcAttr = &syscall.SysProcAttr{
-	// 	Setpgid: true,
-	// 	Pgid:    0,
-	// }
 
 	return &Runner{
 		params: params,

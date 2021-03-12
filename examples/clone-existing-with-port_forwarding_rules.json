@@ -13,9 +13,7 @@
     }
   ],
   "builders": [{
-    "type": "veertu-anka-vm",
-    "cpu_count": 8,
-    "ram_size": "10G",
+    "type": "veertu-anka-vm-clone",
     "source_vm_name": "{{user `source_vm_name`}}",
     "port_forwarding_rules": [
       {
@@ -26,6 +24,7 @@
       {
         "port_forwarding_guest_port": 8080
       }
-    ]
+    ],
+    "vm_name": "macos-from-{{user `source_vm_name`}}"
   }]
 }

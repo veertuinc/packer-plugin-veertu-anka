@@ -6,9 +6,10 @@ import (
 
 func testConfig() map[string]interface{} {
 	return map[string]interface{}{
-		"type":          "veertu-anka",
+		"type":          "veertu-anka-create-vm",
 		"installer_app": "/Applications/Install macOS Big Sur.app",
 		"disk_size":     80,
+		"vm_name":       "test-prepare-anka-create",
 	}
 }
 

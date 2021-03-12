@@ -22,9 +22,8 @@
     }
   ],
   "builders": [{
-    "type": "veertu-anka-vm",
-    "cpu_count": 9,
-    "ram_size": "9G",
-    "source_vm_name": "{{user `source_vm_name`}}"
+    "type": "veertu-anka-vm-clone",
+    "source_vm_name": "{{user `source_vm_name`}}",
+    "vm_name": "macos-from-{{user `source_vm_name`}}"
   }]
 }

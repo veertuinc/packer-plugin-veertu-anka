@@ -1,16 +1,17 @@
 {
   "provisioners": [
     {
-      "type": "shell",
       "inline": [
         "sleep 5",
         "echo hello world",
         "echo llamas rock"
-      ]
+      ],
+      "type": "shell"
     }
   ],
   "builders": [{
-    "type": "veertu-anka-vm",
-    "installer_app": "/Applications/Install macOS Big Sur.app/"
+    "installer_app": "/Applications/Install macOS Big Sur.app/",
+    "type": "veertu-anka-vm-create",
+    "vm_name": "anka-packer-base-macos"
   }]
 }

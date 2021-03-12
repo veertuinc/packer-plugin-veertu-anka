@@ -38,7 +38,8 @@ The most basic json file you can build from is:
   "builders": [
     {
       "installer_app": "/Applications/Install macOS Big Sur.app",
-      "type": "veertu-anka"
+      "type": "veertu-anka-vm-create",
+      "vm_name": "macos-big-sur"
     }
   ],
   "post-processors": [
@@ -69,11 +70,9 @@ You can also skip the creation of the base VM template and use an existing VM te
     }
   ],
   "builders": [{
-    "type": "veertu-anka",
-    "cpu_count": 8,
-    "ram_size": "10G",
-    "disk_size": "150G",
-    "source_vm_name": "10.15.6"
+    "type": "veertu-anka-vm-clone",
+    "source_vm_name": "10.15.6",
+    "vm_name": "macos-from-source_10.15.6"
   }]
 }
 ```
@@ -88,15 +87,31 @@ This will clone `10.15.6` to a new VM and, if there are differences from the bas
 
 ## Builders 
 
-### veertu-anka-vm
+### veertu-anka-vm-create
 
 #### Required Configuration
 
+* `installer_app` (String)
+
+The path to a macOS installer. This process takes about 20 minutes. The resulting VM template name will be `{{vm_name}}-{{macOSVersion}}`. macOSVersion is pulled from the installer app.
+
 * `type` (String)
 
-Must be `veertu-anka-vm`.
+Must be `veertu-anka-vm-create`.
+
+* `vm_name` (String)
+
+The name for the VM that is created. One is generated if not provided (`anka-packer-{10RandomCharacters}`).
 
 #### Optional Configuration
+
+* `anka_password` (String)
+
+Sets the password for the vm. Can also be set with `ANKA_DEFAULT_PASSWD` env var. Defaults to `admin`.
+
+* `anka_user` (String)
+
+Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. Defaults to `anka`.
 
 * `boot_delay` (String)
 
@@ -116,19 +131,13 @@ The size in "[0-9]+G" format, defaults to `25G`.
 
 The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
-* `installer_app` (String)
-
-The path to a macOS installer. This must be provided if `source_vm_name` isn't provided. This process takes about 20 minutes. The resulting VM template name will be `anka-packer-base-{macOSVersion}`.
-
 * `port_forwarding_rules` (Struct)
 
 > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
 
 ```json
   "builders": [{
-    "type": "veertu-anka",
-    "cpu_count": 8,
-    "ram_size": "10G",
+    "type": "veertu-anka-vm-clone",
     "source_vm_name": "anka-packer-base-10.15.7",
     "port_forwarding_rules": [
       {
@@ -139,7 +148,8 @@ The path to a macOS installer. This must be provided if `source_vm_name` isn't p
       {
         "port_forwarding_guest_port": 8080
       }
-    ]
+    ],
+    "vm_name": "macos-from-packer-base_10.15.7"
   }]
 ```
 
@@ -147,13 +157,111 @@ The path to a macOS installer. This must be provided if `source_vm_name` isn't p
 
 The size in "[0-9]+G" format, defaults to `2G`.
 
+* `stop_vm` (Boolean)
+
+Whether or not to stop the vm after it has been created, defaults to false.
+
+### veertu-anka-vm-clone
+
+#### Required Configuration
+
 * `source_vm_name` (String)
 
 The VM to clone for provisioning, either stopped or suspended.
 
+* `type` (String)
+
+Must be `veertu-anka-vm-clone`.
+
 * `vm_name` (String)
 
 The name for the VM that is created. One is generated if not provided (`anka-packer-{10RandomCharacters}`).
+
+#### Optional Configuration
+
+* `always_fetch` (Boolean)
+
+Always pull the source VM from the registry. Defaults to false.
+
+* `boot_delay` (String)
+
+The time to wait before running packer provisioner commands, defaults to `10s`.
+
+* `cacert` (String)
+
+Path to a CA Root certificate.
+
+* `cert` (String)
+
+Path to your node certificate (if certificate authority is enabled).
+
+* `cpu_count` (String)
+
+The number of CPU cores, defaults to `2`.
+
+* `disk_size` (String)
+
+The size in "[0-9]+G" format, defaults to `25G`.
+
+> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
+
+* `insecure` (Boolean)
+
+Skip TLS verification.
+
+* `key` (String)
+
+Path to your node certificate key if the client/node certificate doesn't contain one.
+
+* `hw_uuid` (String)
+
+The Hardware UUID you wish to set (usually generated with `uuidgen`).
+
+* `port_forwarding_rules` (Struct)
+
+> If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
+
+```json
+  "builders": [{
+    "type": "veertu-anka-vm-clone",
+    "source_vm_name": "anka-packer-base-10.15.7",
+    "port_forwarding_rules": [
+      {
+        "port_forwarding_guest_port": 80,
+        "port_forwarding_host_port": 12345,
+        "port_forwarding_rule_name": "website"
+      },
+      {
+        "port_forwarding_guest_port": 8080
+      }
+    ],
+    "vm_name": "macos-from-packer-base_10.15.7"
+  }]
+```
+
+* `ram_size` (String)
+
+The size in "[0-9]+G" format, defaults to `2G`.
+
+* `registry-path` (String)
+
+The registry URL (will use your default configuration if not set).
+
+* `remote` (String)
+
+The registry name (will use your default configuration if not set).
+
+* `source_vm_tag` (String)
+
+Specify the tag of the VM we want to clone instead of using the default.
+
+* `stop_vm` (Boolean)
+
+Whether or not to stop the vm after it has been created, defaults to false.
+
+* `update_addons` (Boolean)
+
+Update the vm addons. Defaults to false.
 
 ## Post Processors
 
@@ -195,7 +303,7 @@ Assign a tag to your local template and avoid pushing to the Registry.
 
 The registry URL (will use your default configuration if not set).
 
-* `remtoe` (String)
+* `remote` (String)
 
 The registry name (will use your default configuration if not set).
 
@@ -211,14 +319,24 @@ The name of the tag to push (will default as 'latest' if not set).
 
 You will need a recent golang installed and setup. See `go.mod` for which version is expected.
 
+To test a basic vm creation, run:
+
 ```bash
 make packer-test
 ```
 
--or-
+To test the post processor you will need an active vpn connection that can reach an anka registry. You can setup an anka registry by either adding the registry locally with:
 
 ```bash
-make build-and-install && PACKER_LOG=1 packer build examples/create-from-installer.json
+anka registry add <registry_name> <registry_url>
+```
+
+-or-
+
+You can setup the `create-from-installer-with-post-processing.json` with the correct registry values and update the make target `packer-test` to use that json file and run:
+
+```bash
+make packer-test
 ```
 
 [Packer Builder]: https://www.packer.io/docs/extending/custom-builders.html
