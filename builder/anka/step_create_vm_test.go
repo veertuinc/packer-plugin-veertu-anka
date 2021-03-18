@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	c "github.com/veertuinc/packer-builder-veertu-anka/client"
 	mocks "github.com/veertuinc/packer-builder-veertu-anka/mocks"
+	u "github.com/veertuinc/packer-builder-veertu-anka/util"
 	"gotest.tools/assert"
 )
 
@@ -32,6 +33,10 @@ func TestCreateVMRun(t *testing.T) {
 	ui := packer.TestUi(t)
 	ctx := context.Background()
 	state := new(multistep.BasicStateBag)
+	installerAppInfo := u.InstallAppPlist{
+		OSVersion:         "11.2",
+		OSPlatformVersion: "16.4.06",
+	}
 
 	state.Put("ui", ui)
 	state.Put("util", util)
@@ -51,7 +56,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("config", config)
 		state.Put("client", client)
 
-		step.vmName = "foo-11.2-16.4.06"
+		step.vmName = fmt.Sprintf("%s-%s-%s", config.VMName, installerAppInfo.OSVersion, installerAppInfo.OSPlatformVersion)
 
 		state.Put("vm_name", step.vmName)
 
@@ -64,7 +69,7 @@ func TestCreateVMRun(t *testing.T) {
 		}
 
 		gomock.InOrder(
-			util.EXPECT().ObtainMacOSVersionFromInstallerApp(config.InstallerApp).Return("11.2-16.4.06", nil).Times(1),
+			util.EXPECT().ObtainMacOSVersionFromInstallerApp(config.InstallerApp).Return(installerAppInfo, nil).Times(1),
 			client.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1),
 		)
 
@@ -94,7 +99,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("config", config)
 		state.Put("client", client)
 
-		step.vmName = "foo-11.2-16.4.06"
+		step.vmName = fmt.Sprintf("%s-%s-%s", config.VMName, installerAppInfo.OSVersion, installerAppInfo.OSPlatformVersion)
 
 		state.Put("vm_name", step.vmName)
 
@@ -107,7 +112,7 @@ func TestCreateVMRun(t *testing.T) {
 		}
 
 		gomock.InOrder(
-			util.EXPECT().ObtainMacOSVersionFromInstallerApp(config.InstallerApp).Return("11.2-16.4.06", nil).Times(1),
+			util.EXPECT().ObtainMacOSVersionFromInstallerApp(config.InstallerApp).Return(installerAppInfo, nil).Times(1),
 			client.EXPECT().Exists(step.vmName).Return(true, nil).Times(1),
 			client.EXPECT().Delete(c.DeleteParams{VMName: step.vmName}).Return(nil).Times(1),
 			client.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1),
@@ -143,7 +148,7 @@ func TestCreateVMRun(t *testing.T) {
 		gomock.InOrder(
 			util.EXPECT().
 				ObtainMacOSVersionFromInstallerApp(config.InstallerApp).
-				Return("", fmt.Errorf("installer app does not exist at %q", config.InstallerApp)).
+				Return(installerAppInfo, fmt.Errorf("installer app does not exist at %q", config.InstallerApp)).
 				Times(1),
 			util.EXPECT().
 				StepError(ui, state, fmt.Errorf("installer app does not exist at %q", config.InstallerApp)).

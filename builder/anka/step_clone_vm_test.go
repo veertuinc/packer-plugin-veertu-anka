@@ -322,7 +322,7 @@ func TestCloneVMRun(t *testing.T) {
 			util.EXPECT().ConvertDiskSizeToBytes(config.DiskSize).Return(uint64(120*1024*1024*1024), nil).Times(1),
 			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
 			client.EXPECT().Modify(clonedShowResponse.Name, "set", "hard-drive", "-s", config.DiskSize).Return(nil).Times(1),
-			client.EXPECT().Run(runParams).Return(nil, 0).Times(1),
+			client.EXPECT().Run(runParams).Return(0, nil).Times(1),
 			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
 		)
 

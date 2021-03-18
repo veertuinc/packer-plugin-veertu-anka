@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os/exec"
 
@@ -63,6 +64,8 @@ type CreateResponse struct {
 }
 
 func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (CreateResponse, error) {
+	var response CreateResponse
+
 	args := []string{
 		"create",
 		"--app", params.InstallerApp,
@@ -71,12 +74,12 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 		"--disk-size", params.DiskSize,
 		params.Name,
 	}
+
 	output, err := runCommandStreamer(outputStreamer, args...)
 	if err != nil {
-		return CreateResponse{}, err
+		return response, err
 	}
 
-	var response CreateResponse
 	err = json.Unmarshal(output.Body, &response)
 	if err != nil {
 		return response, fmt.Errorf("Failed parsing output: %q (%v)", output.Body, err)
@@ -96,6 +99,7 @@ func (c *AnkaClient) Delete(params DeleteParams) error {
 	}
 
 	args = append(args, params.VMName)
+
 	_, err := runCommand(args...)
 	return err
 }
@@ -161,12 +165,13 @@ type DescribeResponse struct {
 }
 
 func (c *AnkaClient) Describe(vmName string) (DescribeResponse, error) {
+	var response DescribeResponse
+
 	output, err := runCommand("describe", vmName)
 	if err != nil {
-		return DescribeResponse{}, err
+		return response, err
 	}
 
-	var response DescribeResponse
 	err = json.Unmarshal(output.Body, &response)
 	if err != nil {
 		return response, err
@@ -180,17 +185,20 @@ func (c *AnkaClient) Exists(vmName string) (bool, error) {
 	if err == nil {
 		return true, nil
 	}
+
 	switch err.(type) {
 	// case *json.UnmarshalTypeError:
 	case *common.VMNotFoundException:
 		return false, nil
 	}
+
 	return false, err
 }
 
 func (c *AnkaClient) Modify(vmName string, command string, property string, flags ...string) error {
 	ankaCommand := []string{"modify", vmName, command, property}
 	ankaCommand = append(ankaCommand, flags...)
+
 	output, err := runCommand(ankaCommand...)
 	if err != nil {
 		return err
@@ -199,13 +207,26 @@ func (c *AnkaClient) Modify(vmName string, command string, property string, flag
 		log.Print("Error executing modify command: ", output.ExceptionType, " ", output.Message)
 		return fmt.Errorf(output.Message)
 	}
+
 	return nil
 }
 
-func (c *AnkaClient) Run(params RunParams) (error, int) {
+type RunParams struct {
+	VMName         string
+	Volume         string
+	Command        []string
+	Stdin          io.Reader
+	Stdout, Stderr io.Writer
+	Debug          bool
+	User           string
+}
+
+func (c *AnkaClient) Run(params RunParams) (int, error) {
 	runner := NewRunner(params)
-	if err := runner.Start(); err != nil {
-		return err, 1
+
+	err := runner.Start()
+	if err != nil {
+		return 1, err
 	}
 
 	log.Printf("Waiting for command to run")
@@ -231,18 +252,19 @@ func (sr ShowResponse) IsStopped() bool {
 }
 
 func (c *AnkaClient) Show(vmName string) (ShowResponse, error) {
+	var response ShowResponse
+
 	output, err := runCommand("show", vmName)
 	if err != nil {
 		merr, ok := err.(MachineReadableError)
 		if ok {
 			if merr.Code == AnkaVMNotFoundExceptionErrorCode {
-				return ShowResponse{}, &common.VMNotFoundException{}
+				return response, &common.VMNotFoundException{}
 			}
 		}
-		return ShowResponse{}, err
+		return response, err
 	}
 
-	var response ShowResponse
 	err = json.Unmarshal(output.Body, &response)
 	if err != nil {
 		return response, err
@@ -275,6 +297,7 @@ func (c *AnkaClient) Stop(params StopParams) error {
 	}
 
 	args = append(args, params.VMName)
+
 	_, err := runCommand(args...)
 	return err
 }

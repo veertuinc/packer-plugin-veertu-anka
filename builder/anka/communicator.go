@@ -42,7 +42,7 @@ func (c *Communicator) Start(ctx context.Context, remote *packer.RemoteCmd) erro
 	}
 
 	go func() {
-		err, exitCode := runner.Wait()
+		exitCode, err := runner.Wait()
 		if err != nil {
 			log.Printf("Runner exited with error: %v", err)
 		}
@@ -89,7 +89,7 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 			Dst: c.VMName + ":" + dst,
 		})
 	} else {
-		err, _ = c.Client.Run(client.RunParams{
+		_, err = c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", path.Base(tempfile.Name()), dst},
 			Volume:  c.HostDir,
@@ -186,7 +186,7 @@ func (c *Communicator) UploadDir(dst string, src string, exclude []string) error
 			containerDst, filepath.Base(td), containerDst,
 		)
 
-		err, _ = c.Client.Run(client.RunParams{
+		_, err = c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"bash", "-c", command},
 			Volume:  c.HostDir,
@@ -238,7 +238,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	}
 
 	if !c.Config.UseAnkaCP {
-		err, _ := c.Client.Run(client.RunParams{
+		_, err := c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", src, "./" + path.Base(tempfile.Name())},
 			Volume:  c.HostDir,
@@ -273,7 +273,7 @@ func (c *Communicator) DownloadDir(src string, dst string, exclude []string) err
 }
 
 func (c *Communicator) findFUSE() error {
-	notFound, _ := c.Client.Run(client.RunParams{
+	_, notFound := c.Client.Run(client.RunParams{
 		VMName:  c.VMName,
 		Command: []string{"kextstat | grep \"com.veertu.filesystems.vtufs\" &>/dev/null"},
 	})

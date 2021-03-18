@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/multistep/commonsteps"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	"github.com/veertuinc/packer-builder-veertu-anka/util"
 )
@@ -25,13 +26,16 @@ type Builder struct {
 }
 
 // Prepare processes the build configuration parameters.
-func (b *Builder) Prepare(raws ...interface{}) (params []string, warns []string, retErr error) {
+func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
+	generatedData := []string{"VMName", "OSVersion", "DarwinVersion"}
+
 	c, errs := NewConfig(raws...)
 	if errs != nil {
 		return nil, nil, errs
 	}
 	b.config = c
-	return nil, nil, nil
+
+	return generatedData, nil, nil
 }
 
 // Run executes an Anka Packer build and returns a packer.Artifact
@@ -52,6 +56,8 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	state.Put("ui", ui)
 	state.Put("client", ankaClient)
 	state.Put("util", util)
+
+	generatedData := &packerbuilderdata.GeneratedData{State: state}
 
 	steps := []multistep.Step{
 		&StepTempDir{},
@@ -79,6 +85,9 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 			},
 		},
 		&commonsteps.StepProvision{},
+		&StepSetGeneratedData{
+			GeneratedData: generatedData,
+		},
 	)
 
 	// Run!
@@ -121,8 +130,9 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 
 	// No errors, must've worked
 	return &Artifact{
-		vmId:   descr.UUID,
-		vmName: descr.Name,
+		vmId:      descr.UUID,
+		vmName:    descr.Name,
+		StateData: map[string]interface{}{"generated_data": state.Get("generated_data")},
 	}, nil
 }
 

@@ -16,11 +16,17 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/pathing"
 )
 
+// InstallAppPlist is a list of variables that comes from the installer app
+type InstallAppPlist struct {
+	OSVersion         string `plist:"DTPlatformVersion"`
+	OSPlatformVersion string `plist:"CFBundleShortVersionString"`
+}
+
 // Util defines everything this utility can do
 type Util interface {
 	ConfigTmpDir() (string, error)
 	ConvertDiskSizeToBytes(diskSize string) (uint64, error)
-	ObtainMacOSVersionFromInstallerApp(path string) (string, error)
+	ObtainMacOSVersionFromInstallerApp(path string) (InstallAppPlist, error)
 	StepError(ui packer.Ui, state multistep.StateBag, err error) multistep.StepAction
 }
 
@@ -64,38 +70,35 @@ func (u *AnkaUtil) ConvertDiskSizeToBytes(diskSize string) (uint64, error) {
 }
 
 // ObtainMacOSVersionFromInstallerApp abstracts the os version from the installer app provided
-func (u *AnkaUtil) ObtainMacOSVersionFromInstallerApp(path string) (string, error) {
+func (u *AnkaUtil) ObtainMacOSVersionFromInstallerApp(path string) (InstallAppPlist, error) {
+	installerAppPlist := InstallAppPlist{}
+
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("installer app does not exist at %q: %w", path, err)
+		return installerAppPlist, fmt.Errorf("installer app does not exist at %q: %w", path, err)
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to stat installer at %q: %w", path, err)
+		return installerAppPlist, fmt.Errorf("failed to stat installer at %q: %w", path, err)
 	}
 
 	plistPath := filepath.Join(path, "Contents", "Info.plist")
 
 	_, err = os.Stat(plistPath)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("installer app info plist did not exist at %q: %w", plistPath, err)
+		return installerAppPlist, fmt.Errorf("installer app info plist did not exist at %q: %w", plistPath, err)
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to stat installer app info plist at %q: %w", plistPath, err)
+		return installerAppPlist, fmt.Errorf("failed to stat installer app info plist at %q: %w", plistPath, err)
 	}
 
 	plistContent, _ := os.Open(plistPath)
 
-	var installAppPlist struct {
-		PlatformVersion string `plist:"DTPlatformVersion"`
-		ShortVersion    string `plist:"CFBundleShortVersionString"`
-	}
-
-	err = plist.NewXMLDecoder(plistContent).Decode(&installAppPlist)
+	err = plist.NewXMLDecoder(plistContent).Decode(&installerAppPlist)
 	if err != nil {
-		return "", err
+		return installerAppPlist, err
 	}
 
-	return fmt.Sprintf("%s-%s", installAppPlist.PlatformVersion, installAppPlist.ShortVersion), nil
+	return installerAppPlist, nil
 }
 
 // ConfigTmpDir creates the temp dir used by packer during runtime

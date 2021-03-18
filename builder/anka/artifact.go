@@ -6,8 +6,9 @@ import (
 
 // Artifact represents an Anka image as the result of a Packer build.
 type Artifact struct {
-	vmName string
-	vmId   string
+	vmName    string
+	vmId      string
+	StateData map[string]interface{}
 }
 
 // BuilderId returns the unique builder id.
@@ -33,7 +34,7 @@ func (a *Artifact) Id() string {
 // State allows the caller to ask for builder specific state information
 // relating to the artifact instance.
 func (a *Artifact) State(name string) interface{} {
-	return nil
+	return a.StateData[name]
 }
 
 // String returns the string representation of the artifact.

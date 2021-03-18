@@ -189,7 +189,7 @@ func (s *StepCloneVM) modifyVMResources(showResponse client.ShowResponse, config
 			}
 
 			// Resize the inner VM disk too with diskutil
-			err, _ = s.client.Run(client.RunParams{
+			_, err = s.client.Run(client.RunParams{
 				VMName:  showResponse.Name,
 				Command: []string{"diskutil", "apfs", "resizeContainer", "disk1", "0"},
 			})

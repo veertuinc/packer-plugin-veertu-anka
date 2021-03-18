@@ -198,11 +198,11 @@ func (mr *MockClientMockRecorder) RegistryRevert(url, id interface{}) *gomock.Ca
 }
 
 // Run mocks base method.
-func (m *MockClient) Run(params client.RunParams) (error, int) {
+func (m *MockClient) Run(params client.RunParams) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Run", params)
-	ret0, _ := ret[0].(error)
-	ret1, _ := ret[1].(int)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 

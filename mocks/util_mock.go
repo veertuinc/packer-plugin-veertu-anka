@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	multistep "github.com/hashicorp/packer-plugin-sdk/multistep"
 	packer "github.com/hashicorp/packer-plugin-sdk/packer"
+	util "github.com/veertuinc/packer-builder-veertu-anka/util"
 )
 
 // MockUtil is a mock of Util interface.
@@ -66,10 +67,10 @@ func (mr *MockUtilMockRecorder) ConvertDiskSizeToBytes(diskSize interface{}) *go
 }
 
 // ObtainMacOSVersionFromInstallerApp mocks base method.
-func (m *MockUtil) ObtainMacOSVersionFromInstallerApp(path string) (string, error) {
+func (m *MockUtil) ObtainMacOSVersionFromInstallerApp(path string) (util.InstallAppPlist, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ObtainMacOSVersionFromInstallerApp", path)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(util.InstallAppPlist)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
