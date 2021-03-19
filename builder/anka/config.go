@@ -37,10 +37,10 @@ type Config struct {
 	SourceVMName string `mapstructure:"source_vm_name"`
 	SourceVMTag  string `mapstructure:"source_vm_tag"`
 
-	VMName   string `mapstructure:"vm_name"`
-	DiskSize string `mapstructure:"disk_size"`
-	RAMSize  string `mapstructure:"ram_size"`
-	CPUCount string `mapstructure:"cpu_count"`
+	VMName    string `mapstructure:"vm_name"`
+	DiskSize  string `mapstructure:"disk_size"`
+	RAMSize   string `mapstructure:"ram_size"`
+	VCPUCount string `mapstructure:"vcpu_count"`
 
 	AlwaysFetch bool `mapstructure:"always_fetch"`
 

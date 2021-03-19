@@ -44,7 +44,7 @@ func TestCreateVMRun(t *testing.T) {
 	t.Run("create vm", func(t *testing.T) {
 		config := &Config{
 			DiskSize:     "500G",
-			CPUCount:     "32G",
+			VCPUCount:    "32G",
 			RAMSize:      "16G",
 			InstallerApp: "/fake/InstallApp.app/",
 			VMName:       "foo",
@@ -64,7 +64,7 @@ func TestCreateVMRun(t *testing.T) {
 			InstallerApp: config.InstallerApp,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
-			CPUCount:     config.CPUCount,
+			VCPUCount:    config.VCPUCount,
 			RAMSize:      config.RAMSize,
 		}
 
@@ -86,7 +86,7 @@ func TestCreateVMRun(t *testing.T) {
 	t.Run("create vm with packer force", func(t *testing.T) {
 		config := &Config{
 			DiskSize:     "500G",
-			CPUCount:     "32G",
+			VCPUCount:    "32G",
 			RAMSize:      "16G",
 			InstallerApp: "/fake/InstallApp.app/",
 			VMName:       "foo",
@@ -107,7 +107,7 @@ func TestCreateVMRun(t *testing.T) {
 			InstallerApp: config.InstallerApp,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
-			CPUCount:     config.CPUCount,
+			VCPUCount:    config.VCPUCount,
 			RAMSize:      config.RAMSize,
 		}
 
@@ -133,7 +133,7 @@ func TestCreateVMRun(t *testing.T) {
 	t.Run("create vm and installer app does not exist", func(t *testing.T) {
 		config := &Config{
 			DiskSize:     "500G",
-			CPUCount:     "32G",
+			VCPUCount:    "32G",
 			RAMSize:      "16G",
 			InstallerApp: "/does/not/exist/InstallApp.app/",
 			VMName:       "foo",

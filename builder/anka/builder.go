@@ -43,12 +43,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	ankaClient := &client.AnkaClient{}
 	util := &util.AnkaUtil{}
 
-	version, err := ankaClient.Version()
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("[DEBUG] Anka version: %s version %s (build %s)", version.Body.Product, version.Body.Version, version.Body.Build)
-
 	// Setup the state bag and initial state for the steps
 	state := new(multistep.BasicStateBag)
 	state.Put("config", b.config)
@@ -110,6 +104,16 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	descr, err := ankaClient.Describe(state.Get("vm_name").(string))
 	if err != nil {
 		return nil, err
+	}
+
+	license, err := ankaClient.License()
+	if err != nil {
+		return nil, err
+	}
+
+	if license.LicenseType == "com.veertu.anka.develop" {
+		log.Printf("developer license present, can only stop vms: https://ankadocs.veertu.com/docs/licensing/#anka-license-feature-differences")
+		b.config.StopVM = true
 	}
 
 	if b.config.StopVM {

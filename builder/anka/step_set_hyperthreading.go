@@ -42,11 +42,11 @@ func (s *StepSetHyperThreading) Run(ctx context.Context, state multistep.StateBa
 	if err != nil {
 		return onError(err)
 	}
-	if describeResponse.CPU.Threads > 0 && config.EnableHtt {
+	if describeResponse.VCPU.Threads > 0 && config.EnableHtt {
 		log.Print("Htt already on")
 		return multistep.ActionContinue
 	}
-	if describeResponse.CPU.Threads == 0 && config.DisableHtt {
+	if describeResponse.VCPU.Threads == 0 && config.DisableHtt {
 		log.Print("Htt already off")
 		return multistep.ActionContinue
 	}

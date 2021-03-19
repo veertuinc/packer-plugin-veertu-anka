@@ -17,6 +17,7 @@ type Client interface {
 	Delete(params DeleteParams) error
 	Describe(vmName string) (DescribeResponse, error)
 	Exists(vmName string) (bool, error)
+	License() (LicenseResponse, error)
 	Modify(vmName string, command string, property string, flags ...string) error
 	RegistryList(registryParams RegistryParams) ([]RegistryListResponse, error)
 	RegistryPull(registryParams RegistryParams, pullParams RegistryPullParams) error

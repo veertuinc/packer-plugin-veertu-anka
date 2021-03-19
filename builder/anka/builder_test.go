@@ -13,7 +13,7 @@ func testConfig() map[string]interface{} {
 	}
 }
 
-func TestPrepare(t *testing.T) {
+func TestBuilderPrepare(t *testing.T) {
 	var b Builder
 
 	c := testConfig()

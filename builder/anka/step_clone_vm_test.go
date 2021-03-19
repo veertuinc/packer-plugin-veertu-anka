@@ -286,7 +286,7 @@ func TestCloneVMRun(t *testing.T) {
 		}
 
 		config := &Config{
-			CPUCount:     "4",
+			VCPUCount:    "4",
 			DiskSize:     "120G",
 			RAMSize:      "16G",
 			VMName:       "foo",
@@ -332,24 +332,24 @@ func TestCloneVMRun(t *testing.T) {
 			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
 		)
 
-		// cpucount
+		// vcpucount
 		gomock.InOrder(
 			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
-			client.EXPECT().Modify(clonedShowResponse.Name, "set", "cpu", "-c", config.CPUCount).Return(nil).Times(1),
+			client.EXPECT().Modify(clonedShowResponse.Name, "set", "cpu", "-c", config.VCPUCount).Return(nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShowResponse.Name, step.vmName))
 		mockui.Say(fmt.Sprintf("Modifying VM %s disk size to %s", clonedShowResponse.Name, config.DiskSize))
 		mockui.Say(fmt.Sprintf("Modifying VM %s RAM to %s", clonedShowResponse.Name, config.RAMSize))
-		mockui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %v", clonedShowResponse.Name, config.CPUCount))
+		mockui.Say(fmt.Sprintf("Modifying VM %s VCPU core count to %v", clonedShowResponse.Name, config.VCPUCount))
 
 		stepAction := step.Run(ctx, state)
 
 		assert.Equal(t, mockui.SayMessages[0].Message, "Cloning source VM source_foo into a new virtual machine: foo")
 		assert.Equal(t, mockui.SayMessages[1].Message, "Modifying VM foo disk size to 120G")
 		assert.Equal(t, mockui.SayMessages[2].Message, "Modifying VM foo RAM to 16G")
-		assert.Equal(t, mockui.SayMessages[3].Message, "Modifying VM foo CPU core count to 4")
+		assert.Equal(t, mockui.SayMessages[3].Message, "Modifying VM foo VCPU core count to 4")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 

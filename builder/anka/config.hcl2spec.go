@@ -75,7 +75,7 @@ type FlatConfig struct {
 	VMName                    *string           `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
 	DiskSize                  *string           `mapstructure:"disk_size" cty:"disk_size" hcl:"disk_size"`
 	RAMSize                   *string           `mapstructure:"ram_size" cty:"ram_size" hcl:"ram_size"`
-	CPUCount                  *string           `mapstructure:"cpu_count" cty:"cpu_count" hcl:"cpu_count"`
+	VCPUCount                 *string           `mapstructure:"vcpu_count" cty:"vcpu_count" hcl:"vcpu_count"`
 	AlwaysFetch               *bool             `mapstructure:"always_fetch" cty:"always_fetch" hcl:"always_fetch"`
 	UpdateAddons              *bool             `mapstructure:"update_addons" cty:"update_addons" hcl:"update_addons"`
 	RegistryName              *string           `mapstructure:"registry_name" cty:"registry_name" hcl:"registry_name"`
@@ -174,7 +174,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"vm_name":                      &hcldec.AttrSpec{Name: "vm_name", Type: cty.String, Required: false},
 		"disk_size":                    &hcldec.AttrSpec{Name: "disk_size", Type: cty.String, Required: false},
 		"ram_size":                     &hcldec.AttrSpec{Name: "ram_size", Type: cty.String, Required: false},
-		"cpu_count":                    &hcldec.AttrSpec{Name: "cpu_count", Type: cty.String, Required: false},
+		"vcpu_count":                   &hcldec.AttrSpec{Name: "vcpu_count", Type: cty.String, Required: false},
 		"always_fetch":                 &hcldec.AttrSpec{Name: "always_fetch", Type: cty.Bool, Required: false},
 		"update_addons":                &hcldec.AttrSpec{Name: "update_addons", Type: cty.Bool, Required: false},
 		"registry_name":                &hcldec.AttrSpec{Name: "registry_name", Type: cty.String, Required: false},

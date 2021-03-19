@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	defaultDiskSize = "40G"
-	defaultRAMSize  = "4G"
-	defaultCPUCount = "2"
+	defaultDiskSize  = "40G"
+	defaultRAMSize   = "4G"
+	defaultVCPUCount = "2"
 )
 
 // StepCreateVM will be used to run the create step for an 'vm-create' builder types
@@ -113,7 +113,7 @@ func (s *StepCreateVM) createFromInstallerApp(ui packer.Ui, config *Config) erro
 		InstallerApp: config.InstallerApp,
 		Name:         s.vmName,
 		DiskSize:     config.DiskSize,
-		CPUCount:     config.CPUCount,
+		VCPUCount:    config.VCPUCount,
 		RAMSize:      config.RAMSize,
 	}
 
@@ -121,8 +121,8 @@ func (s *StepCreateVM) createFromInstallerApp(ui packer.Ui, config *Config) erro
 		createParams.DiskSize = defaultDiskSize
 	}
 
-	if createParams.CPUCount == "" {
-		createParams.CPUCount = defaultCPUCount
+	if createParams.VCPUCount == "" {
+		createParams.VCPUCount = defaultVCPUCount
 	}
 
 	if createParams.RAMSize == "" {

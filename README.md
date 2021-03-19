@@ -8,14 +8,12 @@ Note that this builder does not manage images. Once it creates an image, it is u
 
 * Plugin will only work with Packer v1.7 or later.
 * Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
-* Builder has been renamed from `veertu-anka` to `veertu-anka-vm`.
+* Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
 
 ### Compatibility
 
 Packer Version | Veertu Anka Plugin Version
 --- | ---
-Up to 1.4.5 | 1.1.0
-1.5.x and above | 1.2.0
 1.7.x and above | 2.0.0
 
 ## Installing from Binary
@@ -53,7 +51,7 @@ The most basic json file you can build from is:
 
 This will create a base VM template using the `.app` you specified in `installer_app` with a name like `anka-packer-base-{macOSVersion}`. Once the base VM template is created, it will create a clone from it (that shares the underlying layers from the base VM template, minimizing the amount of disk space used). Once the VM has been successfully created, it will push that VM to your default registry with the `latest` tag.
 
-> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `cpu_count`. Otherwise, defaults will be used (see "Configuration" section).
+> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, defaults will be used.
 
 You can also skip the creation of the base VM template and use an existing VM template (`10.15.6`):
 
@@ -81,7 +79,7 @@ Or, create a variable inside for the `source_vm_name` and then run: `packer buil
 
 > The `installer_app` is ignored if you've specified `source_vm_name` and it does not exist already
 
-This will clone `10.15.6` to a new VM and, if there are differences from the base VM, modify CPU, RAM, and DISK.
+This will clone `10.15.6` to a new VM and, if there are differences from the base VM, modify vCPU, RAM, and DISK.
 
 > Check out the [examples directory](./examples) to see how port-forwarding and other options are used
 
@@ -117,9 +115,11 @@ Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. 
 
 The time to wait before running packer provisioner commands, defaults to `10s`.
 
-* `cpu_count` (String)
+* `vcpu_count` (String)
 
-The number of CPU cores, defaults to `2`.
+> This chnage gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+
+The number of vCPU cores, defaults to `2`.
 
 * `disk_size` (String)
 
@@ -195,9 +195,11 @@ Path to a CA Root certificate.
 
 Path to your node certificate (if certificate authority is enabled).
 
-* `cpu_count` (String)
+* `vcpu_count` (String)
 
-The number of CPU cores, defaults to `2`.
+> This chnage gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+
+The number of vCPU cores, defaults to `2`.
 
 * `disk_size` (String)
 
@@ -356,6 +358,14 @@ The variables we expose are:
 ## Development
 
 You will need a recent golang installed and setup. See `go.mod` for which version is expected.
+
+We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our interfaces for testing. This allows us to easily test when we expect logic to be called without having to rewrite golang standard library functions with custom mock logic. To generate one of these mocked interfaces, installed the mockgen binary by following the link provided.
+
+```bash
+mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
+```
+
+### Testing
 
 To test a basic vm creation, run:
 

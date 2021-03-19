@@ -121,6 +121,21 @@ func (mr *MockClientMockRecorder) Exists(vmName interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockClient)(nil).Exists), vmName)
 }
 
+// License mocks base method.
+func (m *MockClient) License() (client.LicenseResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "License")
+	ret0, _ := ret[0].(client.LicenseResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// License indicates an expected call of License.
+func (mr *MockClientMockRecorder) License() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "License", reflect.TypeOf((*MockClient)(nil).License))
+}
+
 // Modify mocks base method.
 func (m *MockClient) Modify(vmName, command, property string, flags ...string) error {
 	m.ctrl.T.Helper()

@@ -223,21 +223,21 @@ func (s *StepCloneVM) modifyVMResources(showResponse client.ShowResponse, config
 		}
 	}
 
-	if config.CPUCount != "" {
-		stringCPUCount, err := strconv.ParseInt(config.CPUCount, 10, 32)
+	if config.VCPUCount != "" {
+		stringVCPUCount, err := strconv.ParseInt(config.VCPUCount, 10, 32)
 		if err != nil {
 			return err
 		}
 
-		if int(stringCPUCount) != showResponse.CPUCores {
+		if int(stringVCPUCount) != showResponse.VCPUCores {
 			err := s.client.Stop(stopParams)
 			if err != nil {
 				return err
 			}
 
-			ui.Say(fmt.Sprintf("Modifying VM %s CPU core count to %v", showResponse.Name, stringCPUCount))
+			ui.Say(fmt.Sprintf("Modifying VM %s VCPU core count to %v", showResponse.Name, stringVCPUCount))
 
-			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", strconv.Itoa(int(stringCPUCount)))
+			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", strconv.Itoa(int(stringVCPUCount)))
 			if err != nil {
 				return err
 			}

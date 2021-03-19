@@ -15,6 +15,7 @@ const (
 	AnkaVMNotFoundExceptionErrorCode = 3
 )
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#clone
 type CloneParams struct {
 	VMName     string
 	SourceUUID string
@@ -35,6 +36,7 @@ func (c *AnkaClient) Clone(params CloneParams) error {
 	return nil
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#cp
 type CopyParams struct {
 	Src string
 	Dst string
@@ -51,16 +53,17 @@ type CreateParams struct {
 	OpticalDrive string
 	RAMSize      string
 	DiskSize     string
-	CPUCount     string
+	VCPUCount    string
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#create
 type CreateResponse struct {
-	UUID     string `json:"uuid"`
-	Name     string `json:"name"`
-	CPUCores int    `json:"cpu_cores"`
-	RAM      string `json:"ram"`
-	ImageID  string `json:"image_id"`
-	Status   string `json:"status"`
+	UUID      string `json:"uuid"`
+	Name      string `json:"name"`
+	VCPUCores int    `json:"cpu_cores"`
+	RAM       string `json:"ram"`
+	ImageID   string `json:"image_id"`
+	Status    string `json:"status"`
 }
 
 func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (CreateResponse, error) {
@@ -70,7 +73,7 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 		"create",
 		"--app", params.InstallerApp,
 		"--ram-size", params.RAMSize,
-		"--cpu-count", params.CPUCount,
+		"--cpu-count", params.VCPUCount,
 		"--disk-size", params.DiskSize,
 		params.Name,
 	}
@@ -88,6 +91,7 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 	return response, nil
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#delete
 type DeleteParams struct {
 	VMName string
 }
@@ -104,11 +108,12 @@ func (c *AnkaClient) Delete(params DeleteParams) error {
 	return err
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#describe
 type DescribeResponse struct {
 	Name    string `json:"name"`
 	Version int    `json:"version"`
 	UUID    string `json:"uuid"`
-	CPU     struct {
+	VCPU    struct {
 		Cores   int `json:"cores"`
 		Threads int `json:"threads"`
 	} `json:"cpu"`
@@ -180,6 +185,7 @@ func (c *AnkaClient) Describe(vmName string) (DescribeResponse, error) {
 	return response, nil
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#show
 func (c *AnkaClient) Exists(vmName string) (bool, error) {
 	_, err := c.Show(vmName)
 	if err == nil {
@@ -195,6 +201,29 @@ func (c *AnkaClient) Exists(vmName string) (bool, error) {
 	return false, err
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#license
+type LicenseResponse struct {
+	LicenseType string `json:"license_type"`
+	Status      string `json:"status"`
+}
+
+func (c *AnkaClient) License() (LicenseResponse, error) {
+	var response LicenseResponse
+
+	output, err := runCommand("license", "show")
+	if err != nil {
+		return response, err
+	}
+
+	err = json.Unmarshal(output.Body, &response)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
+}
+
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#modify
 func (c *AnkaClient) Modify(vmName string, command string, property string, flags ...string) error {
 	ankaCommand := []string{"modify", vmName, command, property}
 	ankaCommand = append(ankaCommand, flags...)
@@ -211,6 +240,7 @@ func (c *AnkaClient) Modify(vmName string, command string, property string, flag
 	return nil
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#run
 type RunParams struct {
 	VMName         string
 	Volume         string
@@ -233,10 +263,11 @@ func (c *AnkaClient) Run(params RunParams) (int, error) {
 	return runner.Wait()
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#show
 type ShowResponse struct {
 	UUID      string `json:"uuid"`
 	Name      string `json:"name"`
-	CPUCores  int    `json:"cpu_cores"`
+	VCPUCores int    `json:"cpu_cores"`
 	RAM       string `json:"ram"`
 	ImageID   string `json:"image_id"`
 	Status    string `json:"status"`
@@ -262,6 +293,7 @@ func (c *AnkaClient) Show(vmName string) (ShowResponse, error) {
 				return response, &common.VMNotFoundException{}
 			}
 		}
+
 		return response, err
 	}
 
@@ -273,6 +305,7 @@ func (c *AnkaClient) Show(vmName string) (ShowResponse, error) {
 	return response, nil
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#start
 type StartParams struct {
 	VMName string
 }
@@ -282,6 +315,7 @@ func (c *AnkaClient) Start(params StartParams) error {
 	return err
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#stop
 type StopParams struct {
 	VMName string
 	Force  bool
@@ -302,6 +336,7 @@ func (c *AnkaClient) Stop(params StopParams) error {
 	return err
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#suspend
 type SuspendParams struct {
 	VMName string
 }
@@ -311,6 +346,7 @@ func (c *AnkaClient) Suspend(params SuspendParams) error {
 	return err
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#start
 func (c *AnkaClient) UpdateAddons(vmName string) error {
 	args := []string{"start", "--update-addons", vmName}
 
@@ -318,6 +354,7 @@ func (c *AnkaClient) UpdateAddons(vmName string) error {
 	return err
 }
 
+// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#version
 type VersionResponse struct {
 	Status string              `json:"status"`
 	Body   VersionResponseBody `json:"body"`
