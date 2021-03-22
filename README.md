@@ -91,15 +91,11 @@ This will clone `10.15.6` to a new VM and, if there are differences from the bas
 
 * `installer_app` (String)
 
-The path to a macOS installer. This process takes about 20 minutes. The resulting VM template name will be `{{vm_name}}-{{macOSVersion}}`. macOSVersion is pulled from the installer app.
+The path to a macOS installer. This process takes about 20 minutes.
 
 * `type` (String)
 
 Must be `veertu-anka-vm-create`.
-
-* `vm_name` (String)
-
-The name for the VM that is created. One is generated if not provided (`anka-packer-{10RandomCharacters}`).
 
 #### Optional Configuration
 
@@ -161,6 +157,14 @@ The size in "[0-9]+G" format, defaults to `2G`.
 
 Whether or not to stop the vm after it has been created, defaults to false.
 
+* `use_anka_cp` (Boolean)
+
+Use built in anka cp command. Defaults to false.
+
+* `vm_name` (String)
+
+The name for the VM that is created. One is generated with installer_app data if not provided (`anka-packer-base-{{ installer_app.OSVersion }}-{{ installer_app.BundlerVersion }}`).
+
 ### veertu-anka-vm-clone
 
 #### Required Configuration
@@ -172,10 +176,6 @@ The VM to clone for provisioning, either stopped or suspended.
 * `type` (String)
 
 Must be `veertu-anka-vm-clone`.
-
-* `vm_name` (String)
-
-The name for the VM that is created. One is generated if not provided (`anka-packer-{10RandomCharacters}`).
 
 #### Optional Configuration
 
@@ -264,6 +264,14 @@ Whether or not to stop the vm after it has been created, defaults to false.
 * `update_addons` (Boolean)
 
 Update the vm addons. Defaults to false.
+
+* `use_anka_cp` (Boolean)
+
+Use built in anka cp command. Defaults to false.
+
+* `vm_name` (String)
+
+The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
 
 ## Post Processors
 

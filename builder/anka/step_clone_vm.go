@@ -23,9 +23,9 @@ type StepCloneVM struct {
 func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packer.Ui)
-	util := state.Get("util").(util.Util)
+	ankaUtil := state.Get("util").(util.Util)
 	onError := func(err error) multistep.StepAction {
-		return util.StepError(ui, state, err)
+		return ankaUtil.StepError(ui, state, err)
 	}
 	sourceVMTag := "latest"
 	doPull := config.AlwaysFetch
@@ -36,6 +36,10 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 
 	s.client = state.Get("client").(client.Client)
 	s.vmName = config.VMName
+
+	if s.vmName == "" {
+		s.vmName = fmt.Sprintf("%s-%s", config.SourceVMName, ankaUtil.RandSeq(10))
+	}
 
 	state.Put("vm_name", s.vmName)
 
@@ -110,7 +114,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 		return onError(err)
 	}
 
-	err = s.modifyVMResources(clonedShow, config, ui, util)
+	err = s.modifyVMResources(clonedShow, config, ui, ankaUtil)
 	if err != nil {
 		return onError(err)
 	}

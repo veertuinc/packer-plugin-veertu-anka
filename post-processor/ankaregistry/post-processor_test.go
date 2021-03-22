@@ -11,14 +11,16 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/common"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
-	c "github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	mocks "github.com/veertuinc/packer-builder-veertu-anka/mocks"
 )
+
+var templateList []client.RegistryListResponse
 
 func TestAnkaRegistryPostProcessor(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	client := mocks.NewMockClient(mockCtrl)
+	ankaClient := mocks.NewMockClient(mockCtrl)
 
 	ui := packer.TestUi(t)
 
@@ -35,22 +37,22 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		pp := PostProcessor{
 			config: config,
-			client: client,
+			client: ankaClient,
 		}
 
-		registryParams := c.RegistryParams{
+		registryParams := client.RegistryParams{
 			RegistryName: config.RegistryName,
 			RegistryURL:  config.RegistryURL,
 		}
 
-		pushParams := c.RegistryPushParams{
+		pushParams := client.RegistryPushParams{
 			Tag:         config.Tag,
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
 		}
 
-		client.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -76,23 +78,23 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		pp := PostProcessor{
 			config: config,
-			client: client,
+			client: ankaClient,
 		}
 
-		registryParams := c.RegistryParams{
+		registryParams := client.RegistryParams{
 			RegistryName: config.RegistryName,
 			RegistryURL:  config.RegistryURL,
 		}
 
-		pushParams := c.RegistryPushParams{
+		pushParams := client.RegistryPushParams{
 			Tag:         config.Tag,
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
 		}
 
-		client.EXPECT().RegistryList(registryParams).Return([]c.RegistryListResponse{}, nil).Times(1)
-		client.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -103,7 +105,6 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 	})
 
 	t.Run("with force push to registry and existing templates", func(t *testing.T) {
-		var templateList []c.RegistryListResponse
 		err := json.Unmarshal(json.RawMessage(`[{ "id": "foo_id", "name": "foo" }]`), &templateList)
 		if err != nil {
 			t.Fail()
@@ -124,24 +125,24 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		pp := PostProcessor{
 			config: config,
-			client: client,
+			client: ankaClient,
 		}
 
-		registryParams := c.RegistryParams{
+		registryParams := client.RegistryParams{
 			RegistryName: config.RegistryName,
 			RegistryURL:  config.RegistryURL,
 		}
 
-		pushParams := c.RegistryPushParams{
+		pushParams := client.RegistryPushParams{
 			Tag:         config.Tag,
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
 		}
 
-		client.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
-		client.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(1)
-		client.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
+		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))

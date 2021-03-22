@@ -81,6 +81,20 @@ func (mr *MockUtilMockRecorder) ObtainMacOSVersionFromInstallerApp(path interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObtainMacOSVersionFromInstallerApp", reflect.TypeOf((*MockUtil)(nil).ObtainMacOSVersionFromInstallerApp), path)
 }
 
+// RandSeq mocks base method.
+func (m *MockUtil) RandSeq(n int) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RandSeq", n)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// RandSeq indicates an expected call of RandSeq.
+func (mr *MockUtilMockRecorder) RandSeq(n interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RandSeq", reflect.TypeOf((*MockUtil)(nil).RandSeq), n)
+}
+
 // StepError mocks base method.
 func (m *MockUtil) StepError(ui packer.Ui, state multistep.StateBag, err error) multistep.StepAction {
 	m.ctrl.T.Helper()

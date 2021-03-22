@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
-	c "github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	mocks "github.com/veertuinc/packer-builder-veertu-anka/mocks"
 	"gotest.tools/assert"
 )
@@ -17,8 +17,8 @@ import (
 func TestHyperthreadingRun(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	client := mocks.NewMockClient(mockCtrl)
-	util := mocks.NewMockUtil(mockCtrl)
+	ankaClient := mocks.NewMockClient(mockCtrl)
+	ankaUtil := mocks.NewMockUtil(mockCtrl)
 
 	step := StepSetHyperThreading{}
 	ui := packer.TestUi(t)
@@ -26,7 +26,8 @@ func TestHyperthreadingRun(t *testing.T) {
 	state := new(multistep.BasicStateBag)
 
 	state.Put("ui", ui)
-	state.Put("util", util)
+	state.Put("client", ankaClient)
+	state.Put("util", ankaUtil)
 	state.Put("vm_name", "foo")
 
 	t.Run("disabled or nil htt values", func(t *testing.T) {
@@ -35,7 +36,6 @@ func TestHyperthreadingRun(t *testing.T) {
 			DisableHtt: false,
 		}
 
-		state.Put("client", client)
 		state.Put("config", config)
 
 		stepAction := step.Run(ctx, state)
@@ -48,10 +48,9 @@ func TestHyperthreadingRun(t *testing.T) {
 			DisableHtt: true,
 		}
 
-		state.Put("client", client)
 		state.Put("config", config)
 
-		util.EXPECT().
+		ankaUtil.EXPECT().
 			StepError(ui, state, fmt.Errorf("Conflicting setting enable_htt and disable_htt both true")).
 			Return(multistep.ActionHalt).
 			Times(1)
@@ -66,14 +65,13 @@ func TestHyperthreadingRun(t *testing.T) {
 			DisableHtt: false,
 		}
 
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().Describe("foo").Return(c.DescribeResponse{}, nil).Times(1),
-			client.EXPECT().Show("foo").Return(c.ShowResponse{}, nil).Times(1),
-			client.EXPECT().Stop(c.StopParams{VMName: "foo", Force: true}).Return(nil).Times(1),
-			client.EXPECT().Modify("foo", "set", "cpu", "--htt").Return(nil).Times(1),
+			ankaClient.EXPECT().Describe("foo").Return(client.DescribeResponse{}, nil).Times(1),
+			ankaClient.EXPECT().Show("foo").Return(client.ShowResponse{}, nil).Times(1),
+			ankaClient.EXPECT().Stop(client.StopParams{VMName: "foo", Force: true}).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify("foo", "set", "cpu", "--htt").Return(nil).Times(1),
 		)
 
 		stepAction := step.Run(ctx, state)
@@ -81,7 +79,7 @@ func TestHyperthreadingRun(t *testing.T) {
 	})
 
 	t.Run("enable htt when already configured", func(t *testing.T) {
-		var describeResponse c.DescribeResponse
+		var describeResponse client.DescribeResponse
 		err := json.Unmarshal(json.RawMessage(`{"CPU": {"Threads": 2}}`), &describeResponse)
 		if err != nil {
 			t.Fail()
@@ -92,10 +90,9 @@ func TestHyperthreadingRun(t *testing.T) {
 			DisableHtt: false,
 		}
 
-		state.Put("client", client)
 		state.Put("config", config)
 
-		client.EXPECT().Describe("foo").Return(describeResponse, nil).Times(1)
+		ankaClient.EXPECT().Describe("foo").Return(describeResponse, nil).Times(1)
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, multistep.ActionContinue, stepAction)
@@ -107,17 +104,16 @@ func TestHyperthreadingRun(t *testing.T) {
 			DisableHtt: true,
 		}
 
-		state.Put("client", client)
 		state.Put("config", config)
 
-		client.EXPECT().Describe("foo").Return(c.DescribeResponse{}, nil).Times(1)
+		ankaClient.EXPECT().Describe("foo").Return(client.DescribeResponse{}, nil).Times(1)
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
 	t.Run("disable htt", func(t *testing.T) {
-		var describeResponse c.DescribeResponse
+		var describeResponse client.DescribeResponse
 		err := json.Unmarshal(json.RawMessage(`{"CPU": {"Threads": 2}}`), &describeResponse)
 		if err != nil {
 			t.Fail()
@@ -128,14 +124,13 @@ func TestHyperthreadingRun(t *testing.T) {
 			DisableHtt: true,
 		}
 
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().Describe("foo").Return(describeResponse, nil).Times(1),
-			client.EXPECT().Show("foo").Return(c.ShowResponse{}, nil).Times(1),
-			client.EXPECT().Stop(c.StopParams{VMName: "foo", Force: true}).Return(nil).Times(1),
-			client.EXPECT().Modify("foo", "set", "cpu", "--no-htt").Return(nil).Times(1),
+			ankaClient.EXPECT().Describe("foo").Return(describeResponse, nil).Times(1),
+			ankaClient.EXPECT().Show("foo").Return(client.ShowResponse{}, nil).Times(1),
+			ankaClient.EXPECT().Stop(client.StopParams{VMName: "foo", Force: true}).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify("foo", "set", "cpu", "--no-htt").Return(nil).Times(1),
 		)
 
 		stepAction := step.Run(ctx, state)
@@ -143,7 +138,7 @@ func TestHyperthreadingRun(t *testing.T) {
 	})
 
 	t.Run("test rerun when vm is currently running", func(t *testing.T) {
-		var showResponse c.ShowResponse
+		var showResponse client.ShowResponse
 		err := json.Unmarshal(json.RawMessage(`{ "Status": "running" }`), &showResponse)
 		if err != nil {
 			t.Fail()
@@ -154,15 +149,14 @@ func TestHyperthreadingRun(t *testing.T) {
 			DisableHtt: false,
 		}
 
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().Describe("foo").Return(c.DescribeResponse{}, nil).Times(1),
-			client.EXPECT().Show("foo").Return(showResponse, nil).Times(1),
-			client.EXPECT().Stop(c.StopParams{VMName: "foo", Force: true}).Return(nil).Times(1),
-			client.EXPECT().Modify("foo", "set", "cpu", "--htt").Return(nil).Times(1),
-			client.EXPECT().Start(c.StartParams{VMName: "foo"}).Return(nil).Times(1),
+			ankaClient.EXPECT().Describe("foo").Return(client.DescribeResponse{}, nil).Times(1),
+			ankaClient.EXPECT().Show("foo").Return(showResponse, nil).Times(1),
+			ankaClient.EXPECT().Stop(client.StopParams{VMName: "foo", Force: true}).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify("foo", "set", "cpu", "--htt").Return(nil).Times(1),
+			ankaClient.EXPECT().Start(client.StartParams{VMName: "foo"}).Return(nil).Times(1),
 		)
 
 		stepAction := step.Run(ctx, state)

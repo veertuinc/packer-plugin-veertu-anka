@@ -28,20 +28,23 @@ type StepCreateVM struct {
 func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*Config)
 	ui := state.Get("ui").(packer.Ui)
-	util := state.Get("util").(util.Util)
+	ankaUtil := state.Get("util").(util.Util)
 	onError := func(err error) multistep.StepAction {
-		return util.StepError(ui, state, err)
+		return ankaUtil.StepError(ui, state, err)
 	}
+	installerAppData := util.InstallAppPlist{}
 
 	s.client = state.Get("client").(client.Client)
 	s.vmName = config.VMName
 
-	installerAppData, err := util.ObtainMacOSVersionFromInstallerApp(config.InstallerApp)
-	if err != nil {
-		return onError(err)
-	}
+	if s.vmName == "" {
+		installerAppData, err = ankaUtil.ObtainMacOSVersionFromInstallerApp(config.InstallerApp)
+		if err != nil {
+			return onError(err)
+		}
 
-	s.vmName = fmt.Sprintf("%s-%s-%s", s.vmName, installerAppData.OSVersion, installerAppData.OSPlatformVersion)
+		s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerAppData.OSVersion, installerAppData.BundlerVersion)
+	}
 
 	state.Put("vm_name", s.vmName)
 

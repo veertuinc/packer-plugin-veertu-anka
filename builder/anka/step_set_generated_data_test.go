@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
-	c "github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	mocks "github.com/veertuinc/packer-builder-veertu-anka/mocks"
 	"gotest.tools/assert"
 )
@@ -17,8 +17,8 @@ import (
 func TestSetGeneratedDataRun(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	client := mocks.NewMockClient(mockCtrl)
-	util := mocks.NewMockUtil(mockCtrl)
+	ankaClient := mocks.NewMockClient(mockCtrl)
+	ankaUtil := mocks.NewMockUtil(mockCtrl)
 
 	state := new(multistep.BasicStateBag)
 	step := StepSetGeneratedData{
@@ -27,27 +27,27 @@ func TestSetGeneratedDataRun(t *testing.T) {
 	}
 	ui := packer.TestUi(t)
 	ctx := context.Background()
-	darwinVersion := c.RunParams{
+	darwinVersion := client.RunParams{
 		Command: []string{"/usr/bin/uname", "-r"},
 		VMName:  step.vmName,
 		Stdout:  &bytes.Buffer{},
 	}
-	osv := c.RunParams{
+	osv := client.RunParams{
 		Command: []string{"/usr/bin/sw_vers", "-productVersion"},
 		VMName:  step.vmName,
 		Stdout:  &bytes.Buffer{},
 	}
 
 	state.Put("ui", ui)
-	state.Put("util", util)
+	state.Put("client", ankaClient)
+	state.Put("util", ankaUtil)
 
 	t.Run("expose variables", func(t *testing.T) {
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 
 		gomock.InOrder(
-			client.EXPECT().Run(darwinVersion).Times(1),
-			client.EXPECT().Run(osv).Times(1),
+			ankaClient.EXPECT().Run(darwinVersion).Times(1),
+			ankaClient.EXPECT().Run(osv).Times(1),
 		)
 
 		stepAction := step.Run(ctx, state)

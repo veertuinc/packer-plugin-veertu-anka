@@ -11,22 +11,22 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
-	c "github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-builder-veertu-anka/client"
 	mocks "github.com/veertuinc/packer-builder-veertu-anka/mocks"
 	"gotest.tools/assert"
 )
 
 var (
-	sourceShowResponse     c.ShowResponse
-	clonedShowResponse     c.ShowResponse
-	clonedDescribeResponse c.DescribeResponse
+	sourceShowResponse     client.ShowResponse
+	clonedShowResponse     client.ShowResponse
+	clonedDescribeResponse client.DescribeResponse
 )
 
 func TestCloneVMRun(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	client := mocks.NewMockClient(mockCtrl)
-	util := mocks.NewMockUtil(mockCtrl)
+	ankaClient := mocks.NewMockClient(mockCtrl)
+	ankaUtil := mocks.NewMockUtil(mockCtrl)
 
 	step := StepCloneVM{}
 	ui := packer.TestUi(t)
@@ -34,7 +34,8 @@ func TestCloneVMRun(t *testing.T) {
 	state := new(multistep.BasicStateBag)
 
 	state.Put("ui", ui)
-	state.Put("util", util)
+	state.Put("client", ankaClient)
+	state.Put("util", ankaUtil)
 
 	err := json.Unmarshal(json.RawMessage(`{ "UUID": "1234-abcdef-hijk-5678", "Name": "source_foo" }`), &sourceShowResponse)
 	if err != nil {
@@ -58,14 +59,13 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
-			client.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			client.EXPECT().Clone(c.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
-			client.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -74,6 +74,36 @@ func TestCloneVMRun(t *testing.T) {
 		stepAction := step.Run(ctx, state)
 
 		assert.Equal(t, mockui.SayMessages[0].Message, "Cloning source VM source_foo into a new virtual machine: foo")
+		assert.Equal(t, multistep.ActionContinue, stepAction)
+	})
+
+	t.Run("clone vm when no vm_name was provided in config", func(t *testing.T) {
+		config := &Config{
+			SourceVMName: "source_foo",
+			PackerConfig: common.PackerConfig{
+				PackerBuilderType: "veertu-anka-vm-clone",
+			},
+		}
+
+		step.vmName = fmt.Sprintf("%s-%s", config.SourceVMName, "ABCDEabcde")
+
+		state.Put("vm_name", step.vmName)
+		state.Put("config", config)
+
+		gomock.InOrder(
+			ankaUtil.EXPECT().RandSeq(10).Return("ABCDEabcde").Times(1),
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+		)
+
+		mockui := packer.MockUi{}
+		mockui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShowResponse.Name, step.vmName))
+
+		stepAction := step.Run(ctx, state)
+
+		assert.Equal(t, mockui.SayMessages[0].Message, "Cloning source VM source_foo into a new virtual machine: source_foo-ABCDEabcde")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
@@ -90,20 +120,19 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", config)
 
 		// force delete
 		gomock.InOrder(
-			client.EXPECT().Exists(step.vmName).Return(true, nil).Times(1),
-			client.EXPECT().Delete(c.DeleteParams{VMName: step.vmName}).Return(nil).Times(1),
+			ankaClient.EXPECT().Exists(step.vmName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: step.vmName}).Return(nil).Times(1),
 		)
 
 		gomock.InOrder(
-			client.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
-			client.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			client.EXPECT().Clone(c.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
-			client.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -126,8 +155,8 @@ func TestCloneVMRun(t *testing.T) {
 			},
 		}
 		sourceVMTag := "latest"
-		registryParams := c.RegistryParams{}
-		registryPullParams := c.RegistryPullParams{
+		registryParams := client.RegistryParams{}
+		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
 			Tag:    sourceVMTag,
 			Local:  false,
@@ -137,15 +166,14 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
-			client.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
-			client.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			client.EXPECT().Clone(c.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
-			client.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
+			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -166,8 +194,8 @@ func TestCloneVMRun(t *testing.T) {
 			},
 		}
 		sourceVMTag := "latest"
-		registryParams := c.RegistryParams{}
-		registryPullParams := c.RegistryPullParams{
+		registryParams := client.RegistryParams{}
+		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
 			Tag:    sourceVMTag,
 			Local:  false,
@@ -177,16 +205,15 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
-			client.EXPECT().
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
+			ankaClient.EXPECT().
 				RegistryPull(registryParams, registryPullParams).
 				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry", config.SourceVMName, sourceVMTag)).
 				Times(1),
-			util.EXPECT().
+			ankaUtil.EXPECT().
 				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry", config.SourceVMName, sourceVMTag)).
 				Return(multistep.ActionHalt).
 				Times(1),
@@ -207,8 +234,8 @@ func TestCloneVMRun(t *testing.T) {
 			},
 		}
 		sourceVMTag := "latest"
-		registryParams := c.RegistryParams{}
-		registryPullParams := c.RegistryPullParams{
+		registryParams := client.RegistryParams{}
+		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
 			Tag:    sourceVMTag,
 			Local:  false,
@@ -218,14 +245,13 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
-			client.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			client.EXPECT().Clone(c.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
-			client.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -249,8 +275,8 @@ func TestCloneVMRun(t *testing.T) {
 			},
 		}
 		sourceVMTag := "latest"
-		registryParams := c.RegistryParams{}
-		registryPullParams := c.RegistryPullParams{
+		registryParams := client.RegistryParams{}
+		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
 			Tag:    sourceVMTag,
 			Local:  false,
@@ -260,15 +286,14 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().
+			ankaClient.EXPECT().
 				RegistryPull(registryParams, registryPullParams).
 				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry", config.SourceVMName, sourceVMTag)).
 				Times(1),
-			util.EXPECT().
+			ankaUtil.EXPECT().
 				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry", config.SourceVMName, sourceVMTag)).
 				Return(multistep.ActionHalt).
 				Times(1),
@@ -295,11 +320,11 @@ func TestCloneVMRun(t *testing.T) {
 				PackerBuilderType: "veertu-anka-vm-clone",
 			},
 		}
-		stopParams := c.StopParams{
+		stopParams := client.StopParams{
 			VMName: clonedShowResponse.Name,
 			Force:  true,
 		}
-		runParams := c.RunParams{
+		runParams := client.RunParams{
 			VMName:  clonedShowResponse.Name,
 			Command: []string{"diskutil", "apfs", "resizeContainer", "disk1", "0"},
 		}
@@ -307,35 +332,34 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", config)
 
 		gomock.InOrder(
-			client.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
-			client.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			client.EXPECT().Clone(c.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
-			client.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
 
 		// disksize
 		gomock.InOrder(
-			util.EXPECT().ConvertDiskSizeToBytes(config.DiskSize).Return(uint64(120*1024*1024*1024), nil).Times(1),
-			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
-			client.EXPECT().Modify(clonedShowResponse.Name, "set", "hard-drive", "-s", config.DiskSize).Return(nil).Times(1),
-			client.EXPECT().Run(runParams).Return(0, nil).Times(1),
-			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaUtil.EXPECT().ConvertDiskSizeToBytes(config.DiskSize).Return(uint64(120*1024*1024*1024), nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "set", "hard-drive", "-s", config.DiskSize).Return(nil).Times(1),
+			ankaClient.EXPECT().Run(runParams).Return(0, nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
 		)
 
 		// ramsize
 		gomock.InOrder(
-			client.EXPECT().Modify(clonedShowResponse.Name, "set", "ram", config.RAMSize).Return(nil).Times(1),
-			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "set", "ram", config.RAMSize).Return(nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
 		)
 
 		// vcpucount
 		gomock.InOrder(
-			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
-			client.EXPECT().Modify(clonedShowResponse.Name, "set", "cpu", "-c", config.VCPUCount).Return(nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "set", "cpu", "-c", config.VCPUCount).Return(nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -378,7 +402,7 @@ func TestCloneVMRun(t *testing.T) {
 			t.Fail()
 		}
 
-		stopParams := c.StopParams{
+		stopParams := client.StopParams{
 			VMName: clonedShowResponse.Name,
 			Force:  true,
 		}
@@ -386,21 +410,20 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", &config)
 
 		gomock.InOrder(
-			client.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
-			client.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			client.EXPECT().Clone(c.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
-			client.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
 
 		// port forwarding rules
 		gomock.InOrder(
-			client.EXPECT().Describe(config.VMName).Return(c.DescribeResponse{}, nil).Times(1),
-			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
-			client.EXPECT().
+			ankaClient.EXPECT().Describe(config.VMName).Return(client.DescribeResponse{}, nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().
 				Modify(clonedShowResponse.Name, "add", "port-forwarding", "--host-port", strconv.Itoa(config.PortForwardingRules[0].PortForwardingHostPort), "--guest-port", strconv.Itoa(config.PortForwardingRules[0].PortForwardingGuestPort), "rule1").
 				Return(nil).
 				Times(1),
@@ -408,8 +431,8 @@ func TestCloneVMRun(t *testing.T) {
 
 		// hwuuid
 		gomock.InOrder(
-			client.EXPECT().Stop(stopParams).Return(nil).Times(1),
-			client.EXPECT().Modify(clonedShowResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID).Return(nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID).Return(nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -467,15 +490,14 @@ func TestCloneVMRun(t *testing.T) {
 		step.vmName = config.VMName
 
 		state.Put("vm_name", step.vmName)
-		state.Put("client", client)
 		state.Put("config", &config)
 
 		gomock.InOrder(
-			client.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
-			client.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			client.EXPECT().Clone(c.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
-			client.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
-			client.EXPECT().Describe(config.VMName).Return(clonedDescribeResponse, nil).Times(1),
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Describe(config.VMName).Return(clonedDescribeResponse, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}

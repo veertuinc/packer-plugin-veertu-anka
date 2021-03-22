@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/groob/plist"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
@@ -16,10 +18,15 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/pathing"
 )
 
+var (
+	random  *rand.Rand
+	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+)
+
 // InstallAppPlist is a list of variables that comes from the installer app
 type InstallAppPlist struct {
-	OSVersion         string `plist:"DTPlatformVersion"`
-	OSPlatformVersion string `plist:"CFBundleShortVersionString"`
+	OSVersion      string `plist:"DTPlatformVersion"`
+	BundlerVersion string `plist:"CFBundleShortVersionString"`
 }
 
 // Util defines everything this utility can do
@@ -27,6 +34,7 @@ type Util interface {
 	ConfigTmpDir() (string, error)
 	ConvertDiskSizeToBytes(diskSize string) (uint64, error)
 	ObtainMacOSVersionFromInstallerApp(path string) (InstallAppPlist, error)
+	RandSeq(n int) string
 	StepError(ui packer.Ui, state multistep.StateBag, err error) multistep.StepAction
 }
 
@@ -140,4 +148,15 @@ func (u *AnkaUtil) ConfigTmpDir() (string, error) {
 
 	log.Printf("Set Packer temp dir to %s", td)
 	return td, nil
+}
+
+func (u *AnkaUtil) RandSeq(n int) string {
+	random = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[random.Intn(len(letters))]
+	}
+
+	return string(b)
 }
