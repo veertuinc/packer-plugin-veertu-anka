@@ -4,10 +4,15 @@ import (
 	"bytes"
 	"context"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
+)
+
+var (
+	darwinBuffer, osBuffer bytes.Buffer
 )
 
 type StepSetGeneratedData struct {
@@ -24,12 +29,12 @@ func (s *StepSetGeneratedData) Run(_ context.Context, state multistep.StateBag) 
 	darwinVersion := client.RunParams{
 		Command: []string{"/usr/bin/uname", "-r"},
 		VMName:  s.vmName,
-		Stdout:  &bytes.Buffer{},
+		Stdout:  &darwinBuffer,
 	}
 	osVersion := client.RunParams{
 		Command: []string{"/usr/bin/sw_vers", "-productVersion"},
 		VMName:  s.vmName,
-		Stdout:  &bytes.Buffer{},
+		Stdout:  &osBuffer,
 	}
 
 	_, err := s.client.Run(darwinVersion)
@@ -43,8 +48,8 @@ func (s *StepSetGeneratedData) Run(_ context.Context, state multistep.StateBag) 
 	}
 
 	s.GeneratedData.Put("VMName", s.vmName)
-	s.GeneratedData.Put("OSVersion", osVersion.Stdout)
-	s.GeneratedData.Put("DarwinVersion", darwinVersion.Stdout)
+	s.GeneratedData.Put("OSVersion", strings.TrimSpace(osBuffer.String()))
+	s.GeneratedData.Put("DarwinVersion", strings.TrimSpace(darwinBuffer.String()))
 
 	return multistep.ActionContinue
 }

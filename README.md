@@ -29,57 +29,47 @@ Packer Version | Veertu Anka Plugin Version
 
 ## Usage
 
-The most basic json file you can build from is:
+The most basic pkr.hcl file you can build from is:
 
-```json
-{
-  "builders": [
-    {
-      "installer_app": "/Applications/Install macOS Big Sur.app",
-      "type": "veertu-anka-vm-create",
-      "vm_name": "macos-big-sur"
-    }
-  ],
-  "post-processors": [
-    {
-      "type": "veertu-anka-registry-push",
-      "tag": "latest"
-    }
+```hcl
+source "veertu-anka-vm-create" "anka-packer-base-macos" {
+  installer_app = "/Applications/Install macOS Big Sur.app/"
+  vm_name = "anka-packer-base-macos"
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-create.anka-packer-base-macos"
+  ]
+
+  post-processor "veertu-anka-registry-push" {
+    tag = "veertu-registry-push-test"
+  }
+}
+```
+
+This will create a base VM template using the `.app` you specified in `installer_app` with a name like `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the `veertu-registry-push-test` tag.
+
+> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, defaults will be used.
+
+You can also skip the creation of the base VM template and use an existing VM template:
+
+```hcl
+source "veertu-anka-vm-clone" "anka-packer-from-source" { 
+  vm_name = "anka-packer-from-source"
+  source_vm_name = "anka-packer-base-macos"
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.anka-packer-from-source",
   ]
 }
 ```
 
-This will create a base VM template using the `.app` you specified in `installer_app` with a name like `anka-packer-base-{macOSVersion}`. Once the base VM template is created, it will create a clone from it (that shares the underlying layers from the base VM template, minimizing the amount of disk space used). Once the VM has been successfully created, it will push that VM to your default registry with the `latest` tag.
+Or, you can utilize the `variable` blocks and assign them values using the command line `-var foo=bar` or within `.pkrvars.hcl` files or as environment variables `PKR_VAR_foo=bar`. https://www.packer.io/docs/templates/hcl_templates/variables#assigning-values-to-build-variables
 
-> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, defaults will be used.
-
-You can also skip the creation of the base VM template and use an existing VM template (`10.15.6`):
-
-```json
-{
-  "provisioners": [
-    {
-      "type": "shell",
-      "inline": [
-        "sleep 5",
-        "echo hello world",
-        "echo llamas rock"
-      ]
-    }
-  ],
-  "builders": [{
-    "type": "veertu-anka-vm-clone",
-    "source_vm_name": "10.15.6",
-    "vm_name": "macos-from-source_10.15.6"
-  }]
-}
-```
-
-Or, create a variable inside for the `source_vm_name` and then run: `packer build -var 'source_vm_name=10.15.6' examples/macos-catalina-existing.json`.
-
-> The `installer_app` is ignored if you've specified `source_vm_name` and it does not exist already
-
-This will clone `10.15.6` to a new VM and, if there are differences from the base VM, modify vCPU, RAM, and DISK.
+This will clone `anka-packer-base-macos` to a new VM and, if there are differences from the base VM, modify vCPU, RAM, and DISK.
 
 > Check out the [examples directory](./examples) to see how port-forwarding and other options are used
 
@@ -113,7 +103,7 @@ The time to wait before running packer provisioner commands, defaults to `10s`.
 
 * `vcpu_count` (String)
 
-> This chnage gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
 
 The number of vCPU cores, defaults to `2`.
 
@@ -131,22 +121,35 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
 > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
 
-```json
-  "builders": [{
-    "type": "veertu-anka-vm-clone",
-    "source_vm_name": "anka-packer-base-10.15.7",
-    "port_forwarding_rules": [
-      {
-        "port_forwarding_guest_port": 80,
-        "port_forwarding_host_port": 12345,
-        "port_forwarding_rule_name": "website"
-      },
-      {
-        "port_forwarding_guest_port": 8080
-      }
-    ],
-    "vm_name": "macos-from-packer-base_10.15.7"
-  }]
+```hcl
+source "veertu-anka-vm-clone" "anka-packer-from-source-with-port-rules" {
+  vm_name = "anka-packer-from-source-with-port-rules"
+  source_vm_name = "anka-packer-base-macos"
+  port_forwarding_rules = [
+    {
+      port_forwarding_guest_port = 80
+      port_forwarding_host_port = 12345
+      port_forwarding_rule_name = "website"
+    },
+    {
+      port_forwarding_guest_port = 8080
+    }
+  ]
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.anka-packer-from-source-with-port-rules",
+  ]
+
+  provisioner "shell" {
+    inline = [
+      "sleep 5",
+      "echo hello world",
+      "echo llamas rock"
+    ]
+  }
+}
 ```
 
 * `ram_size` (String)
@@ -197,7 +200,7 @@ Path to your node certificate (if certificate authority is enabled).
 
 * `vcpu_count` (String)
 
-> This chnage gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
 
 The number of vCPU cores, defaults to `2`.
 
@@ -223,22 +226,35 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
 > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
 
-```json
-  "builders": [{
-    "type": "veertu-anka-vm-clone",
-    "source_vm_name": "anka-packer-base-10.15.7",
-    "port_forwarding_rules": [
-      {
-        "port_forwarding_guest_port": 80,
-        "port_forwarding_host_port": 12345,
-        "port_forwarding_rule_name": "website"
-      },
-      {
-        "port_forwarding_guest_port": 8080
-      }
-    ],
-    "vm_name": "macos-from-packer-base_10.15.7"
-  }]
+```hcl
+source "veertu-anka-vm-clone" "anka-packer-from-source-with-port-rules" {
+  vm_name = "anka-packer-from-source-with-port-rules"
+  source_vm_name = "anka-packer-base-macos"
+  port_forwarding_rules = [
+    {
+      port_forwarding_guest_port = 80
+      port_forwarding_host_port = 12345
+      port_forwarding_rule_name = "website"
+    },
+    {
+      port_forwarding_guest_port = 8080
+    }
+  ]
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.anka-packer-from-source-with-port-rules",
+  ]
+
+  provisioner "shell" {
+    inline = [
+      "sleep 5",
+      "echo hello world",
+      "echo llamas rock"
+    ]
+  }
+}
 ```
 
 * `ram_size` (String)
@@ -337,29 +353,28 @@ The variables we expose are:
 * `DarwinVersion`: Darwin version that is compatible with the current OS version
   * eg. 19.6.0
 
-```json
-{
-  "variables": {
-    "source_vm_name": "anka-packer-base-11.2-16.4.06"
-  },
-  "builders": [{
-    "type": "",
-    "source_vm_name": "{{ user `source_vm_name` }}",
-    "vm_name": "anka-macos-from-{{ user `source_vm_name` }}"
-  }],
-  "provisioners": [
-    {
-      "type": "shell",
-      "environment_vars": [
-        "VMNAME={{ build `VMName`}}",
-        "OSVERSION={{ build `OSVersion` }}",
-        "DARWINVERSION={{ build `DarwinVersion` }}"
-      ],
-      "inline": [
-        "echo $VMNAME was cloned with Mac $OSVERSION and compatible Darwin Version $DARWINVERSION"
-      ]
-    }
+```hcl
+locals {
+  source_vm_name = "anka-packer-base-11.2-16.4.06"
+}
+
+source "veertu-anka-vm-clone" "anka-macos-from-source" {
+  "source_vm_name": "${local.source_vm_name}",
+  "vm_name": "anka-macos-from-source"
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.anka-macos-from-source"
   ]
+
+  provisioner "shell" {
+    inline = [
+      "echo vm_name is ${build.VMName}",
+      "echo os_version is ${build.OSVersion}",
+      "echo darwin_version is ${build.DarwinVersion}"
+    ]
+  }
 }
 ```
 
@@ -389,7 +404,7 @@ anka registry add <registry_name> <registry_url>
 
 -or-
 
-You can setup the `create-from-installer-with-post-processing.json` with the correct registry values and update the make target `packer-test` to use that json file and run:
+You can setup the `create-from-installer-with-post-processing.pkr.hcl` with the correct registry values and update the make target `packer-test` to use that .pkr.hcl file and run:
 
 ```bash
 make packer-test

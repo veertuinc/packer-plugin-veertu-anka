@@ -136,7 +136,7 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	return &Artifact{
 		vmId:      descr.UUID,
 		vmName:    descr.Name,
-		StateData: map[string]interface{}{"generated_data": state.Get("generated_data")},
+		StateData: map[string]interface{}{"generated_data": generatedData.State.Get("generated_data")},
 	}, nil
 }
 
