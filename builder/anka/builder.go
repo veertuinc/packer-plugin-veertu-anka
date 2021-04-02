@@ -67,7 +67,6 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 	}
 
 	steps = append(steps,
-		&StepSetHyperThreading{},
 		&StepStartVM{},
 		&communicator.StepConnect{
 			Config: &b.config.Comm,

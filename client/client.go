@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	statusOK    = "OK"
-	statusERROR = "ERROR"
+	statusOK = "OK"
 )
 
 type Client interface {

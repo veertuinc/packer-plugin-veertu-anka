@@ -393,7 +393,15 @@ mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mock
 To test a basic vm creation, run:
 
 ```bash
-make packer-test
+make anka.test
+```
+
+-or-
+
+with packer directly:
+
+```bash
+packer build examples/create-from-installer.pkr.hcl
 ```
 
 To test the post processor you will need an active vpn connection that can reach an anka registry. You can setup an anka registry by either adding the registry locally with:
@@ -407,7 +415,7 @@ anka registry add <registry_name> <registry_url>
 You can setup the `create-from-installer-with-post-processing.pkr.hcl` with the correct registry values and update the make target `packer-test` to use that .pkr.hcl file and run:
 
 ```bash
-make packer-test
+make anka.test
 ```
 
 [Packer Builder]: https://www.packer.io/docs/extending/custom-builders.html

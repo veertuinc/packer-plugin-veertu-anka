@@ -32,7 +32,8 @@ func runCommandStreamer(outputStreamer chan string, args ...string) (MachineRead
 		cmd.Stderr = cmd.Stdout
 	}
 
-	if err = cmd.Start(); err != nil {
+	err = cmd.Start()
+	if err != nil {
 		return MachineReadableOutput{}, err
 	}
 
@@ -51,7 +52,9 @@ func runCommandStreamer(outputStreamer chan string, args ...string) (MachineRead
 	if scannerErr == nil {
 		return MachineReadableOutput{}, errors.New("missing machine readable output")
 	}
-	if _, ok := scannerErr.(customErr); !ok {
+
+	_, ok := scannerErr.(customErr)
+	if !ok {
 		return MachineReadableOutput{}, err
 	}
 
@@ -64,7 +67,8 @@ func runCommandStreamer(outputStreamer chan string, args ...string) (MachineRead
 
 	cmd.Wait()
 
-	if err = parsed.GetError(); err != nil {
+	err = parsed.GetError()
+	if err != nil {
 		return MachineReadableOutput{}, err
 	}
 

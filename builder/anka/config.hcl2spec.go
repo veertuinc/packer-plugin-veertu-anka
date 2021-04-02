@@ -87,8 +87,6 @@ type FlatConfig struct {
 	PortForwardingRules       []FlatPortForwardingRule `mapstructure:"port_forwarding_rules,omitempty" cty:"port_forwarding_rules" hcl:"port_forwarding_rules"`
 	HWUUID                    *string                  `mapstructure:"hw_uuid,omitempty" cty:"hw_uuid" hcl:"hw_uuid"`
 	BootDelay                 *string                  `mapstructure:"boot_delay" cty:"boot_delay" hcl:"boot_delay"`
-	EnableHtt                 *bool                    `mapstructure:"enable_htt" cty:"enable_htt" hcl:"enable_htt"`
-	DisableHtt                *bool                    `mapstructure:"disable_htt" cty:"disable_htt" hcl:"disable_htt"`
 	UseAnkaCP                 *bool                    `mapstructure:"use_anka_cp" cty:"use_anka_cp" hcl:"use_anka_cp"`
 	StopVM                    *bool                    `mapstructure:"stop_vm" cty:"stop_vm" hcl:"stop_vm"`
 }
@@ -182,8 +180,6 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"port_forwarding_rules":        &hcldec.BlockListSpec{TypeName: "port_forwarding_rules", Nested: hcldec.ObjectSpec((*FlatPortForwardingRule)(nil).HCL2Spec())},
 		"hw_uuid":                      &hcldec.AttrSpec{Name: "hw_uuid", Type: cty.String, Required: false},
 		"boot_delay":                   &hcldec.AttrSpec{Name: "boot_delay", Type: cty.String, Required: false},
-		"enable_htt":                   &hcldec.AttrSpec{Name: "enable_htt", Type: cty.Bool, Required: false},
-		"disable_htt":                  &hcldec.AttrSpec{Name: "disable_htt", Type: cty.Bool, Required: false},
 		"use_anka_cp":                  &hcldec.AttrSpec{Name: "use_anka_cp", Type: cty.Bool, Required: false},
 		"stop_vm":                      &hcldec.AttrSpec{Name: "stop_vm", Type: cty.Bool, Required: false},
 	}

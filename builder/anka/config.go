@@ -56,11 +56,9 @@ type Config struct {
 
 	PortForwardingRules []PortForwardingRule `mapstructure:"port_forwarding_rules,omitempty"`
 
-	HWUUID     string `mapstructure:"hw_uuid,omitempty"`
-	BootDelay  string `mapstructure:"boot_delay"`
-	EnableHtt  bool   `mapstructure:"enable_htt"`
-	DisableHtt bool   `mapstructure:"disable_htt"`
-	UseAnkaCP  bool   `mapstructure:"use_anka_cp"`
+	HWUUID    string `mapstructure:"hw_uuid,omitempty"`
+	BootDelay string `mapstructure:"boot_delay"`
+	UseAnkaCP bool   `mapstructure:"use_anka_cp"`
 
 	StopVM bool `mapstructure:"stop_vm"`
 
