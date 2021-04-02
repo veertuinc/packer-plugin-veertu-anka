@@ -59,7 +59,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		assert.Equal(t, mockui.SayMessages[0].Message, "Pushing template to Anka Registry as foo with tag registry-push")
 
-		pp.PostProcess(context.Background(), ui, artifact)
+		_, _, _, err := pp.PostProcess(context.Background(), ui, artifact)
+		assert.Nil(t, err)
 	})
 
 	t.Run("with force push to registry but no existing templates", func(t *testing.T) {
@@ -101,7 +102,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		assert.Equal(t, mockui.SayMessages[0].Message, "Pushing template to Anka Registry as foo with tag registry-push")
 
-		pp.PostProcess(context.Background(), ui, artifact)
+		_, _, _, err := pp.PostProcess(context.Background(), ui, artifact)
+		assert.Nil(t, err)
 	})
 
 	t.Run("with force push to registry and existing templates", func(t *testing.T) {
@@ -153,6 +155,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		assert.Equal(t, mockui.SayMessages[1].Message, "Found existing template foo_id on registry that matches name 'foo'")
 		assert.Equal(t, mockui.SayMessages[2].Message, "Reverted latest tag for template 'foo_id' on registry")
 
-		pp.PostProcess(context.Background(), ui, artifact)
+		_, _, _, err = pp.PostProcess(context.Background(), ui, artifact)
+		assert.Nil(t, err)
 	})
 }

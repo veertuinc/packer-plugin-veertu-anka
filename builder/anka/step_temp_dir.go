@@ -39,6 +39,9 @@ func (s *StepTempDir) Run(ctx context.Context, state multistep.StateBag) multist
 	}
 
 	tempdir, err = ioutil.TempDir(configTmpDir, "packer-anka")
+	if err != nil {
+		return onError(err)
+	}
 
 	s.tempDir = tempdir
 	state.Put("temp_dir", s.tempDir)
