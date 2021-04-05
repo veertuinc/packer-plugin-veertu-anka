@@ -3,6 +3,7 @@ package anka
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
@@ -10,11 +11,12 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/multistep/commonsteps"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/packerbuilderdata"
 	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	// "golang.org/x/mod/semver"
+	"github.com/veertuinc/packer-builder-veertu-anka/util"
 )
 
-// The unique ID for this builder.
+// BuilderId is the unique ID for this builder.
 const BuilderId = "packer.veertu-anka"
 
 // Builder represents a Packer Builder.
@@ -24,29 +26,47 @@ type Builder struct {
 }
 
 // Prepare processes the build configuration parameters.
-func (b *Builder) Prepare(raws ...interface{}) (params []string, warns []string, retErr error) {
+func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
+	generatedData := []string{"VMName", "OSVersion", "DarwinVersion"}
+
 	c, errs := NewConfig(raws...)
 	if errs != nil {
 		return nil, nil, errs
 	}
 	b.config = c
-	return nil, nil, nil
+
+	return generatedData, nil, nil
 }
 
 // Run executes an Anka Packer build and returns a packer.Artifact
 func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (packer.Artifact, error) {
-	client := &client.Client{}
+	ankaClient := &client.AnkaClient{}
+	util := &util.AnkaUtil{}
 
-	version, err := client.Version()
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("[DEBUG] Anka version: %s version %s (build %s)", version.Body.Product, version.Body.Version, version.Body.Build)
+	// Setup the state bag and initial state for the steps
+	state := new(multistep.BasicStateBag)
+	state.Put("config", b.config)
+	state.Put("hook", hook)
+	state.Put("ui", ui)
+	state.Put("client", ankaClient)
+	state.Put("util", util)
+
+	generatedData := &packerbuilderdata.GeneratedData{State: state}
 
 	steps := []multistep.Step{
 		&StepTempDir{},
-		&StepCreateVM{},
-		&StepSetHyperThreading{},
+	}
+
+	switch b.config.PackerConfig.PackerBuilderType {
+	case "veertu-anka-vm-create":
+		steps = append(steps, &StepCreateVM{})
+	case "veertu-anka-vm-clone":
+		steps = append(steps, &StepCloneVM{})
+	default:
+		return nil, errors.New("wrong type for builder. must be of type clone or create")
+	}
+
+	steps = append(steps,
 		&StepStartVM{},
 		&communicator.StepConnect{
 			Config: &b.config.Comm,
@@ -57,42 +77,69 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 				return "", errors.New("No host implemented for anka builder (which is ok)")
 			},
 		},
+		&StepSetGeneratedData{
+			GeneratedData: generatedData,
+		},
 		&commonsteps.StepProvision{},
-	}
-
-	// Setup the state bag and initial state for the steps
-	state := new(multistep.BasicStateBag)
-	state.Put("config", b.config)
-	state.Put("hook", hook)
-	state.Put("ui", ui)
-	state.Put("client", client)
+	)
 
 	// Run!
 	b.runner = commonsteps.NewRunner(steps, b.config.PackerConfig, ui)
 	b.runner.Run(ctx, state)
 
 	// If there was an error, return that
-	if rawErr, ok := state.GetOk("error"); ok {
+	rawErr, ok := state.GetOk("error")
+	if ok {
 		return nil, rawErr.(error)
 	}
 
 	// If it was cancelled, then just return
-	if _, ok := state.GetOk(multistep.StateCancelled); ok {
+	_, ok = state.GetOk(multistep.StateCancelled)
+	if ok {
 		return nil, nil
 	}
 
 	// Check we can describe the VM
-	descr, err := client.Describe(state.Get("vm_name").(string))
+	descr, err := ankaClient.Describe(state.Get("vm_name").(string))
 	if err != nil {
 		return nil, err
 	}
+
+	license, err := ankaClient.License()
+	if err != nil {
+		return nil, err
+	}
+
+	if license.LicenseType == "com.veertu.anka.develop" {
+		log.Printf("developer license present, can only stop vms: https://ankadocs.veertu.com/docs/licensing/#anka-license-feature-differences")
+		b.config.StopVM = true
+	}
+
+	if b.config.StopVM {
+		ui.Say(fmt.Sprintf("Stopping VM %s", descr.Name))
+
+		err := ankaClient.Stop(client.StopParams{VMName: descr.Name})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		ui.Say(fmt.Sprintf("Suspending VM %s", descr.Name))
+
+		err := ankaClient.Suspend(client.SuspendParams{VMName: descr.Name})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// No errors, must've worked
 	return &Artifact{
-		vmId:   descr.UUID,
-		vmName: descr.Name,
+		vmId:      descr.UUID,
+		vmName:    descr.Name,
+		StateData: map[string]interface{}{"generated_data": generatedData.State.Get("generated_data")},
 	}, nil
 }
 
+// ConfigSpec returns an HCL spec of the config
 func (b *Builder) ConfigSpec() hcldec.ObjectSpec {
 	return b.config.FlatMapstructure().HCL2Spec()
 }
