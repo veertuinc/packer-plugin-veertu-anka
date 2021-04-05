@@ -77,10 +77,10 @@ func (b *Builder) Run(ctx context.Context, ui packer.Ui, hook packer.Hook) (pack
 				return "", errors.New("No host implemented for anka builder (which is ok)")
 			},
 		},
-		&commonsteps.StepProvision{},
 		&StepSetGeneratedData{
 			GeneratedData: generatedData,
 		},
+		&commonsteps.StepProvision{},
 	)
 
 	// Run!
