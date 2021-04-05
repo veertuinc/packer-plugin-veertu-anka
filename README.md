@@ -408,7 +408,7 @@ anka registry add <registry_name> <registry_url>
 
 -or-
 
-You can setup the `create-from-installer-with-post-processing.pkr.hcl` with the correct registry values and update the make target `packer-test` to use that .pkr.hcl file and run:
+You can setup the `create-from-installer-with-post-processing.pkr.hcl` with the correct registry values and update the make target `anka.test` to use that .pkr.hcl file and run:
 
 ```bash
 make anka.test

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func runCommand(args ...string) (MachineReadableOutput, error) {
+func runAnkaCommand(args ...string) (MachineReadableOutput, error) {
 	return runCommandStreamer(nil, args...)
 }
 
@@ -104,5 +104,5 @@ func runRegistryCommand(registryParams RegistryParams, args ...string) (MachineR
 
 	cmdArgs = append(cmdArgs, args...)
 
-	return runCommand(cmdArgs...)
+	return runAnkaCommand(cmdArgs...)
 }

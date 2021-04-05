@@ -22,7 +22,7 @@ type CloneParams struct {
 }
 
 func (c *AnkaClient) Clone(params CloneParams) error {
-	_, err := runCommand("clone", params.SourceUUID, params.VMName)
+	_, err := runAnkaCommand("clone", params.SourceUUID, params.VMName)
 	if err != nil {
 		merr, ok := err.(MachineReadableError)
 		if ok {
@@ -43,7 +43,7 @@ type CopyParams struct {
 }
 
 func (c *AnkaClient) Copy(params CopyParams) error {
-	_, err := runCommand("cp", "-af", params.Src, params.Dst)
+	_, err := runAnkaCommand("cp", "-pRLf", params.Src, params.Dst)
 	return err
 }
 
@@ -104,7 +104,7 @@ func (c *AnkaClient) Delete(params DeleteParams) error {
 
 	args = append(args, params.VMName)
 
-	_, err := runCommand(args...)
+	_, err := runAnkaCommand(args...)
 	return err
 }
 
@@ -172,7 +172,7 @@ type DescribeResponse struct {
 func (c *AnkaClient) Describe(vmName string) (DescribeResponse, error) {
 	var response DescribeResponse
 
-	output, err := runCommand("describe", vmName)
+	output, err := runAnkaCommand("describe", vmName)
 	if err != nil {
 		return response, err
 	}
@@ -210,7 +210,7 @@ type LicenseResponse struct {
 func (c *AnkaClient) License() (LicenseResponse, error) {
 	var response LicenseResponse
 
-	output, err := runCommand("license", "show")
+	output, err := runAnkaCommand("license", "show")
 	if err != nil {
 		return response, err
 	}
@@ -228,7 +228,7 @@ func (c *AnkaClient) Modify(vmName string, command string, property string, flag
 	ankaCommand := []string{"modify", vmName, command, property}
 	ankaCommand = append(ankaCommand, flags...)
 
-	output, err := runCommand(ankaCommand...)
+	output, err := runAnkaCommand(ankaCommand...)
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (sr ShowResponse) IsStopped() bool {
 func (c *AnkaClient) Show(vmName string) (ShowResponse, error) {
 	var response ShowResponse
 
-	output, err := runCommand("show", vmName)
+	output, err := runAnkaCommand("show", vmName)
 	if err != nil {
 		merr, ok := err.(MachineReadableError)
 		if ok {
@@ -311,7 +311,7 @@ type StartParams struct {
 }
 
 func (c *AnkaClient) Start(params StartParams) error {
-	_, err := runCommand("start", params.VMName)
+	_, err := runAnkaCommand("start", params.VMName)
 	return err
 }
 
@@ -332,7 +332,7 @@ func (c *AnkaClient) Stop(params StopParams) error {
 
 	args = append(args, params.VMName)
 
-	_, err := runCommand(args...)
+	_, err := runAnkaCommand(args...)
 	return err
 }
 
@@ -342,7 +342,7 @@ type SuspendParams struct {
 }
 
 func (c *AnkaClient) Suspend(params SuspendParams) error {
-	_, err := runCommand("suspend", params.VMName)
+	_, err := runAnkaCommand("suspend", params.VMName)
 	return err
 }
 
@@ -350,7 +350,7 @@ func (c *AnkaClient) Suspend(params SuspendParams) error {
 func (c *AnkaClient) UpdateAddons(vmName string) error {
 	args := []string{"start", "--update-addons", vmName}
 
-	_, err := runCommand(args...)
+	_, err := runAnkaCommand(args...)
 	return err
 }
 
