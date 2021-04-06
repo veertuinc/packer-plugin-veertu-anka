@@ -126,6 +126,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 
 	if p.config.PackerForce {
 		var id string
+		var latestTag string
 
 		templates, err := p.client.RegistryList(registryParams)
 		if err != nil {
@@ -135,12 +136,13 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		for i := 0; i < len(templates); i++ {
 			if templates[i].Name == remoteVMName {
 				id = templates[i].ID
+				latestTag = templates[i].Latest
 				ui.Say(fmt.Sprintf("Found existing template %s on registry that matches name '%s'", id, remoteVMName))
 				break
 			}
 		}
 
-		if id != "" {
+		if id != "" && latestTag == remoteTag {
 			err = p.client.RegistryRevert(registryParams.RegistryURL, id)
 			if err != nil {
 				return nil, false, false, err
