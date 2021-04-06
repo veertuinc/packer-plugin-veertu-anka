@@ -79,6 +79,24 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		return nil, false, false, err
 	}
 
+	if p.config.RegistryURL == "" {
+		reposList, err := p.client.RegistryListRepos()
+		if err != nil {
+			return nil, false, false, err
+		}
+
+		if p.config.RegistryName == "" {
+			p.config.RegistryName = reposList.Default
+		}
+
+		remote, ok := reposList.Remotes[p.config.RegistryName]
+		if !ok {
+			return nil, false, false, fmt.Errorf("Could not find configuration for registry '%s'", p.config.RegistryName)
+		}
+
+		p.config.RegistryURL = fmt.Sprintf("%s://%s:%s", remote.Scheme, remote.Host, remote.Port)
+	}
+
 	registryParams := client.RegistryParams{
 		RegistryName: p.config.RegistryName,
 		RegistryURL:  p.config.RegistryURL,

@@ -48,6 +48,44 @@ func (c *AnkaClient) RegistryList(registryParams RegistryParams) ([]RegistryList
 	return response, nil
 }
 
+type RegistryRemote struct {
+	Default bool   `json:"default"`
+	Host    string `json:"host"`
+	Scheme  string `json:"scheme"`
+	Port    string `json:"port"`
+}
+
+type RegistryListReposResponse struct {
+	Default string
+	Remotes map[string]RegistryRemote
+}
+
+func (c *AnkaClient) RegistryListRepos() (RegistryListReposResponse, error) {
+	var response RegistryListReposResponse
+
+	output, err := runRegistryCommand(RegistryParams{}, "list-repos")
+	if err != nil {
+		return response, err
+	}
+	if output.Status != "OK" {
+		log.Print("Error executing 'registry list-repos' command: ", output.ExceptionType, " ", output.Message)
+		return response, fmt.Errorf(output.Message)
+	}
+
+	err = json.Unmarshal(output.Body, &response.Remotes)
+	if err != nil {
+		return response, err
+	}
+
+	for name, remote := range response.Remotes {
+		if remote.Default {
+			response.Default = name
+		}
+	}
+
+	return response, nil
+}
+
 type RegistryPullParams struct {
 	VMID   string
 	Tag    string
