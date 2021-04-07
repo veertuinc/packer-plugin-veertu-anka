@@ -386,6 +386,12 @@ mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mock
 
 ### Testing
 
+GO tests are available running
+
+```bash
+make go.test
+```
+
 To test a basic vm creation, run:
 
 ```bash
