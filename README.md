@@ -72,15 +72,15 @@ build {
 This will check to see if the VM template/tag exists locally, and if not, pull it from the registry:
 
 ```bash
-❯ PACKER_LOG=1 packer build -var 'source_vm_name=anka-packer-base-macos' examples/clone-existing-with-port-forwarding-rules.pkr.hcl
+❯ PKR_VAR_source_vm_tag="v1" PACKER_LOG=1 packer build -var 'source_vm_name=anka-packer-base-macos' examples/clone-existing-with-port-forwarding-rules.pkr.hcl
 . . .
 2021/04/07 14:11:52 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:52 Searching for anka-packer-base-macos locally...
 2021/04/07 14:11:52 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:52 Executing anka --machine-readable show anka-packer-base-macos
 2021/04/07 14:11:53 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:53 Could not find anka-packer-base-macos locally, looking in anka registry...
-2021/04/07 14:11:53 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:53 Executing anka --machine-readable registry pull --tag latest anka-packer-base-macos
+2021/04/07 14:11:53 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:53 Executing anka --machine-readable registry pull --tag v1 anka-packer-base-macos
 ```
 
-> Within your `.pkrvars.hcl` files, you can utilize `variable` blocks and then assign them values using the command line `packer build -var foo=bar` or as environment variables `PKR_VAR_foo=bar`. https://www.packer.io/docs/templates/hcl_templates/variables#assigning-values-to-build-variables
+> Within your `.pkrvars.hcl` files, you can utilize `variable` blocks and then assign them values using the command line `packer build -var 'foo=bar'` or as environment variables `PKR_VAR_foo=bar` https://www.packer.io/docs/templates/hcl_templates/variables#assigning-values-to-build-variables
 
 This will clone `anka-packer-base-macos` to a new VM and, if there are differences from the base VM, modify vCPU, RAM, and DISK.
 
