@@ -1,6 +1,11 @@
+variable "source_vm_name" {
+  type = string
+  default = "anka-packer-base-macos"
+}
+
 source "veertu-anka-vm-clone" "anka-packer-from-source-with-port-rules" {
   vm_name = "anka-packer-from-source-with-port-rules"
-  source_vm_name = "anka-packer-base-macos"
+  source_vm_name = "${var.source_vm_name}"
   port_forwarding_rules {
     port_forwarding_guest_port = 80
     port_forwarding_host_port = 12345
