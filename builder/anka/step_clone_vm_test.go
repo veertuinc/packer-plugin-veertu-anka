@@ -322,7 +322,6 @@ func TestCloneVMRun(t *testing.T) {
 		}
 		stopParams := client.StopParams{
 			VMName: clonedShowResponse.Name,
-			Force:  true,
 		}
 		runParams := client.RunParams{
 			VMName:  clonedShowResponse.Name,
@@ -404,7 +403,6 @@ func TestCloneVMRun(t *testing.T) {
 
 		stopParams := client.StopParams{
 			VMName: clonedShowResponse.Name,
-			Force:  true,
 		}
 
 		step.vmName = config.VMName

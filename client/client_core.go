@@ -242,13 +242,15 @@ func (c *AnkaClient) Modify(vmName string, command string, property string, flag
 
 // https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#run
 type RunParams struct {
-	VMName         string
-	Volume         string
-	Command        []string
-	Stdin          io.Reader
-	Stdout, Stderr io.Writer
-	Debug          bool
-	User           string
+	VMName            string
+	Volume            string
+	WaitForNetworking bool
+	WaitForTimeSync   bool
+	Command           []string
+	Stdin             io.Reader
+	Stdout, Stderr    io.Writer
+	Debug             bool
+	User              string
 }
 
 func (c *AnkaClient) Run(params RunParams) (int, error) {
@@ -280,6 +282,10 @@ func (sr ShowResponse) IsRunning() bool {
 
 func (sr ShowResponse) IsStopped() bool {
 	return sr.Status == "stopped"
+}
+
+func (sr ShowResponse) IsSuspended() bool {
+	return sr.Status == "suspended"
 }
 
 func (c *AnkaClient) Show(vmName string) (ShowResponse, error) {
@@ -331,8 +337,21 @@ func (c *AnkaClient) Stop(params StopParams) error {
 	}
 
 	args = append(args, params.VMName)
+	// Check if it's suspended, and do a run to start, then graceful stop
+	showResponse, err := c.Show(params.VMName)
+	if err != nil {
+		return err
+	}
+	if showResponse.IsSuspended() {
+		_, err = c.Run(RunParams{
+			VMName:            params.VMName,
+			WaitForNetworking: true,
+			WaitForTimeSync:   true,
+			Command:           []string{"true"},
+		})
+	}
 
-	_, err := runAnkaCommand(args...)
+	_, err = runAnkaCommand(args...)
 	return err
 }
 

@@ -39,6 +39,14 @@ func NewRunner(params RunParams) *Runner {
 		args = append(args, "-n")
 	}
 
+	if params.WaitForNetworking {
+		args = append(args, "--wait-network")
+	}
+
+	if params.WaitForTimeSync {
+		args = append(args, "--wait-time")
+	}
+
 	args = append(args, params.VMName)
 	args = append(args, "sh")
 
@@ -70,7 +78,7 @@ func (r *Runner) Start() error {
 
 	cmdString := strings.Join(r.params.Command, " ")
 
-	log.Print("Executing on sh: ", cmdString)
+	log.Print("Executing: ", cmdString)
 
 	_, err = stdin.Write([]byte(cmdString))
 	return err
@@ -79,7 +87,7 @@ func (r *Runner) Start() error {
 func (r *Runner) Wait() (int, error) {
 	err := r.cmd.Wait()
 
-	log.Printf("Command finished in %s with %v", time.Since(r.started), err)
+	log.Printf("Command finished in %s %v", time.Since(r.started), err)
 
 	return getExitCode(err), err
 }

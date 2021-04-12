@@ -170,7 +170,6 @@ func (s *StepCloneVM) Cleanup(state multistep.StateBag) {
 func (s *StepCloneVM) modifyVMResources(showResponse client.ShowResponse, config *Config, ui packer.Ui, util util.Util) error {
 	stopParams := client.StopParams{
 		VMName: showResponse.Name,
-		Force:  true,
 	}
 
 	if config.DiskSize != "" {
@@ -254,7 +253,6 @@ func (s *StepCloneVM) modifyVMResources(showResponse client.ShowResponse, config
 func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, config *Config, ui packer.Ui) error {
 	stopParams := client.StopParams{
 		VMName: showResponse.Name,
-		Force:  true,
 	}
 
 	if len(config.PortForwardingRules) > 0 {
