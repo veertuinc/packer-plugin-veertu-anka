@@ -3,9 +3,15 @@ variable "vm_name" {
   default = "anka-packer-base-macos"
 }
 
+variable "vcpu_count" {
+  type = string
+  default = ""
+}
+
 source "veertu-anka-vm-create" "anka-packer-base-macos" {
   installer_app = "/Applications/Install macOS Big Sur.app/"
   vm_name = "${var.vm_name}"
+  vcpu_count = "${var.vcpu_count}"
 }
 
 build {
@@ -15,7 +21,6 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sleep 5",
       "echo hello world",
       "echo llamas rock"
     ]

@@ -21,7 +21,6 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sleep 5",
       "echo hello world",
       "echo llamas rock"
     ]

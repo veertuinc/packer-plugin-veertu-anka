@@ -25,6 +25,8 @@ source "veertu-anka-vm-clone" "anka-packer-from-source-with-port-rules" {
   port_forwarding_rules {
     port_forwarding_guest_port = 8080
   }
+  vcpu_count = 8
+  ram_size = "10G"
 }
 
 build {
@@ -34,7 +36,6 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sleep 5",
       "echo hello world",
       "echo llamas rock"
     ]
