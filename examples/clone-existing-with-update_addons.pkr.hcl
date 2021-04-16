@@ -12,6 +12,7 @@ source "veertu-anka-vm-clone" "anka-packer-from-source-with-update_addons" {
   vm_name = "${var.vm_name}"
   source_vm_name = "${var.source_vm_name}"
   update_addons = true
+  stop_vm = true
 }
 
 build {

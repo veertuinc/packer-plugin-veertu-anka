@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -13,6 +14,7 @@ func runAnkaCommand(args ...string) (MachineReadableOutput, error) {
 }
 
 func runCommandStreamer(outputStreamer chan string, args ...string) (MachineReadableOutput, error) {
+
 	if outputStreamer != nil {
 		args = append([]string{"--debug"}, args...)
 	}
@@ -22,6 +24,15 @@ func runCommandStreamer(outputStreamer chan string, args ...string) (MachineRead
 	log.Printf("Executing anka %s", strings.Join(cmdArgs, " "))
 
 	cmd := exec.Command("anka", cmdArgs...)
+
+	for _, e := range os.Environ() { // Ensure that ANKA_ environment variables from the host are available when executing anka commands
+		pair := strings.SplitN(e, "=", 2)
+		key := pair[0]
+		val := pair[1]
+		if strings.HasPrefix(key, "ANKA_") || strings.HasPrefix(key, "PATH") {
+			cmd.Env = append([]string{key + "=" + val}, cmd.Env...)
+		}
+	}
 
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
