@@ -16,7 +16,7 @@ import (
 	"github.com/veertuinc/packer-builder-veertu-anka/util"
 )
 
-const defaultBootDelay = "10s"
+const defaultBootDelay = "7s"
 
 // PortForwardingRule defines the requirements for port forwarding
 type PortForwardingRule struct {

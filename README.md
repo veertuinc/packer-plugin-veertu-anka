@@ -112,7 +112,7 @@ Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. 
 
 * `boot_delay` (String)
 
-The time to wait before running packer provisioner commands, defaults to `10s`.
+The time to wait before running packer provisioner commands, defaults to `7s`.
 
 * `vcpu_count` (String)
 
@@ -199,7 +199,7 @@ Always pull the source VM from the registry. Defaults to false.
 
 * `boot_delay` (String)
 
-The time to wait before running packer provisioner commands, defaults to `10s`.
+The time to wait before running packer provisioner commands, defaults to `7s`.
 
 * `cacert` (String)
 
