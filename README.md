@@ -1,5 +1,7 @@
 # Packer Plugin for Anka
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb98bc92bc01409ca3951badb7a90fe4)](https://www.codacy.com/gh/veertuinc/packer-builder-veertu-anka/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=veertuinc/packer-builder-veertu-anka&amp;utm_campaign=Badge_Grade)
+
 This is a [Packer Builder] for building images that work with [Veertu Anka], a macOS virtualization tool.
 
 Note that this builder does not manage images. Once it creates an image, it is up to you to use it or delete it.
