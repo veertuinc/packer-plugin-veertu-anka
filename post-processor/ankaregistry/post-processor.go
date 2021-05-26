@@ -119,9 +119,9 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 	pushParams := client.RegistryPushParams{
 		Tag:         remoteTag,
 		Description: p.config.Description,
-		RemoteVM:    remoteVMName,
+		RemoteVM:    p.config.RemoteVM,
 		Local:       p.config.Local,
-		VMID:        artifact.Id(),
+		VMID:        artifact.String(),
 	}
 
 	if p.config.PackerForce {
