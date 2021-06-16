@@ -351,6 +351,9 @@ func (c *AnkaClient) Stop(params StopParams) error {
 			Command:           []string{"true"},
 		})
 	}
+	if err != nil {
+		return err
+	}
 
 	_, err = runAnkaCommand(args...)
 	return err
