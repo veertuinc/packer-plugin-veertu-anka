@@ -7,6 +7,8 @@ BIN := packer-plugin-veertu-anka
 
 .DEFAULT_GOAL := help
 
+all: lint go.lint go.hcl2spec clean go.build go.test anka.clean-images anka.clean-clones
+
 #help:	@ List available tasks on this project
 help:
 	@grep -h -E '[a-zA-Z\.\-]+:.*?@ .*$$' $(MAKEFILE_LIST) | sort | tr -d '#' | awk 'BEGIN {FS = ":.*?@ "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
