@@ -30,6 +30,7 @@ type Client interface {
 	Suspend(params SuspendParams) error
 	UpdateAddons(vmName string) error
 	Version() (VersionResponse, error)
+	FuseAvailable(vmName string) bool
 }
 
 type AnkaClient struct {

@@ -327,3 +327,17 @@ func (mr *MockClientMockRecorder) Version() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Version", reflect.TypeOf((*MockClient)(nil).Version))
 }
+
+// FuseAvailable mocks base method.
+func (m *MockClient) FuseAvailable(vmName string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FuseAvailable", vmName)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// FuseAvailable indicates an expected call of FuseAvailable.
+func (mr *MockClientMockRecorder) FuseAvailable(vmName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FuseAvailable", reflect.TypeOf((*MockClient)(nil).FuseAvailable), vmName)
+}
