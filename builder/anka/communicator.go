@@ -17,11 +17,12 @@ import (
 
 // Communicator initializes what is shared between anka and packer
 type Communicator struct {
-	Config  *Config
-	Client  client.Client
-	HostDir string
-	VMDir   string
-	VMName  string
+	Config        *Config
+	Client        client.Client
+	HostDir       string
+	VMDir         string
+	VMName        string
+	FuseAvailable bool
 }
 
 // Start runs the actual anka commands
@@ -57,8 +58,6 @@ func (c *Communicator) Start(ctx context.Context, remote *packer.RemoteCmd) erro
 func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error {
 	log.Printf("Uploading file to VM: %s", dst)
 
-	c.configureAnkaCP()
-
 	tempfile, err := ioutil.TempFile(c.HostDir, "upload")
 	if err != nil {
 		return err
@@ -78,7 +77,7 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 		_ = tempfile.Chmod((*fi).Mode())
 	}
 
-	if c.Config.UseAnkaCP {
+	if !c.FuseAvailable {
 		err = c.Client.Copy(client.CopyParams{
 			Src: tempfile.Name(),
 			Dst: c.VMName + ":" + dst,
@@ -98,9 +97,8 @@ func (c *Communicator) Upload(dst string, src io.Reader, fi *os.FileInfo) error 
 
 // UploadDir uploads the source directory to the destination
 func (c *Communicator) UploadDir(dst string, src string, exclude []string) error {
-	c.configureAnkaCP()
 
-	if !c.Config.UseAnkaCP {
+	if c.FuseAvailable {
 		td, err := ioutil.TempDir(c.HostDir, "dirupload")
 		if err != nil {
 			return err
@@ -195,8 +193,6 @@ func (c *Communicator) UploadDir(dst string, src string, exclude []string) error
 func (c *Communicator) Download(src string, dst io.Writer) error {
 	log.Printf("Downloading file from VM: %s", src)
 
-	c.configureAnkaCP()
-
 	tempfile, err := ioutil.TempFile(c.HostDir, "download")
 	if err != nil {
 		return err
@@ -205,7 +201,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 	defer os.Remove(tempfile.Name())
 	defer tempfile.Close()
 
-	if c.Config.UseAnkaCP {
+	if !c.FuseAvailable {
 		err := c.Client.Copy(client.CopyParams{
 			Src: c.VMName + ":" + src,
 			Dst: tempfile.Name(),
@@ -222,7 +218,7 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 		return err
 	}
 
-	if !c.Config.UseAnkaCP {
+	if c.FuseAvailable {
 		_, err := c.Client.Run(client.RunParams{
 			VMName:  c.VMName,
 			Command: []string{"cp", src, "./" + path.Base(tempfile.Name())},
@@ -240,9 +236,8 @@ func (c *Communicator) Download(src string, dst io.Writer) error {
 
 // DownloadDir copies the source directory to the destination
 func (c *Communicator) DownloadDir(src string, dst string, exclude []string) error {
-	c.configureAnkaCP()
 
-	if !c.Config.UseAnkaCP {
+	if c.FuseAvailable {
 		return errors.New("communicator.DownloadDir isn't implemented")
 	}
 
@@ -250,22 +245,4 @@ func (c *Communicator) DownloadDir(src string, dst string, exclude []string) err
 		Src: c.VMName + ":" + src,
 		Dst: dst,
 	})
-}
-
-func (c *Communicator) configureAnkaCP() {
-	if !c.Config.UseAnkaCP {
-		errFindingFUSE := c.findFUSE()
-		if errFindingFUSE != nil {
-			c.Config.UseAnkaCP = true
-		}
-	}
-}
-
-func (c *Communicator) findFUSE() error {
-	_, notFound := c.Client.Run(client.RunParams{
-		VMName:  c.VMName,
-		Command: []string{"kextstat | grep \"com.veertu.filesystems.vtufs\" &>/dev/null"},
-	})
-
-	return notFound
 }

@@ -18,11 +18,18 @@ func (s *StepConnectAnka) Run(ctx context.Context, state multistep.StateBag) mul
 	vmName := state.Get("vm_name").(string)
 
 	comm := &Communicator{
-		Config:  config,
-		Client:  client,
-		HostDir: tempDir,
-		VMDir:   "/packer-files",
-		VMName:  vmName,
+		Config:        config,
+		Client:        client,
+		HostDir:       tempDir,
+		VMDir:         "/packer-files",
+		VMName:        vmName,
+		FuseAvailable: false,
+	}
+
+	if config.UseAnkaCP {
+		comm.FuseAvailable = false
+	} else {
+		comm.FuseAvailable = client.FuseAvailable(vmName)
 	}
 
 	state.Put("communicator", comm)
