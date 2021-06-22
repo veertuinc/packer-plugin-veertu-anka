@@ -2,6 +2,8 @@ LATEST-GIT-SHA := $(shell git rev-parse HEAD)
 VERSION := $(shell cat VERSION)
 FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
 BIN := packer-plugin-veertu-anka
+ARCH := amd64
+OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 .PHONY: lint.golang lint.packer go.test anka.test anka.clean anka.clean-images
 
@@ -33,14 +35,21 @@ go.test:
 
 #go.hcl2spec:		@ Run `go generate` to generate hcl2 config specs
 go.hcl2spec:
-	GOOS=darwin GOBIN=$(shell pwd) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
-	GOOS=darwin PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
-	GOOS=darwin PATH="$(shell pwd):${PATH}" go generate post-processor/ankaregistry/post-processor.go
+	GOOS=$(OS_TYPE) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
+	GOOS=$(OS_TYPE) PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
+	GOOS=$(OS_TYPE) PATH="$(shell pwd):${PATH}" go generate post-processor/ankaregistry/post-processor.go
+
+build-linux:
+	GOOS=linux OS_TYPE=linux $(MAKE) go.build
+
+build-mac:
+	GOOS=darwin OS_TYPE=darwin $(MAKE) go.build
 
 #go.build:		@ Run `go build` to generate the binary
 go.build: $(BIN)
 $(BIN): go.hcl2spec
-	GOOS=darwin go build -ldflags="$(FLAGS)" -o $(BIN)
+	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o bin/$(BIN)_$(OS_TYPE)_$(ARCH)
+	chmod +x bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 
 #packer.install:		@ Copy the binary to the packer plugins folder
 packer.install: $(BIN)
