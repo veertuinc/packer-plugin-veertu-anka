@@ -10,7 +10,7 @@ BIN_FULL := bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 
 .DEFAULT_GOAL := help
 
-all: lint go.lint clean go.build go.test anka.clean-images anka.clean-clones uninstall
+all: lint go.lint clean go.hcl2spec go.build go.test anka.clean-images anka.clean-clones uninstall
 
 #help:	@ List available tasks on this project
 help:
@@ -32,8 +32,7 @@ go.hcl2spec:
 	GOOS=$(OS_TYPE) PATH="$(shell pwd):${PATH}" go generate post-processor/ankaregistry/post-processor.go
 
 #go.build:		@ Run `go build` to generate the binary
-go.build: $(BIN)
-$(BIN): go.hcl2spec
+go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
 	chmod +x $(BIN_FULL)
 
