@@ -10,7 +10,7 @@ BIN_FULL := bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 
 .DEFAULT_GOAL := help
 
-all: lint go.lint go.hcl2spec clean go.build go.test anka.clean-images anka.clean-clones
+all: lint go.lint clean go.build go.test anka.clean-images anka.clean-clones uninstall
 
 #help:	@ List available tasks on this project
 help:
@@ -53,6 +53,10 @@ install:
 	mkdir -p ~/.packer.d/plugins/
 	cp -f $(BIN_FULL) ~/.packer.d/plugins/$(BIN)
 
+#uninstall:		@ Delete the binary from the packer plugins folder
+uninstall:
+	rm -f ~/.packer.d/plugins/$(BIN)
+
 #build-and-install:		@ Run make targets to setup the initialize the binary
 build-and-install:
 	$(MAKE) clean
@@ -65,7 +69,7 @@ build-linux:
 
 #build-mac:		@ Run go.build for macOS
 build-mac:
-	GOOS=darwin OS_TYPE=darwin RACE="-race" $(MAKE) go.build
+	GOOS=darwin OS_TYPE=darwin $(MAKE) go.build
 
 #create-test:		@ Run `packer build` with the default .pkr.hcl file
 create-test: lint install
