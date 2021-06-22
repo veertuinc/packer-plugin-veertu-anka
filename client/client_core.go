@@ -251,6 +251,7 @@ type RunParams struct {
 	Stdout, Stderr    io.Writer
 	Debug             bool
 	User              string
+	FuseAvailable     bool
 }
 
 func (c *AnkaClient) Run(params RunParams) (int, error) {
@@ -350,6 +351,9 @@ func (c *AnkaClient) Stop(params StopParams) error {
 			Command:           []string{"true"},
 		})
 	}
+	if err != nil {
+		return err
+	}
 
 	_, err = runAnkaCommand(args...)
 	return err
@@ -395,4 +399,12 @@ func (c *AnkaClient) Version() (VersionResponse, error) {
 
 	err = json.Unmarshal([]byte(out), &response)
 	return response, err
+}
+
+func (c *AnkaClient) FuseAvailable(vmName string) bool {
+	exitCode, _ := c.Run(RunParams{
+		VMName:  vmName,
+		Command: []string{"kextstat | grep \"com.veertu.filesystems.vtufs\" &>/dev/null"},
+	})
+	return exitCode == 0
 }

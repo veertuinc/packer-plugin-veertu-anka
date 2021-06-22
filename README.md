@@ -399,6 +399,23 @@ We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our
 mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
 ```
 
+### Building
+
+```bash
+make go.build
+```
+
+### Linting
+
+```bash
+brew install golangci-lint
+```
+
+```bash
+make go.lint
+make lint
+```
+
 ### Testing
 
 GO tests are available running
@@ -410,7 +427,7 @@ make go.test
 To test a basic vm creation, run:
 
 ```bash
-make anka.test
+make create-test
 ```
 
 -or-
@@ -432,7 +449,7 @@ anka registry add <registry_name> <registry_url>
 You can setup the `create-from-installer-with-post-processing.pkr.hcl` with the correct registry values and update the make target `anka.test` to use that .pkr.hcl file and run:
 
 ```bash
-make anka.test
+make create-test
 ```
 
 [Packer Builder]: https://www.packer.io/docs/extending/custom-builders.html

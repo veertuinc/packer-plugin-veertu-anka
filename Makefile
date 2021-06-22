@@ -5,28 +5,19 @@ BIN := packer-plugin-veertu-anka
 ARCH := amd64
 OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
-.PHONY: lint.golang lint.packer go.test anka.test anka.clean anka.clean-images
+.PHONY: go.lint lint go.test test clean anka.clean-images
 
 .DEFAULT_GOAL := help
+
+all: lint go.lint go.hcl2spec clean go.build go.test anka.clean-images anka.clean-clones
 
 #help:	@ List available tasks on this project
 help:
 	@grep -h -E '[a-zA-Z\.\-]+:.*?@ .*$$' $(MAKEFILE_LIST) | sort | tr -d '#' | awk 'BEGIN {FS = ":.*?@ "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-#lint.golang:		@ Run `golangci-lint run` against the current code
-lint.golang:
+#go.lint:		@ Run `golangci-lint run` against the current code
+go.lint:
 	golangci-lint run --fast
-
-#lint.packer:  @ Run `packer validate` against packer definitions
-lint.packer:
-	packer validate examples/create-from-installer.pkr.hcl
-	packer validate examples/create-from-installer-with-post-processing.pkr.hcl
-	packer validate examples/clone-existing.pkr.hcl
-	packer validate examples/clone-existing-with-post-processing.pkr.hcl
-	packer validate examples/clone-existing-with-port-forwarding-rules.pkr.hcl
-	packer validate examples/clone-existing-with-hwuuid.pkr.hcl
-	packer validate examples/clone-existing-with-expect-disconnect.pkr.hcl
-	packer validate examples/clone-existing-with-use-anka-cp.pkr.hcl
 
 #go.test:		@ Run `go test` against the current tests
 go.test:
@@ -51,23 +42,34 @@ $(BIN): go.hcl2spec
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 	chmod +x bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 
-#packer.install:		@ Copy the binary to the packer plugins folder
-packer.install: $(BIN)
+#lint:  @ Run `packer validate` against packer definitions
+lint:
+	packer validate examples/create-from-installer.pkr.hcl
+	packer validate examples/create-from-installer-with-post-processing.pkr.hcl
+	packer validate examples/clone-existing.pkr.hcl
+	packer validate examples/clone-existing-with-post-processing.pkr.hcl
+	packer validate examples/clone-existing-with-port-forwarding-rules.pkr.hcl
+	packer validate examples/clone-existing-with-hwuuid.pkr.hcl
+	packer validate examples/clone-existing-with-expect-disconnect.pkr.hcl
+	packer validate examples/clone-existing-with-use-anka-cp.pkr.hcl
+
+#install:		@ Copy the binary to the packer plugins folder
+install: $(BIN)
 	mkdir -p ~/.packer.d/plugins/
 	cp $(BIN) ~/.packer.d/plugins/
 
-#anka.build-and-install:		@ Run make targets to setup the initialize the binary
-anka.build-and-install: $(BIN)
-	$(MAKE) anka.clean
+#build-and-install:		@ Run make targets to setup the initialize the binary
+build-and-install: $(BIN)
+	$(MAKE) clean
 	$(MAKE) go.build
-	$(MAKE) packer.install
+	$(MAKE) install
 
-#anka.packer-test:		@ Run `packer build` with the default .pkr.hcl file
-anka.test: lint.packer packer.install
+#create-test:		@ Run `packer build` with the default .pkr.hcl file
+create-test: lint install
 	PACKER_LOG=1 packer build examples/create-from-installer.pkr.hcl
 
-#anka.clean:		@ Remove the binary
-anka.clean:
+#clean:		@ Remove the plugin binary
+clean:
 	rm -f $(BIN)
 
 #anka.clean-images:		@ Remove all anka images with `anka delete`
