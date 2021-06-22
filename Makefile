@@ -4,6 +4,7 @@ FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
 BIN := packer-plugin-veertu-anka
 ARCH := amd64
 OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
+BIN_FULL := bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 
 .PHONY: go.lint lint go.test test clean anka.clean-images
 
@@ -30,17 +31,11 @@ go.hcl2spec:
 	GOOS=$(OS_TYPE) PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
 	GOOS=$(OS_TYPE) PATH="$(shell pwd):${PATH}" go generate post-processor/ankaregistry/post-processor.go
 
-build-linux:
-	GOOS=linux OS_TYPE=linux $(MAKE) go.build
-
-build-mac:
-	GOOS=darwin OS_TYPE=darwin $(MAKE) go.build
-
 #go.build:		@ Run `go build` to generate the binary
 go.build: $(BIN)
 $(BIN): go.hcl2spec
-	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o bin/$(BIN)_$(OS_TYPE)_$(ARCH)
-	chmod +x bin/$(BIN)_$(OS_TYPE)_$(ARCH)
+	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
+	chmod +x $(BIN_FULL)
 
 #lint:  @ Run `packer validate` against packer definitions
 lint:
@@ -54,15 +49,23 @@ lint:
 	packer validate examples/clone-existing-with-use-anka-cp.pkr.hcl
 
 #install:		@ Copy the binary to the packer plugins folder
-install: $(BIN)
+install:
 	mkdir -p ~/.packer.d/plugins/
-	cp $(BIN) ~/.packer.d/plugins/
+	cp -f $(BIN_FULL) ~/.packer.d/plugins/$(BIN)
 
 #build-and-install:		@ Run make targets to setup the initialize the binary
-build-and-install: $(BIN)
+build-and-install:
 	$(MAKE) clean
 	$(MAKE) go.build
 	$(MAKE) install
+
+#build-linux:		@ Run go.build for Linux
+build-linux:
+	GOOS=linux OS_TYPE=linux $(MAKE) go.build
+
+#build-mac:		@ Run go.build for macOS
+build-mac:
+	GOOS=darwin OS_TYPE=darwin RACE="-race" $(MAKE) go.build
 
 #create-test:		@ Run `packer build` with the default .pkr.hcl file
 create-test: lint install
@@ -70,7 +73,7 @@ create-test: lint install
 
 #clean:		@ Remove the plugin binary
 clean:
-	rm -f $(BIN)
+	rm -f $(BIN_FULL)
 
 #anka.clean-images:		@ Remove all anka images with `anka delete`
 anka.clean-images:
