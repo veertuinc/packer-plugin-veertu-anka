@@ -402,13 +402,14 @@ mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mock
 ### Building
 
 ```bash
-make go.build
+make go.hcl2spec go.build
 ```
 
 ### Linting
 
 ```bash
-brew install golangci-lint
+MacOS: brew install golangci-lint
+Linux: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.40.1
 ```
 
 ```bash
