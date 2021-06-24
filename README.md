@@ -1,7 +1,5 @@
 # Packer Plugin for Anka
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb98bc92bc01409ca3951badb7a90fe4)](https://www.codacy.com/gh/veertuinc/packer-builder-veertu-anka/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=veertuinc/packer-builder-veertu-anka&amp;utm_campaign=Badge_Grade)
-
 This is a [Packer Builder] for building images that work with [Veertu Anka], a macOS virtualization tool.
 
 Note that this builder does not manage images. Once it creates an image, it is up to you to use it or delete it.
@@ -13,6 +11,7 @@ Note that this builder does not manage images. Once it creates an image, it is u
 * Plugin will only work with Packer v1.7 or later.
 * Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
 * Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
+* Pre-version-1.5 "legacy" Packer templates, which were exclusively JSON and follow a different format, are no longer compatible and must be updated to either HCL or the new JSON format: https://www.packer.io/docs/templates/hcl_templates/syntax-json
 
 ### Compatibility
 
