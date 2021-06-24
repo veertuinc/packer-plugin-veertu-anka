@@ -435,7 +435,7 @@ make create-test
 with packer directly:
 
 ```bash
-packer build examples/create-from-installer.pkr.hcl
+export PACKER_LOG=1; packer build examples/create-from-installer.pkr.hcl
 ```
 
 To test the post processor you will need an active vpn connection that can reach an anka registry. You can setup an anka registry by either adding the registry locally with:
