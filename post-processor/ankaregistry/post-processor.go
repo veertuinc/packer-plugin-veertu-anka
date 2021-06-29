@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
-	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-plugin-veertu-anka/builder/anka"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
 )
 
 // BuilderIdRegistry unique id for this post processor

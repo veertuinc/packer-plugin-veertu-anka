@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 	"github.com/mitchellh/mapstructure"
-	"github.com/veertuinc/packer-builder-veertu-anka/util"
+	"github.com/veertuinc/packer-plugin-veertu-anka/util"
 )
 
 const defaultBootDelay = "7s"

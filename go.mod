@@ -1,4 +1,4 @@
-module github.com/veertuinc/packer-builder-veertu-anka
+module github.com/veertuinc/packer-plugin-veertu-anka
 
 go 1.13
 

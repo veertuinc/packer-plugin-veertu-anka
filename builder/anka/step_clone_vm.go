@@ -8,9 +8,9 @@ import (
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/veertuinc/packer-builder-veertu-anka/common"
-	"github.com/veertuinc/packer-builder-veertu-anka/util"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
+	"github.com/veertuinc/packer-plugin-veertu-anka/common"
+	"github.com/veertuinc/packer-plugin-veertu-anka/util"
 )
 
 // StepCloneVM will be used to run the clone step for any 'vm-clone' builder types

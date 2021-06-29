@@ -7,9 +7,9 @@ import (
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	"github.com/veertuinc/packer-builder-veertu-anka/common"
-	"github.com/veertuinc/packer-builder-veertu-anka/util"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
+	"github.com/veertuinc/packer-plugin-veertu-anka/common"
+	"github.com/veertuinc/packer-plugin-veertu-anka/util"
 )
 
 const (
