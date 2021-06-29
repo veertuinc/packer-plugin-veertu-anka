@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
-	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-plugin-veertu-anka/builder/anka"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
 )
 
 // BuilderIdRegistry unique id for this post processor
@@ -152,7 +152,12 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		}
 	}
 
-	ui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", remoteVMName, remoteTag))
+	if p.config.Local {
+		ui.Say(fmt.Sprintf("Tagging local template %s with tag %s", remoteVMName, remoteTag))
+	} else {
+		ui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", remoteVMName, remoteTag))
+	}
+
 	pushErr := p.client.RegistryPush(registryParams, pushParams)
 
 	return artifact, true, false, pushErr

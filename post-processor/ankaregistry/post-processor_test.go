@@ -10,9 +10,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/packer-plugin-sdk/common"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/veertuinc/packer-builder-veertu-anka/builder/anka"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	mocks "github.com/veertuinc/packer-builder-veertu-anka/mocks"
+	"github.com/veertuinc/packer-plugin-veertu-anka/builder/anka"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
+	mocks "github.com/veertuinc/packer-plugin-veertu-anka/mocks"
 )
 
 var templateList []client.RegistryListResponse

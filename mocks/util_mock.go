@@ -10,7 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	multistep "github.com/hashicorp/packer-plugin-sdk/multistep"
 	packer "github.com/hashicorp/packer-plugin-sdk/packer"
-	util "github.com/veertuinc/packer-builder-veertu-anka/util"
+	util "github.com/veertuinc/packer-plugin-veertu-anka/util"
 )
 
 // MockUtil is a mock of Util interface.

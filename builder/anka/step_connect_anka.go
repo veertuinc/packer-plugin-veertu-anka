@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
 )
 
 // StepConnectAnka attaches the anka builder to the communicator

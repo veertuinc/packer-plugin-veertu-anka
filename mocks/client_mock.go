@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	client "github.com/veertuinc/packer-builder-veertu-anka/client"
+	client "github.com/veertuinc/packer-plugin-veertu-anka/client"
 )
 
 // MockClient is a mock of Client interface.

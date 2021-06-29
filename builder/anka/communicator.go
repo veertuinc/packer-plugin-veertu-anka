@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
 )
 
 // Communicator initializes what is shared between anka and packer

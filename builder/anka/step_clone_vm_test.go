@@ -11,8 +11,8 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
-	"github.com/veertuinc/packer-builder-veertu-anka/client"
-	mocks "github.com/veertuinc/packer-builder-veertu-anka/mocks"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
+	mocks "github.com/veertuinc/packer-plugin-veertu-anka/mocks"
 	"gotest.tools/assert"
 )
 

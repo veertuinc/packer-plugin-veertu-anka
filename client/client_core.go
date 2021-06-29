@@ -7,7 +7,7 @@ import (
 	"log"
 	"os/exec"
 
-	"github.com/veertuinc/packer-builder-veertu-anka/common"
+	"github.com/veertuinc/packer-plugin-veertu-anka/common"
 )
 
 const (
