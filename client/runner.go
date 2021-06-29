@@ -1,8 +1,6 @@
 package client
 
 import (
-	// "syscall"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -11,16 +9,6 @@ import (
 
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 )
-
-type RunParams struct {
-	VMName         string
-	Volume         string
-	Command        []string
-	Stdin          io.Reader
-	Stdout, Stderr io.Writer
-	Debug          bool
-	User           string
-}
 
 type Runner struct {
 	params  RunParams
@@ -51,17 +39,20 @@ func NewRunner(params RunParams) *Runner {
 		args = append(args, "-n")
 	}
 
+	if params.WaitForNetworking {
+		args = append(args, "--wait-network")
+	}
+
+	if params.WaitForTimeSync {
+		args = append(args, "--wait-time")
+	}
+
 	args = append(args, params.VMName)
 	args = append(args, "sh")
 
 	cmd := exec.Command("anka", args...)
 	cmd.Stdout = params.Stdout
 	cmd.Stderr = params.Stderr
-
-	// cmd.SysProcAttr = &syscall.SysProcAttr{
-	// 	Setpgid: true,
-	// 	Pgid:    0,
-	// }
 
 	return &Runner{
 		params: params,
@@ -72,25 +63,33 @@ func NewRunner(params RunParams) *Runner {
 func (r *Runner) Start() error {
 	log.Printf("Starting command: %s", strings.Join(r.cmd.Args, " "))
 	r.started = time.Now()
+
 	stdin, err := r.cmd.StdinPipe()
 	if err != nil {
 		return err
 	}
+
+	defer stdin.Close()
+
 	err = r.cmd.Start()
 	if err != nil {
 		return err
 	}
+
 	cmdString := strings.Join(r.params.Command, " ")
-	log.Print("Executing on sh: ", cmdString)
-	stdin.Write([]byte(cmdString))
-	stdin.Close()
+
+	log.Print("Executing: ", cmdString)
+
+	_, err = stdin.Write([]byte(cmdString))
 	return err
 }
 
-func (r *Runner) Wait() (error, int) {
+func (r *Runner) Wait() (int, error) {
 	err := r.cmd.Wait()
-	log.Printf("Command finished in %s with %v", time.Now().Sub(r.started), err)
-	return err, getExitCode(err)
+
+	log.Printf("Command finished in %s %v", time.Since(r.started), err)
+
+	return getExitCode(err), err
 }
 
 // GetExitCode extracts an exit code from an error where the platform supports it,
@@ -99,11 +98,14 @@ func getExitCode(err error) int {
 	if err == nil {
 		return 0
 	}
-	if eerr, ok := err.(*exec.ExitError); ok {
+
+	eerr, ok := err.(*exec.ExitError)
+	if ok {
 		code := eerr.ExitCode()
 		if code == 125 {
 			code = packer.CmdDisconnect
 		}
+
 		return code
 	}
 

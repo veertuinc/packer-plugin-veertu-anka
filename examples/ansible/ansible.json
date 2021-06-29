@@ -12,8 +12,9 @@
       }
     ],
     "builders": [{
-      "type": "veertu-anka",
+      "type": "veertu-anka-vm-clone",
       "disk_size": "30G",
-      "source_vm_name": "{{user `source_vm_name`}}"
+      "source_vm_name": "{{user `source_vm_name`}}",
+      "vm_name": "macos-from-{{user `source_vm_name`}}"
     }]
   }

@@ -1,9 +1,10 @@
-//go:generate mapstructure-to-hcl2 -type Config
+//go:generate mapstructure-to-hcl2 -type Config,PortForwardingRule
+
 package anka
 
 import (
 	"errors"
-	"fmt"
+	"os"
 	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/common"
@@ -12,40 +13,63 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 	"github.com/mitchellh/mapstructure"
+	"github.com/veertuinc/packer-builder-veertu-anka/util"
 )
 
-const DEFAULT_BOOT_DELAY = "10s"
+const defaultBootDelay = "7s"
 
+// PortForwardingRule defines the requirements for port forwarding
+type PortForwardingRule struct {
+	PortForwardingGuestPort int    `mapstructure:"port_forwarding_guest_port"`
+	PortForwardingHostPort  int    `mapstructure:"port_forwarding_host_port"`
+	PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
+}
+
+// Config initializes the builders using mapstructure which decodes
+// generic map values from either the json or hcl2 config files provided
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 	Comm                communicator.Config `mapstructure:",squash"`
 
+	AnkaUser     string `mapstructure:"anka_user"`
+	AnkaPassword string `mapstructure:"anka_password"`
+
 	InstallerApp string `mapstructure:"installer_app"`
 	SourceVMName string `mapstructure:"source_vm_name"`
+	SourceVMTag  string `mapstructure:"source_vm_tag"`
 
-	VMName   string `mapstructure:"vm_name"`
-	DiskSize string `mapstructure:"disk_size"`
-	RAMSize  string `mapstructure:"ram_size"`
-	CPUCount string `mapstructure:"cpu_count"`
+	VMName    string `mapstructure:"vm_name"`
+	DiskSize  string `mapstructure:"disk_size"`
+	RAMSize   string `mapstructure:"ram_size"`
+	VCPUCount string `mapstructure:"vcpu_count"`
 
-	PortForwardingRules []struct {
-		PortForwardingGuestPort int    `mapstructure:"port_forwarding_guest_port"`
-		PortForwardingHostPort  int    `mapstructure:"port_forwarding_host_port"`
-		PortForwardingRuleName  string `mapstructure:"port_forwarding_rule_name"`
-	} `mapstructure:"port_forwarding_rules,omitempty"`
+	AlwaysFetch bool `mapstructure:"always_fetch"`
 
-	HWUUID       string `mapstructure:"hw_uuid,omitempty"`
-	BootDelay    string `mapstructure:"boot_delay"`
-	EnableHtt    bool   `mapstructure:"enable_htt"`
-	DisableHtt   bool   `mapstructure:"disable_htt"`
-	UpdateAddons bool   `mapstructure:"update_addons"`
-	UseAnkaCP    bool   `mapstructure:"use_anka_cp"`
+	UpdateAddons bool `mapstructure:"update_addons"`
 
-	ctx interpolate.Context
+	RegistryName string `mapstructure:"registry_name"`
+	RegistryURL  string `mapstructure:"registry_path"`
+	NodeCertPath string `mapstructure:"cert"`
+	NodeKeyPath  string `mapstructure:"key"`
+	CaRootPath   string `mapstructure:"cacert"`
+	IsInsecure   bool   `mapstructure:"insecure"`
+
+	PortForwardingRules []PortForwardingRule `mapstructure:"port_forwarding_rules"`
+
+	HWUUID    string `mapstructure:"hw_uuid,omitempty"`
+	BootDelay string `mapstructure:"boot_delay"`
+	UseAnkaCP bool   `mapstructure:"use_anka_cp"`
+
+	StopVM bool `mapstructure:"stop_vm"`
+
+	ctx interpolate.Context //nolint:structcheck
 }
 
+// NewConfig generates a machine readable config from the generic map values above
+// and provides an inital setup values and scrubs the data for any mistakes
 func NewConfig(raws ...interface{}) (*Config, error) {
 	var c Config
+	util := util.AnkaUtil{}
 
 	var md mapstructure.Metadata
 	err := config.Decode(&c, &config.DecodeOpts{
@@ -56,10 +80,20 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		return nil, err
 	}
 
-	// Accumulate any errors
+	if c.BootDelay == "" {
+		c.BootDelay = defaultBootDelay
+	}
+
+	if c.AnkaPassword != "" {
+		os.Setenv("ANKA_DEFAULT_PASSWD", c.AnkaPassword)
+	}
+
+	if c.AnkaUser != "" {
+		os.Setenv("ANKA_DEFAULT_USER", c.AnkaUser)
+	}
+
 	var errs *packer.MultiError
 
-	// Default to the normal anku communicator type
 	if c.Comm.Type == "" {
 		c.Comm.Type = "anka"
 	}
@@ -68,24 +102,23 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		errs = packer.MultiErrorAppend(errs, errors.New("installer_app or source_vm_name must be specified"))
 	}
 
-	// Handle Port Forwarding Rules
+	if c.InstallerApp != "" && c.SourceVMName != "" {
+		errs = packer.MultiErrorAppend(errs, errors.New("cannot specify both an installer_app and source_vm_name"))
+	}
+
+	if c.SourceVMName != "" && strings.ContainsAny(c.SourceVMName, " \n") {
+		errs = packer.MultiErrorAppend(errs, errors.New("source_vm_name name contains spaces"))
+	}
+
 	if len(c.PortForwardingRules) > 0 {
 		for index, rule := range c.PortForwardingRules {
 			if rule.PortForwardingGuestPort == 0 {
 				errs = packer.MultiErrorAppend(errs, errors.New("guest port is required"))
 			}
 			if rule.PortForwardingRuleName == "" {
-				c.PortForwardingRules[index].PortForwardingRuleName = fmt.Sprintf("%s", randSeq(10))
+				c.PortForwardingRules[index].PortForwardingRuleName = util.RandSeq(10)
 			}
 		}
-	}
-
-	if strings.ContainsAny(c.SourceVMName, " \n") {
-		errs = packer.MultiErrorAppend(errs, errors.New("source_vm_name name contains spaces"))
-	}
-
-	if c.BootDelay == "" {
-		c.BootDelay = DEFAULT_BOOT_DELAY
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
