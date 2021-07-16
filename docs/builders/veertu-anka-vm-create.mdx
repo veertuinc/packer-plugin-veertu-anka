@@ -1,0 +1,151 @@
+---
+description: |
+  The veertu-anka-vm-create Packer builder is able to create new VM templates for use with
+  Anka. The builder takes the path to macOS installer .app, installs macOS using that installer inside of an Anka VM Template, and then runs any provisioning necessary on the instance.
+page_title: Veertu Anka VM Create - Builders
+nav_title: Veertu Anka VM Create
+---
+
+# Veertu's Anka VM Create Builder
+
+Type: `veertu-anka-vm-create`
+
+The `veertu-anka-vm-create` Packer builder is able to create new Anka VM Templates for use with
+Anka Virtualization and the Anka Build Cloud. The builder takes the path to macOS installer .app 
+and installs that macOS version inside of an Anka VM Template.
+
+The builder does _not_ manage templates. Once a template is created, it is up
+to you to use it or delete it.
+
+This builder is part of the [Veertu Anka plugin](https://github.com/veertuinc/packer-plugin-veertu-anka). To install this plugin using `packer init`, add the following Packer block to
+your hcl template:
+
+```hcl
+packer {
+  required_plugins {
+    veertu-anka = {
+      version = ">= 2.0.0"
+      source  = "github.com/veertuinc/packer-plugin-veertu-anka"
+    }
+  }
+}
+```
+
+## Configuration Reference
+
+There are many configuration options available for the builder. They are
+segmented below into two categories: required and optional parameters.
+
+### **Required Configuration**
+
+* `installer_app` (String)
+
+The path to a macOS installer. This process takes about 20 minutes.
+
+* `type` (String)
+
+Must be `veertu-anka-vm-create`.
+
+### Optional Configuration
+
+* `anka_password` (String)
+
+Sets the password for the vm. Can also be set with `ANKA_DEFAULT_PASSWD` env var. Defaults to `admin`.
+
+* `anka_user` (String)
+
+Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. Defaults to `anka`.
+
+* `boot_delay` (String)
+
+The time to wait before running packer provisioner commands, defaults to `7s`.
+
+* `vcpu_count` (String)
+
+> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+
+The number of vCPU cores, defaults to `2`.
+
+* `disk_size` (String)
+
+The size in "[0-9]+G" format, defaults to `25G`.
+
+> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
+
+* `hw_uuid` (String)
+
+The Hardware UUID you wish to set (usually generated with `uuidgen`).
+
+* `port_forwarding_rules` (Struct)
+  
+  * `port_forwarding_guest_port` (Int)
+  * `port_forwarding_host_port` (Int)
+  * `port_forwarding_rule_name` (String)
+
+> If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
+
+* `ram_size` (String)
+
+The size in "[0-9]+G" format, defaults to `2G`.
+
+* `stop_vm` (Boolean)
+
+Whether or not to stop the vm after it has been created, defaults to false.
+
+* `use_anka_cp` (Boolean)
+
+Use built in anka cp command. Defaults to false.
+
+* `vm_name` (String)
+
+The name for the VM that is created. One is generated with installer_app data if not provided (`anka-packer-base-{{ installer_app.OSVersion }}-{{ installer_app.BundlerVersion }}`).
+
+## Example
+
+Here is an example with port forwarding.
+
+```hcl
+
+variable "vm_name" {
+  type = string
+  default = "anka-packer-base-macos"
+}
+
+variable "installer_app" {
+  type = string
+  default = "/Applications/Install macOS Big Sur.app/"
+}
+
+variable "vcpu_count" {
+  type = string
+  default = ""
+}
+
+source "veertu-anka-vm-create" "base" {
+  installer_app = "${var.installer_app}"
+  vm_name = "${var.vm_name}"
+  vcpu_count = "${var.vcpu_count}"
+  port_forwarding_rules {
+    port_forwarding_guest_port = 80
+    port_forwarding_host_port = 12345
+    port_forwarding_rule_name = "website"
+  }
+  port_forwarding_rules  {
+    port_forwarding_guest_port = 8080
+  }
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-create.base"
+  ]
+
+  provisioner "shell" {
+    inline = [
+      "echo hello world",
+      "echo llamas rock"
+    ]
+  }
+}
+
+```

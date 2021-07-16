@@ -17,4 +17,11 @@ build {
   sources = [
     "source.veertu-anka-vm-clone.anka-packer-from-source",
   ]
+
+  provisioner "shell" {
+    inline = [
+      "echo hello world",
+      "echo llamas rock"
+    ]
+  }
 }

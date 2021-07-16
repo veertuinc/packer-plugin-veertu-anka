@@ -6,25 +6,21 @@ on:
 
 jobs:
 
-  check-pr:
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: 1.16
-
-    - name: Install Deps
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v1.40.1
-
-    - name: Build
-      run: make clean go.hcl2spec go.build install
-
-    - name: Lint
-      run: make lint go.lint
-      
-    - name: Test
-      run: make go.test
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Unshallow
+        run: git fetch --prune --unshallow
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - name: Install packer-pdc
+        run: go get github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
+      - name: Run GoReleaser build
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: build --single-target --snapshot --rm-dist

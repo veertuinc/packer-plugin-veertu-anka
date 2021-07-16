@@ -1,0 +1,175 @@
+---
+description: |
+  The veertu-anka-vm-clone Packer builder is able to clone existing Anka VM Templates for use with Anka Virtualization and the Anka Build Cloud. The builder takes a source VM name, clones it, and then runs any provisioning necessary on the new VM Template before stopping or suspending it.
+page_title: Veertu Anka VM Clone - Builders
+nav_title: Veertu Anka VM Clone
+---
+
+# Veertu's Anka VM Clone Builder
+
+Type: `veertu-anka-vm-clone`
+
+The `veertu-anka-vm-clone` Packer builder is able to clone existing Anka VM Templates for use with Anka Virtualization and the Anka Build Cloud. The builder takes a source VM name, clones it, and then runs any provisioning necessary on the new VM Template before stopping or suspending it.
+
+The builder does _not_ manage templates. Once a template is created, it is up
+to you to use it or delete it.
+
+This builder is part of the [Veertu Anka plugin](https://github.com/veertuinc/packer-plugin-veertu-anka). To install this plugin using `packer init`, add the following Packer block to your hcl template:
+
+```hcl
+packer {
+  required_plugins {
+    veertu-anka = {
+      version = ">= 2.0.0"
+      source  = "github.com/veertuinc/packer-plugin-veertu-anka"
+    }
+  }
+}
+```
+
+## Configuration Reference
+
+There are many configuration options available for the builder. They are
+segmented below into two categories: required and optional parameters.
+
+### **Required Configuration**
+
+* `source_vm_name` (String)
+
+The VM to clone for provisioning, either stopped or suspended.
+
+* `type` (String)
+
+Must be `veertu-anka-vm-clone`.
+
+### Optional Configuration
+
+* `always_fetch` (Boolean)
+
+Always pull the source VM from the registry. Defaults to false.
+
+* `boot_delay` (String)
+
+The time to wait before running packer provisioner commands, defaults to `7s`.
+
+* `cacert` (String)
+
+Path to a CA Root certificate.
+
+* `cert` (String)
+
+Path to your node certificate (if certificate authority is enabled).
+
+* `vcpu_count` (String)
+
+> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+
+The number of vCPU cores, defaults to `2`.
+
+* `disk_size` (String)
+
+The size in "[0-9]+G" format, defaults to `25G`.
+
+> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
+
+* `insecure` (Boolean)
+
+Skip TLS verification.
+
+* `key` (String)
+
+Path to your node certificate key if the client/node certificate doesn't contain one.
+
+* `hw_uuid` (String)
+
+The Hardware UUID you wish to set (usually generated with `uuidgen`).
+
+* `port_forwarding_rules` (Struct)
+  
+  * `port_forwarding_guest_port` (Int)
+  * `port_forwarding_host_port` (Int)
+  * `port_forwarding_rule_name` (String)
+
+> If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
+
+* `ram_size` (String)
+
+The size in "[0-9]+G" format, defaults to `2G`.
+
+* `registry-path` (String)
+
+The registry URL (will use your default configuration if not set).
+
+* `remote` (String)
+
+The registry name (will use your default configuration if not set).
+
+* `source_vm_tag` (String)
+
+Specify the tag of the VM we want to clone instead of using the default.
+
+* `stop_vm` (Boolean)
+
+Whether or not to stop the vm after it has been created, defaults to false.
+
+* `update_addons` (Boolean)
+
+Update the vm addons. Defaults to false.
+
+* `use_anka_cp` (Boolean)
+
+Use built in anka cp command. Defaults to false.
+
+* `vm_name` (String)
+
+The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
+
+## Example
+
+Here is an example that uses the file and shell provisioners.
+
+```hcl
+
+variable "source_vm_name" {
+  type = string
+  default = "anka-packer-base-macos"
+}
+
+variable "vm_name" {
+  type = string
+  default = "anka-packer-from-source"
+}
+
+source "veertu-anka-vm-clone" "clone" {
+  vm_name = "${var.vm_name}"
+  source_vm_name = "${var.source_vm_name}"
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.clone",
+  ]
+  provisioner "file" {
+    destination = "/private/tmp/"
+    source      = "./examples/ansible"
+  }
+  provisioner "shell" {
+    inline = [
+      "[[ ! -d /tmp/ansible ]] && exit 100",
+      "touch /tmp/ansible/test1"
+    ]
+  }
+  provisioner "file" {
+    destination = "./"
+    direction   = "download"
+    source      = "/private/tmp/ansible/test1"
+  }
+  provisioner "shell-local" {
+    inline = [
+      "[[ ! -f ./test1 ]] && exit 200",
+      "rm -f ./test1"
+    ]
+  }
+}
+
+```
