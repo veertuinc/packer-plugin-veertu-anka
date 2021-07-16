@@ -5,6 +5,7 @@ mapstructure-to-hcl2
 dist/
 pkg
 bin
+packer-plugin*
 
 # generated code
 .gon.hcl

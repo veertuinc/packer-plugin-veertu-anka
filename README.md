@@ -6,14 +6,14 @@ Note that this builder does not manage images. Once it creates an image, it is u
 
 > It's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add).
 
-### v2.0.0 Breaking Changes
+## v2.0.0 Breaking Changes
 
 * Plugin will only work with Packer v1.7 or later.
 * Plugin has been renamed from `packer-plugin-veertu-anka` to `packer-plugin-veertu-anka`.
 * Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
 * Pre-version-1.5 "legacy" Packer templates, which were exclusively JSON and follow a different format, are no longer compatible and must be updated to either HCL or the new JSON format: https://www.packer.io/docs/templates/hcl_templates/syntax-json
 
-### Compatibility
+## Compatibility
 
 Packer Version | Veertu Anka Plugin Version
 --- | ---
@@ -51,9 +51,13 @@ build {
 }
 ```
 
-This will create a base VM template using the `.app` you specified in `installer_app` with a name like `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the `veertu-registry-push-test` tag.
+This will create a "base" VM template using the `.app` you specified in `installer_app` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the `veertu-registry-push-test` tag.
 
-> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, defaults will be used.
+> If you didn't specify `vm_name`, we would automatically pull it from the installer app and create a name like `anka-packer-base-11.4-16.6.01`.
+
+> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, defaults (see below) will be used.
+
+> **However, hw_uuid, port_forwarding_rules, and several other configuration settings are ignored for the created "base" vm.** We recommend using the `veertu-anka-vm-clone` builder to modify these values.
 
 You can also skip the creation of the base VM template and use an existing VM template:
 
@@ -83,13 +87,15 @@ This will check to see if the VM template/tag exists locally, and if not, pull i
 
 > Within your `.pkrvars.hcl` files, you can utilize `variable` blocks and then assign them values using the command line `packer build -var 'foo=bar'` or as environment variables `PKR_VAR_foo=bar` https://www.packer.io/docs/templates/hcl_templates/variables#assigning-values-to-build-variables
 
-This will clone `anka-packer-base-macos` to a new VM and, if there are differences from the base VM, modify vCPU, RAM, and DISK.
+This will clone `anka-packer-base-macos` to a new VM and, if there are set configurations, make them.
 
 > Check out the [examples directory](./examples) to see how port-forwarding and other options are used
 
-## Builders 
+---
 
-### veertu-anka-vm-create
+## Builders
+
+### [ veertu-anka-vm-create ]
 
 #### Required Configuration
 
@@ -103,6 +109,34 @@ Must be `veertu-anka-vm-create`.
 
 #### Optional Configuration
 
+* `vm_name` (String)
+
+The name for the VM that is created. One is generated with installer_app data if not provided (`anka-packer-base-{{ installer_app.OSVersion }}-{{ installer_app.BundlerVersion }}`).
+
+* `vcpu_count` (String)
+
+> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+
+The number of vCPU cores, defaults to `2`.
+
+* `ram_size` (String)
+
+The size in "[0-9]+G" format, defaults to `4G`.
+
+* `disk_size` (String)
+
+The size in "[0-9]+G" format, defaults to `40G`.
+
+> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
+
+* `stop_vm` (Boolean)
+
+Whether or not to stop the vm after it has been created, defaults to false.
+
+* `use_anka_cp` (Boolean)
+
+Use built in anka cp command. You shouldn't need this option. Defaults to false.
+
 * `anka_password` (String)
 
 Sets the password for the vm. Can also be set with `ANKA_DEFAULT_PASSWD` env var. Defaults to `admin`.
@@ -115,74 +149,9 @@ Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. 
 
 The time to wait before running packer provisioner commands, defaults to `7s`.
 
-* `vcpu_count` (String)
+### [ veertu-anka-vm-clone ]
 
-> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
-
-The number of vCPU cores, defaults to `2`.
-
-* `disk_size` (String)
-
-The size in "[0-9]+G" format, defaults to `25G`.
-
-> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
-
-* `hw_uuid` (String)
-
-The Hardware UUID you wish to set (usually generated with `uuidgen`).
-
-* `port_forwarding_rules` (Struct)
-
-> If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
-
-```hcl
-source "veertu-anka-vm-clone" "anka-packer-from-source-with-port-rules" {
-  vm_name = "anka-packer-from-source-with-port-rules"
-  source_vm_name = "anka-packer-base-macos"
-  port_forwarding_rules {
-    port_forwarding_guest_port = 80
-    port_forwarding_host_port = 12345
-    port_forwarding_rule_name = "website"
-  }
-  port_forwarding_rules  {
-    port_forwarding_guest_port = 8080
-  }
-}
-
-build {
-  sources = [
-    "source.veertu-anka-vm-clone.anka-packer-from-source-with-port-rules",
-  ]
-
-  provisioner "shell" {
-    inline = [
-      "sleep 5",
-      "echo hello world",
-      "echo llamas rock"
-    ]
-  }
-}
-```
-
-* `ram_size` (String)
-
-The size in "[0-9]+G" format, defaults to `2G`.
-
-* `stop_vm` (Boolean)
-
-Whether or not to stop the vm after it has been created, defaults to false.
-
-* `use_anka_cp` (Boolean)
-
-Use built in anka cp command. Defaults to false.
-
-* `vm_name` (String)
-
-The name for the VM that is created. One is generated with installer_app data if not provided (`anka-packer-base-{{ installer_app.OSVersion }}-{{ installer_app.BundlerVersion }}`).
-
-### veertu-anka-vm-clone
-
-#### Required Configuration
+#### _**Required Configuration**_
 
 * `source_vm_name` (String)
 
@@ -192,7 +161,7 @@ The VM to clone for provisioning, either stopped or suspended.
 
 Must be `veertu-anka-vm-clone`.
 
-#### Optional Configuration
+#### _**Optional Configuration**_
 
 * `always_fetch` (Boolean)
 
@@ -235,37 +204,12 @@ Path to your node certificate key if the client/node certificate doesn't contain
 The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
 * `port_forwarding_rules` (Struct)
+  
+  * `port_forwarding_guest_port` (Int)
+  * `port_forwarding_host_port` (Int)
+  * `port_forwarding_rule_name` (String)
 
 > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
-
-```hcl
-source "veertu-anka-vm-clone" "anka-packer-from-source-with-port-rules" {
-  vm_name = "anka-packer-from-source-with-port-rules"
-  source_vm_name = "anka-packer-base-macos"
-  port_forwarding_rules {
-    port_forwarding_guest_port = 80
-    port_forwarding_host_port = 12345
-    port_forwarding_rule_name = "website"
-  }
-  port_forwarding_rules  {
-    port_forwarding_guest_port = 8080
-  }
-}
-
-build {
-  sources = [
-    "source.veertu-anka-vm-clone.anka-packer-from-source-with-port-rules",
-  ]
-
-  provisioner "shell" {
-    inline = [
-      "sleep 5",
-      "echo hello world",
-      "echo llamas rock"
-    ]
-  }
-}
-```
 
 * `ram_size` (String)
 
@@ -299,17 +243,19 @@ Use built in anka cp command. Defaults to false.
 
 The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
 
+---
+
 ## Post Processors
 
-### veertu-anka-registry-push
+### [ veertu-anka-registry-push ]
 
-#### Required Configuration
+#### _**Required Configuration**_
 
 * `type` (String)
 
 Must be `veertu-anka-registry-push`
 
-#### Optional Configuration
+#### _**Optional Configuration**_
 
 * `cacert` (String)
 
@@ -351,6 +297,8 @@ The name of a registry template you want to push the local template onto.
 
 The name of the tag to push (will default as 'latest' if not set).
 
+---
+
 ## Build Variables
 
 Packer allows for the exposure of build variables which connects information related to the artifact that was built. Those variables can then be accessed by `post-processors` and `provisioners`.
@@ -388,51 +336,29 @@ build {
 }
 ```
 
+---
+
 ## Development
 
 You will need a recent golang installed and setup. See `go.mod` for which version is expected.
 
-We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our interfaces for testing. This allows us to easily test when we expect logic to be called without having to rewrite golang standard library functions with custom mock logic. To generate one of these mocked interfaces, installed the mockgen binary by following the link provided.
+We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our interfaces for testing. This allows us to easily test when we expect logic to be called without having to rewrite golang standard library functions with custom mock logic. To generate one of these mocked interfaces, installed the mockgen binary by following the link provided and then run the `make go.test`.
+
+- You must install `packer-sdc` to generate docs and HCL2spec:
 
 ```bash
-mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
+go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
 ```
 
-### Building
+### Building, Linting, and Testing
+
+We recommend using goreleaser to perform all of the building, linting, and testing:
 
 ```bash
-make go.hcl2spec go.build
+goreleaser build --single-target --snapshot --rm-dist
 ```
 
-### Linting
-
-```bash
-MacOS: brew install golangci-lint
-Linux: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.40.1
-```
-
-```bash
-make go.lint
-make lint
-```
-
-### Testing
-
-GO tests are available running
-
-```bash
-make go.test
-```
-
-To test a basic vm creation, run:
-
-```bash
-make create-test
-```
-
--or-
-
-with packer directly:
+When testing with an example HCL:
 
 ```bash
 export PACKER_LOG=1; packer build examples/create-from-installer.pkr.hcl

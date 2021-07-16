@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-plugin-veertu-anka/client"
 	mocks "github.com/veertuinc/packer-plugin-veertu-anka/mocks"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 var (
