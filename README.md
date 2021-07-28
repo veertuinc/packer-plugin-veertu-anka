@@ -193,6 +193,8 @@ Whether or not to stop the vm after it has been created, defaults to false.
 
 The display controller to set (run `anka modify VMNAME set display --help` to see available options).
 
+> You must use `stop_vm=true` on Anka versions < 2.5.0
+
 * `always_fetch` (Boolean)
 
 Always pull the source VM from the registry. Defaults to false.
