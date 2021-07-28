@@ -18,6 +18,7 @@ source "veertu-anka-vm-clone" "anka-packer-from-source-with-display_controller" 
   source_vm_name = "${var.source_vm_name}"
   vcpu_count = 10
   display_controller = "${var.display_controller}"
+  stop_vm = true
 }
 
 build {
