@@ -97,5 +97,4 @@ anka.wipe-anka:
 #generate-docs:		@ Generate packer docs
 generate-docs:
 	@go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
-	@packer-sdc renderdocs -src docs -partials docs-partials/ -dst docs/
-	@/bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"
+	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/ && /bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"
