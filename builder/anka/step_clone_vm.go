@@ -260,26 +260,22 @@ func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, confi
 		if err != nil {
 			return err
 		}
-
 		existingForwardedPorts := make(map[int]struct{})
 		for _, existingNetworkCard := range describeResponse.NetworkCards {
 			for _, existingPortForwardingRule := range existingNetworkCard.PortForwardingRules {
 				existingForwardedPorts[existingPortForwardingRule.HostPort] = struct{}{}
 			}
 		}
-
 		for _, wantedPortForwardingRule := range config.PortForwardingRules {
 			ui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", showResponse.Name, strconv.Itoa(wantedPortForwardingRule.PortForwardingGuestPort), strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort), wantedPortForwardingRule.PortForwardingRuleName))
 			if _, ok := existingForwardedPorts[wantedPortForwardingRule.PortForwardingHostPort]; ok {
 				ui.Error(fmt.Sprintf("Found an existing host port rule (%s)! Skipping without setting...", strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort)))
 				continue
 			}
-
 			err := s.client.Stop(stopParams)
 			if err != nil {
 				return err
 			}
-
 			err = s.client.Modify(showResponse.Name, "add", "port-forwarding", "--host-port", strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort), "--guest-port", strconv.Itoa(wantedPortForwardingRule.PortForwardingGuestPort), wantedPortForwardingRule.PortForwardingRuleName)
 			if !config.PackerConfig.PackerForce {
 				if err != nil {
@@ -294,10 +290,20 @@ func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, confi
 		if err != nil {
 			return err
 		}
-
 		ui.Say(fmt.Sprintf("Modifying VM custom-variable hw.UUID to %s", config.HWUUID))
-
 		err = s.client.Modify(showResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if config.DisplayController != "" {
+		err := s.client.Stop(stopParams)
+		if err != nil {
+			return err
+		}
+		ui.Say(fmt.Sprintf("Modifying VM display controller to %s", config.DisplayController))
+		err = s.client.Modify(showResponse.Name, "set", "display", "-c", config.DisplayController)
 		if err != nil {
 			return err
 		}

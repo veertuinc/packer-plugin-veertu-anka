@@ -25,8 +25,8 @@ go.lint:
 go.test:
 	go get github.com/golang/mock/mockgen@v1.6.0
 	mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
-	go test -v builder/anka/*.go
-	go test -v post-processor/ankaregistry/*.go
+	go test builder/anka/*.go
+	go test post-processor/ankaregistry/*.go
 
 #go.hcl2spec:		@ Run `go generate` to generate hcl2 config specs
 go.hcl2spec:
@@ -62,6 +62,7 @@ uninstall:
 build-and-install:
 	$(MAKE) clean
 	$(MAKE) go.build
+	$(MAKE) go.hcl2spec
 	$(MAKE) install
 
 #build-linux:		@ Run go.build for Linux

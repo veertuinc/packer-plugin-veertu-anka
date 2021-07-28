@@ -32,6 +32,8 @@ Packer Version | Veertu Anka Plugin Version
 
 ## Usage
 
+> Currently file provisioners do not support ~ or \$HOME in the destination paths. Please use absolute or relative paths.
+
 The most basic pkr.hcl file you can build from is:
 
 ```hcl
@@ -162,6 +164,10 @@ The VM to clone for provisioning, either stopped or suspended.
 Must be `veertu-anka-vm-clone`.
 
 #### _**Optional Configuration**_
+
+* `display_controller` (string)
+
+The display controller to set (run `anka modify VMNAME set display --help` to see available options).
 
 * `always_fetch` (Boolean)
 

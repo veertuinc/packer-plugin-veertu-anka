@@ -56,9 +56,10 @@ type Config struct {
 
 	PortForwardingRules []PortForwardingRule `mapstructure:"port_forwarding_rules"`
 
-	HWUUID    string `mapstructure:"hw_uuid,omitempty"`
-	BootDelay string `mapstructure:"boot_delay"`
-	UseAnkaCP bool   `mapstructure:"use_anka_cp"`
+	HWUUID            string `mapstructure:"hw_uuid,omitempty"`
+	BootDelay         string `mapstructure:"boot_delay"`
+	UseAnkaCP         bool   `mapstructure:"use_anka_cp"`
+	DisplayController string `mapstructure:"display_controller,omitempty"`
 
 	StopVM bool `mapstructure:"stop_vm"`
 
