@@ -129,7 +129,7 @@ The size in "[0-9]+G" format, defaults to `4G`.
 
 The size in "[0-9]+G" format, defaults to `40G`.
 
-> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
+> We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk1 0` inside of the VM
 
 * `stop_vm` (Boolean)
 
@@ -165,6 +165,30 @@ Must be `veertu-anka-vm-clone`.
 
 #### _**Optional Configuration**_
 
+* `vm_name` (String)
+
+The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
+
+* `vcpu_count` (String)
+
+> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+
+The number of vCPU cores, defaults to `2`.
+
+* `ram_size` (String)
+
+The size in "[0-9]+G" format, defaults to `2G`.
+
+* `disk_size` (String)
+
+The size in "[0-9]+G" format, defaults to `25G`.
+
+> We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk1 0` inside of the VM
+
+* `stop_vm` (Boolean)
+
+Whether or not to stop the vm after it has been created, defaults to false.
+
 * `display_controller` (string)
 
 The display controller to set (run `anka modify VMNAME set display --help` to see available options).
@@ -184,18 +208,6 @@ Path to a CA Root certificate.
 * `cert` (String)
 
 Path to your node certificate (if certificate authority is enabled).
-
-* `vcpu_count` (String)
-
-> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
-
-The number of vCPU cores, defaults to `2`.
-
-* `disk_size` (String)
-
-The size in "[0-9]+G" format, defaults to `25G`.
-
-> We will automatically resize the internal disk for you by executing: `diskutil apfs resizeContainer disk1 0`
 
 * `insecure` (Boolean)
 
@@ -217,10 +229,6 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
 > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
 
-* `ram_size` (String)
-
-The size in "[0-9]+G" format, defaults to `2G`.
-
 * `registry-path` (String)
 
 The registry URL (will use your default configuration if not set).
@@ -233,10 +241,6 @@ The registry name (will use your default configuration if not set).
 
 Specify the tag of the VM we want to clone instead of using the default.
 
-* `stop_vm` (Boolean)
-
-Whether or not to stop the vm after it has been created, defaults to false.
-
 * `update_addons` (Boolean)
 
 Update the vm addons. Defaults to false.
@@ -244,10 +248,6 @@ Update the vm addons. Defaults to false.
 * `use_anka_cp` (Boolean)
 
 Use built in anka cp command. Defaults to false.
-
-* `vm_name` (String)
-
-The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
 
 ---
 
