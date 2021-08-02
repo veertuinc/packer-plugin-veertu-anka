@@ -9,7 +9,7 @@ Note that this builder does not manage images. Once it creates an image, it is u
 ## v2.0.0 Breaking Changes
 
 * Plugin will only work with Packer v1.7 or later.
-* Plugin has been renamed from `packer-plugin-veertu-anka` to `packer-plugin-veertu-anka`.
+* Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
 * Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
 * Pre-version-1.5 "legacy" Packer templates, which were exclusively JSON and follow a different format, are no longer compatible and must be updated to either HCL or the new JSON format: https://www.packer.io/docs/templates/hcl_templates/syntax-json
 
