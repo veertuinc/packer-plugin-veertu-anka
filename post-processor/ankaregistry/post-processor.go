@@ -65,6 +65,10 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 		return fmt.Errorf("You must specify a valid tag for your Veertu Anka VM (e.g. 'latest')")
 	}
 
+	if p.config.Local && p.config.RemoteVM != "" {
+		return fmt.Errorf("The 'local' and 'remote_vm' settings are mutually exclusive.")
+	}
+
 	p.client = &client.AnkaClient{}
 
 	return nil
@@ -152,7 +156,12 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		}
 	}
 
-	ui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", remoteVMName, remoteTag))
+	if p.config.Local {
+		ui.Say(fmt.Sprintf("Tagging local template %s with tag %s", remoteVMName, remoteTag))
+	} else {
+		ui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", remoteVMName, remoteTag))
+	}
+
 	pushErr := p.client.RegistryPush(registryParams, pushParams)
 
 	return artifact, true, false, pushErr
