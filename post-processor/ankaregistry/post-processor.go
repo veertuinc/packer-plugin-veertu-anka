@@ -65,6 +65,10 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 		return fmt.Errorf("You must specify a valid tag for your Veertu Anka VM (e.g. 'latest')")
 	}
 
+	if p.config.Local && p.config.RemoteVM != "" {
+		return fmt.Errorf("The 'local' and 'remote_vm' settings are mutually exclusive.")
+	}
+
 	p.client = &client.AnkaClient{}
 
 	return nil
