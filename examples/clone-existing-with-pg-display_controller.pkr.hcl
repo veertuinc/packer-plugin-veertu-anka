@@ -5,7 +5,7 @@ variable "source_vm_name" {
 
 variable "display_controller" {
   type = string
-  default = ""
+  default = "pg"
 }
 
 variable "vm_name" {
