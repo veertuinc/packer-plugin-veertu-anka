@@ -290,8 +290,8 @@ func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, confi
 		if err != nil {
 			return err
 		}
-		ui.Say(fmt.Sprintf("Modifying VM custom-variable hw.UUID to %s", config.HWUUID))
-		err = s.client.Modify(showResponse.Name, "set", "custom-variable", "hw.UUID", config.HWUUID)
+		ui.Say(fmt.Sprintf("Modifying VM custom-variable hw.uuid to %s", config.HWUUID))
+		err = s.client.Modify(showResponse.Name, "set", "custom-variable", "hw.uuid", config.HWUUID)
 		if err != nil {
 			return err
 		}
