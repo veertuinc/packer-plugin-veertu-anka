@@ -42,7 +42,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		if err != nil {
 			return onError(err)
 		}
-
 		s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerAppData.OSVersion, installerAppData.BundlerVersion)
 	}
 
@@ -69,36 +68,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 
 	return multistep.ActionContinue
-}
-
-// Cleanup will delete the vm if there happens to be an error and handle anything failed states
-func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
-	ui := state.Get("ui").(packer.Ui)
-
-	log.Println("Cleaning up create VM step")
-	if s.vmName == "" {
-		return
-	}
-
-	_, halted := state.GetOk(multistep.StateHalted)
-	_, canceled := state.GetOk(multistep.StateCancelled)
-	errorObj := state.Get("error")
-	switch errorObj.(type) {
-	case *common.VMAlreadyExistsError:
-		return
-	case *common.VMNotFoundException:
-		return
-	default:
-		if halted || canceled {
-			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
-
-			err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
-			if err != nil {
-				ui.Error(fmt.Sprint(err))
-			}
-			return
-		}
-	}
 }
 
 func (s *StepCreateVM) createFromInstallerApp(ui packer.Ui, config *Config) error {
@@ -142,4 +111,34 @@ func (s *StepCreateVM) createFromInstallerApp(ui packer.Ui, config *Config) erro
 	close(outputStream)
 
 	return nil
+}
+
+// Cleanup will delete the vm if there happens to be an error and handle anything failed states
+func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
+	ui := state.Get("ui").(packer.Ui)
+
+	log.Println("Cleaning up create VM step")
+	if s.vmName == "" {
+		return
+	}
+
+	_, halted := state.GetOk(multistep.StateHalted)
+	_, canceled := state.GetOk(multistep.StateCancelled)
+	errorObj := state.Get("error")
+	switch errorObj.(type) {
+	case *common.VMAlreadyExistsError:
+		return
+	case *common.VMNotFoundException:
+		return
+	default:
+		if halted || canceled {
+			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
+
+			err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
+			if err != nil {
+				ui.Error(fmt.Sprint(err))
+			}
+			return
+		}
+	}
 }

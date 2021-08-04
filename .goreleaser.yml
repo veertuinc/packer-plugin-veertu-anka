@@ -1,0 +1,77 @@
+# This is an example goreleaser.yaml file with some defaults.
+# Make sure to check the documentation at http://goreleaser.com
+env:
+  - CGO_ENABLED=0
+before:
+  hooks:
+    - make go.lint
+    - make go.test
+    - make go.hcl2spec
+builds:
+  # A separated build to run the packer-plugins-check only once for a linux_amd64 binary
+  -
+    id: build
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    hooks:
+      post:
+        - cmd: bash -c "rm -f /tmp/packer-plugins-check;
+              ( go install github.com/hashicorp/packer/cmd/packer-plugins-check@latest && packer-plugins-check -load={{ .ProjectName }}_{{ .Os }}_{{ .Arch }} ) &>/tmp/packer-plugins-check && exit $? ||
+              EC=$?; [[ $EC -gt 0 ]] && tail /tmp/packer-plugins-check; exit $EC"
+          dir: "{{ dir .Path }}"
+        - cmd: bash -c "chmod +x {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}; ls -lah $(pwd)/{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+          dir: "{{ dir .Path }}"
+        - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }} && make validate-examples"
+    flags:
+      - -trimpath #removes all file system paths from the compiled executable
+    ldflags:
+      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+    goos:
+      - linux
+    goarch:
+      - amd64
+    binary: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
+    no_unique_dist_dir: true
+  -
+    id: build2
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath #removes all file system paths from the compiled executable
+    ldflags:
+      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    binary: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
+    no_unique_dist_dir: true
+archives:
+  - format: zip
+    files:
+      - none*
+    name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+# checksum:
+#   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+#   algorithm: sha256
+# signs:
+#   - artifacts: checksum
+#     args:
+#       # if you are using this is in a GitHub action or some other automated pipeline, you
+#       # need to pass the batch flag to indicate its not interactive.
+#       - "--batch"
+#       - "--local-user"
+#       - "{{ .Env.GPG_FINGERPRINT }}"
+#       - "--output"
+#       - "${signature}"
+#       - "--detach-sign"
+#       - "${artifact}"
+release:
+  # If you want to manually examine the release before its live, uncomment this line:
+  # draft: true
+  # As part of the release doc files are included as a separate deliverable for consumption by Packer.io.
+  # To include a separate docs.zip uncomment the extra_files config and the docs.zip command hook above.
+  #extra_files:
+  #- glob: ./docs.zip
+  disable: true
+
+changelog:
+  skip: true

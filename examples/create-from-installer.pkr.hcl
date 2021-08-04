@@ -13,7 +13,7 @@ variable "vcpu_count" {
   default = ""
 }
 
-source "veertu-anka-vm-create" "anka-packer-base-macos" {
+source "veertu-anka-vm-create" "base" {
   installer_app = "${var.installer_app}"
   vm_name = "${var.vm_name}"
   vcpu_count = "${var.vcpu_count}"
@@ -21,7 +21,7 @@ source "veertu-anka-vm-create" "anka-packer-base-macos" {
 
 build {
   sources = [
-    "source.veertu-anka-vm-create.anka-packer-base-macos"
+    "source.veertu-anka-vm-create.base"
   ]
 
   provisioner "shell" {

@@ -13,7 +13,7 @@ import (
 	"github.com/veertuinc/packer-plugin-veertu-anka/client"
 	mocks "github.com/veertuinc/packer-plugin-veertu-anka/mocks"
 	"github.com/veertuinc/packer-plugin-veertu-anka/util"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 var createResponse client.CreateResponse

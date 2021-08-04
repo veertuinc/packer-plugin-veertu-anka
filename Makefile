@@ -4,13 +4,13 @@ FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
 BIN := packer-plugin-veertu-anka
 ARCH := amd64
 OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
-BIN_FULL := bin/$(BIN)_$(OS_TYPE)_$(ARCH)
+BIN_FULL ?= bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 
-.PHONY: go.lint lint go.test test clean anka.clean-images
+.PHONY: go.lint validate-examples go.test test clean anka.clean-images
 
 .DEFAULT_GOAL := help
 
-all: lint go.lint clean go.hcl2spec go.build go.test anka.clean-images anka.clean-clones uninstall
+all: go.lint clean go.hcl2spec go.build go.test install validate-examples anka.clean-images anka.clean-clones uninstall
 
 #help:	@ List available tasks on this project
 help:
@@ -18,26 +18,28 @@ help:
 
 #go.lint:		@ Run `golangci-lint run` against the current code
 go.lint:
+  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v1.40.1
 	golangci-lint run --fast
 
 #go.test:		@ Run `go test` against the current tests
 go.test:
-	go test -v builder/anka/*.go
-	go test -v post-processor/ankaregistry/*.go
+	go get github.com/golang/mock/mockgen@v1.6.0
+	mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
+	go test builder/anka/*.go
+	go test post-processor/ankaregistry/*.go
 
 #go.hcl2spec:		@ Run `go generate` to generate hcl2 config specs
 go.hcl2spec:
-	GOOS=$(OS_TYPE) go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
-	GOOS=$(OS_TYPE) PATH="$(shell pwd):${PATH}" go generate builder/anka/config.go
-	GOOS=$(OS_TYPE) PATH="$(shell pwd):${PATH}" go generate post-processor/ankaregistry/post-processor.go
+	GOOS=$(OS_TYPE) go generate builder/anka/config.go
+	GOOS=$(OS_TYPE) go generate post-processor/ankaregistry/post-processor.go
 
 #go.build:		@ Run `go build` to generate the binary
 go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
 	chmod +x $(BIN_FULL)
 
-#lint:  @ Run `packer validate` against packer definitions
-lint:
+#validate-examples:  @ Run `packer validate` against example packer definitions using the built package
+validate-examples:
 	packer validate examples/create-from-installer.pkr.hcl
 	packer validate examples/create-from-installer-with-post-processing.pkr.hcl
 	packer validate examples/clone-existing.pkr.hcl
@@ -54,12 +56,13 @@ install:
 
 #uninstall:		@ Delete the binary from the packer plugins folder
 uninstall:
-	rm -f ~/.packer.d/plugins/$(BIN)
+	rm -f ~/.packer.d/plugins/$(BIN)*
 
 #build-and-install:		@ Run make targets to setup the initialize the binary
 build-and-install:
 	$(MAKE) clean
 	$(MAKE) go.build
+	$(MAKE) go.hcl2spec
 	$(MAKE) install
 
 #build-linux:		@ Run go.build for Linux
@@ -90,3 +93,8 @@ anka.clean-clones:
 anka.wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
 	-rm -rf ~/.anka
+
+#generate-docs:		@ Generate packer docs
+generate-docs:
+	@go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
+	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/ && /bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"
