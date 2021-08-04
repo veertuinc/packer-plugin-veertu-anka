@@ -30,6 +30,7 @@ go.test:
 
 #go.hcl2spec:		@ Run `go generate` to generate hcl2 config specs
 go.hcl2spec:
+	go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
 	GOOS=$(OS_TYPE) go generate builder/anka/config.go
 	GOOS=$(OS_TYPE) go generate post-processor/ankaregistry/post-processor.go
 
