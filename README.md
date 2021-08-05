@@ -19,6 +19,24 @@ Packer Version | Veertu Anka Plugin Version
 --- | ---
 1.7.x and above | 2.0.0
 
+## Installing with `packer init`
+
+1. Add a packer block to your .pkr.hcl like this:
+
+    ```
+    packer {
+      required_plugins {
+        veertu-anka = {
+          version = ">= v2.1.0"
+          source = "github.com/veertuinc/veertu-anka"
+        }
+      }
+    }
+    ```
+
+2. Then run `packer init {HCL file name}`
+3. Run your `packer build` command with your hcl template
+
 ## Installing from Binary
 
 1. [Install Packer v1.7 or newer](https://www.packer.io/downloads)
@@ -28,7 +46,8 @@ Packer Version | Veertu Anka Plugin Version
     * The directory where the packer binary is.
     * The `~/.packer.d/plugins` directory.
     * The current working directory.
-5. Change to a directory where you have packer templates, and run as usual.
+5. Rename the binary file to `packer-plugin-veertu-anka`
+6. Run your `packer build` command with your hcl template
 
 ## Documentation
 
