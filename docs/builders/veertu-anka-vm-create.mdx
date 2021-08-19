@@ -113,14 +113,6 @@ source "veertu-anka-vm-create" "base" {
   installer_app = "${var.installer_app}"
   vm_name = "${var.vm_name}"
   vcpu_count = "${var.vcpu_count}"
-  port_forwarding_rules {
-    port_forwarding_guest_port = 80
-    port_forwarding_host_port = 12345
-    port_forwarding_rule_name = "website"
-  }
-  port_forwarding_rules  {
-    port_forwarding_guest_port = 8080
-  }
 }
 
 build {
