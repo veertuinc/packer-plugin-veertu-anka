@@ -15,12 +15,12 @@ builds:
     hooks:
       post:
         - cmd: bash -c "rm -f /tmp/packer-plugins-check;
-              ( go install github.com/hashicorp/packer/cmd/packer-plugins-check@v1.7.4 && packer-plugins-check -load={{ .ProjectName }}_{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }} ) &>/tmp/packer-plugins-check && exit $? ||
+              ( go install github.com/hashicorp/packer/cmd/packer-plugins-check@v1.7.4 && packer-plugins-check -load={{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }} ) &>/tmp/packer-plugins-check && exit $? ||
               EC=$?; [[ $EC -gt 0 ]] && tail /tmp/packer-plugins-check; exit $EC"
           dir: "{{ dir .Path }}"
-        - cmd: bash -c "chmod +x {{ .ProjectName }}_{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}; ls -lah $(pwd)/{{ .ProjectName }}_{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}"
+        - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}; ls -lah $(pwd)/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}"
           dir: "{{ dir .Path }}"
-        - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }} && make validate-examples"
+        - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }} && make validate-examples"
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
@@ -29,7 +29,7 @@ builds:
       - linux
     goarch:
       - amd64
-    binary: '{{ .ProjectName }}_{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+    binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true
   -
     id: build2
@@ -42,13 +42,13 @@ builds:
       - darwin
     goarch:
       - amd64
-    binary: '{{ .ProjectName }}_{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+    binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true
 archives:
   - format: zip
     files:
       - none*
-    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+    name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
 # checksum:
 #   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
 #   algorithm: sha256
