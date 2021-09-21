@@ -53,8 +53,8 @@ Packer Version | Veertu Anka Plugin Version
 
 | Builders | Post Processors |
 | --- | --- |
-| [[ veertu-anka-vm-create ]](./docs/builders/veertu-anka-vm-create.mdx) | [[ veertu-anka-registry-push ]](./docs/post-processors) |
-| [[ veertu-anka-vm-clone ]](./docs/builders/veertu-anka-vm-clone.mdx) | |
+| [[ veertu-anka-vm-create ]](./docs/builders/vm-create.mdx) | [[ veertu-anka-registry-push ]](./docs/post-processors/registry-push.mdx) |
+| [[ veertu-anka-vm-clone ]](./docs/builders/vm-clone.mdx) | |
 
 ## Usage
 
