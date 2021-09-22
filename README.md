@@ -178,7 +178,7 @@ go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
 We recommend using goreleaser to perform all of the building, linting, and testing:
 
 ```bash
-  API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser build --single-target --snapshot --rm-dist
+API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser build --single-target --snapshot --rm-dist
 ```
 
 When testing with an example HCL:
