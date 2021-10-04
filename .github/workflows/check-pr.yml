@@ -17,6 +17,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.16
+      - name: Describe plugin
+        id: plugin_describe
+        run: echo "::set-output name=api_version::$(go run . describe | jq -r '.api_version')"
       - name: Install packer-pdc
         run: go get github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
       - name: Run GoReleaser build
@@ -24,3 +27,5 @@ jobs:
         with:
           version: latest
           args: build --single-target --snapshot --rm-dist
+        env:
+          API_VERSION: ${{ steps.plugin_describe.outputs.api_version }}

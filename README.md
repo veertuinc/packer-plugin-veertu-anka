@@ -1,23 +1,26 @@
 # Packer Plugin for Anka
 
-This is a [Packer Builder] for building images that work with [Veertu Anka], a macOS virtualization tool.
+This is a [Packer](https://www.packer.io/) Plugin for building images that work with [Veertu's Anka macOS Virtualization tool](https://veertu.com/).
 
-Note that this builder does not manage images. Once it creates an image, it is up to you to use it or delete it.
+- Note that this plugin does not manage VM templates. Once it creates a Template, it is up to you to use it or delete it.
 
-> It's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add).
-
+- For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add).
 ## v2.0.0 Breaking Changes
 
-* Plugin will only work with Packer v1.7 or later.
-* Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
-* Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
-* Pre-version-1.5 "legacy" Packer templates, which were exclusively JSON and follow a different format, are no longer compatible and must be updated to either HCL or the new JSON format: https://www.packer.io/docs/templates/hcl_templates/syntax-json
+- Plugin will only work with Packer v1.7 or later.
+
+- Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
+
+- Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
+
+- Pre-version-1.5 "legacy" Packer templates, which were exclusively JSON and follow a different format, are no longer compatible and must be updated to either HCL or the new JSON format: https://www.packer.io/docs/templates/hcl_templates/syntax-json
 
 ## Compatibility
 
 Packer Version | Veertu Anka Plugin Version
 --- | ---
-1.7.x and above | 2.0.0
+1.7.0 and above | >= 2.0.0
+below 1.7.0 | < 2.0.0
 
 ## Installing with `packer init`
 
@@ -53,8 +56,8 @@ Packer Version | Veertu Anka Plugin Version
 
 | Builders | Post Processors |
 | --- | --- |
-| [[ veertu-anka-vm-create ]](./docs/builders/veertu-anka-vm-create.mdx) | [[ veertu-anka-registry-push ]](./docs/post-processors) |
-| [[ veertu-anka-vm-clone ]](./docs/builders/veertu-anka-vm-clone.mdx) | |
+| [[ veertu-anka-vm-create ]](./docs/builders/vm-create.mdx) | [[ veertu-anka-registry-push ]](./docs/post-processors/anka-registry-push.mdx) |
+| [[ veertu-anka-vm-clone ]](./docs/builders/vm-clone.mdx) | |
 
 ## Usage
 
@@ -175,7 +178,7 @@ go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
 We recommend using goreleaser to perform all of the building, linting, and testing:
 
 ```bash
-goreleaser build --single-target --snapshot --rm-dist
+API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser build --single-target --snapshot --rm-dist
 ```
 
 When testing with an example HCL:
