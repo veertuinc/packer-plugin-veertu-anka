@@ -15,7 +15,7 @@ builds:
     hooks:
       post:
         - cmd: bash -c "rm -f /tmp/packer-plugins-check;
-              ( go install github.com/hashicorp/packer/cmd/packer-plugins-check@v1.7.4 && packer-plugins-check -load={{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }} ) &>/tmp/packer-plugins-check && exit $? ||
+              ( go install github.com/hashicorp/packer/cmd/packer-plugins-check@latest && packer-plugins-check -load={{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }} ) &>/tmp/packer-plugins-check && exit $? ||
               EC=$?; [[ $EC -gt 0 ]] && tail /tmp/packer-plugins-check; exit $EC"
           dir: "{{ dir .Path }}"
         - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}; ls -lah $(pwd)/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}"
