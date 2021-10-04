@@ -56,7 +56,7 @@ below 1.7.0 | < 2.0.0
 
 | Builders | Post Processors |
 | --- | --- |
-| [[ veertu-anka-vm-create ]](./docs/builders/vm-create.mdx) | [[ veertu-anka-registry-push ]](./docs/post-processors/registry-push.mdx) |
+| [[ veertu-anka-vm-create ]](./docs/builders/vm-create.mdx) | [[ veertu-anka-registry-push ]](./docs/post-processors/anka-registry-push.mdx) |
 | [[ veertu-anka-vm-clone ]](./docs/builders/vm-clone.mdx) | |
 
 ## Usage
