@@ -60,7 +60,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
-			Force: 		 false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
@@ -98,7 +98,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
-			Force:		 false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
@@ -136,7 +136,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
-			Force:		 false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
@@ -177,7 +177,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
-			Force:		 false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
@@ -225,7 +225,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
-			Force:		 false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
@@ -275,7 +275,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
-			Force:		 false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
