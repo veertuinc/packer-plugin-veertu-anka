@@ -128,6 +128,7 @@ type RegistryPushParams struct {
 	Description string
 	RemoteVM    string
 	Local       bool
+	Force		bool
 }
 
 func (c *AnkaClient) RegistryPush(registryParams RegistryParams, pushParams RegistryPushParams) error {
@@ -147,6 +148,10 @@ func (c *AnkaClient) RegistryPush(registryParams RegistryParams, pushParams Regi
 
 	if pushParams.Local {
 		cmdArgs = append(cmdArgs, "--local")
+	}
+	
+	if pushParams.Force {
+		cmdArgs = append(cmdArgs, "--force")
 	}
 
 	cmdArgs = append(cmdArgs, pushParams.VMID)
