@@ -151,7 +151,9 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 			if templates[i].Name == remoteVMName {
 				id = templates[i].ID
 				latestTag = templates[i].Latest
-				found = true
+				if !pushParams.Force { // avoid revert and error if we're forcing the push with the CLI
+					found = true
+				}
 				foundMessage = fmt.Sprintf("Found existing template %s on registry that matches name '%s'", id, remoteVMName)
 				ui.Say(foundMessage)
 				break
