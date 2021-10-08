@@ -23,10 +23,10 @@ go.lint:
 
 #go.test:		@ Run `go test` against the current tests
 go.test:
-	go get github.com/golang/mock/mockgen@v1.6.0
+	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
-	go test builder/anka/*.go
-	go test post-processor/ankaregistry/*.go
+	go test -v builder/anka/*.go
+	go test -v post-processor/ankaregistry/*.go
 
 #go.hcl2spec:		@ Run `go generate` to generate hcl2 config specs
 go.hcl2spec:

@@ -77,6 +77,14 @@ The name of a registry template you want to push the local template onto.
 
 The name of the tag to push (will default as 'latest' if not set).
 
+* `force` (String)
+
+Whether or not to forcefully push, regardless of a tag already existing
+
+## Other 
+
+When using `packer build -force`, the post-processor will issue a [revert API call](https://ankadocs.veertu.com/docs/anka-build-cloud/working-with-registry-and-api/#revert) to remove the existing tag before pushing the new.
+
 ## Example
 
 Here is an example that uses the file and shell provisioners.
