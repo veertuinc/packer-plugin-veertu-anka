@@ -38,7 +38,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		Remotes: map[string]client.RegistryRemote{"go-mock": registryRemote},
 	}
 
-	t.Run("should push to registry with defaults", func(t *testing.T) {
+	t.Run("push to registry with defaults", func(t *testing.T) {
 		config := Config{
 			RemoteVM:    "foo",
 			Tag:         "registry-push",
@@ -60,21 +60,25 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
+		mockui.Say("Registry push successful")
 
 		assert.Equal(t, mockui.SayMessages[0].Message, "Pushing template to Anka Registry as foo with tag registry-push")
+		assert.Equal(t, mockui.SayMessages[1].Message, "Registry push successful")
 
 		_, _, _, err := pp.PostProcess(context.Background(), ui, artifact)
 		assert.Nil(t, err)
 	})
 
-	t.Run("with force push to registry with registry name", func(t *testing.T) {
+	t.Run("push to registry with registry name", func(t *testing.T) {
 		config := Config{
 			RegistryName: "go-mock",
 			RemoteVM:     "foo",
@@ -97,9 +101,11 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -111,7 +117,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("with force push to registry with registry URL", func(t *testing.T) {
+	t.Run("push to registry with registry URL", func(t *testing.T) {
 		config := Config{
 			RegistryURL: "http://anka.example.test:8080",
 			RemoteVM:    "foo",
@@ -134,8 +140,10 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
+			Force:       false,
 		}
 
+		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -147,7 +155,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("with force push to registry but no existing templates", func(t *testing.T) {
+	t.Run("push to registry with no existing templates", func(t *testing.T) {
 		packerConfig := common.PackerConfig{
 			PackerForce: true,
 		}
@@ -174,6 +182,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
@@ -189,7 +198,48 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("with force push to registry and existing templates", func(t *testing.T) {
+	t.Run("push to registry with existing template and fail", func(t *testing.T) {
+		err := json.Unmarshal(json.RawMessage(`[{ "id": "foo_id", "name": "foo", "latest": "foo_tag" }]`), &templateList)
+		if err != nil {
+			t.Fail()
+		}
+
+		packerConfig := common.PackerConfig{
+			PackerForce: false,
+		}
+
+		config := Config{
+			PackerConfig: packerConfig,
+			RemoteVM:     "foo",
+			Tag:          "registry-push",
+			Description:  "mock for testing anka registry push",
+		}
+
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+
+		registryParams := client.RegistryParams{
+			RegistryName: "go-mock",
+			RegistryURL:  "http://localhost:8080",
+		}
+
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
+
+		mockui := packer.MockUi{}
+		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
+		mockui.Say(fmt.Sprintf("Found existing template %s on registry that matches name '%s'", templateList[0].ID, config.RemoteVM))
+
+		assert.Equal(t, mockui.SayMessages[0].Message, "Pushing template to Anka Registry as foo with tag registry-push")
+		assert.Equal(t, mockui.SayMessages[1].Message, "Found existing template foo_id on registry that matches name 'foo'")
+
+		_, _, _, err = pp.PostProcess(context.Background(), ui, artifact)
+		assert.Error(t, err)
+	})
+
+	t.Run("push to registry with existing template and don't revert latest tag first [packer build -force]", func(t *testing.T) {
 		err := json.Unmarshal(json.RawMessage(`[{ "id": "foo_id", "name": "foo", "latest": "foo_tag" }]`), &templateList)
 		if err != nil {
 			t.Fail()
@@ -221,10 +271,12 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
+		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(0)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -238,7 +290,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("with force push to registry and existing templates with latest tag match", func(t *testing.T) {
+	t.Run("push to registry with existing templates with latest tag match and revert tag first [packer build -force]", func(t *testing.T) {
 		err := json.Unmarshal(json.RawMessage(`[{ "id": "foo_id", "name": "foo", "latest": "registry-push" }]`), &templateList)
 		if err != nil {
 			t.Fail()
@@ -270,6 +322,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Description: config.Description,
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
+			Force:       false,
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
@@ -289,4 +342,52 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		_, _, _, err = pp.PostProcess(context.Background(), ui, artifact)
 		assert.Nil(t, err)
 	})
+
+	t.Run("force push to registry with existing template", func(t *testing.T) {
+		err := json.Unmarshal(json.RawMessage(`[{ "id": "foo_id", "name": "foo", "latest": "registry-push" }]`), &templateList)
+		if err != nil {
+			t.Fail()
+		}
+
+		config := Config{
+			RemoteVM:    "foo",
+			Tag:         "registry-push",
+			Description: "mock for testing anka registry push",
+			Force:       true,
+		}
+
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+
+		registryParams := client.RegistryParams{
+			RegistryName: "go-mock",
+			RegistryURL:  "http://localhost:8080",
+		}
+
+		pushParams := client.RegistryPushParams{
+			Tag:         config.Tag,
+			Description: config.Description,
+			RemoteVM:    config.RemoteVM,
+			Local:       false,
+			Force:       true,
+		}
+
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
+		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(0)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+
+		mockui := packer.MockUi{}
+		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
+		mockui.Say(fmt.Sprintf("Found existing template %s on registry that matches name '%s'", templateList[0].ID, config.RemoteVM))
+
+		assert.Equal(t, mockui.SayMessages[0].Message, "Pushing template to Anka Registry as foo with tag registry-push")
+		assert.Equal(t, mockui.SayMessages[1].Message, "Found existing template foo_id on registry that matches name 'foo'")
+
+		_, _, _, err = pp.PostProcess(context.Background(), ui, artifact)
+		assert.Nil(t, err)
+	})
+
 }

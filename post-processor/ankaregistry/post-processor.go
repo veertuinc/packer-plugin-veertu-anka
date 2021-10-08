@@ -34,6 +34,7 @@ type Config struct {
 	Description string `mapstructure:"description"`
 	RemoteVM    string `mapstructure:"remote_vm"`
 	Local       bool   `mapstructure:"local"`
+	Force       bool   `mapstructure:"force"`
 
 	ctx interpolate.Context
 }
@@ -125,13 +126,22 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		Description: p.config.Description,
 		RemoteVM:    p.config.RemoteVM,
 		Local:       p.config.Local,
+		Force:       p.config.Force,
 		VMID:        artifact.String(),
 	}
 
-	if p.config.PackerForce {
-		var id string
-		var latestTag string
+	var id string
+	var latestTag string
+	var found bool
+	var foundMessage string
+	var err error
 
+	if p.config.Local {
+		ui.Say(fmt.Sprintf("Tagging local template %s with tag %s", remoteVMName, remoteTag))
+	} else {
+		ui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", remoteVMName, remoteTag))
+
+		// Check if it already exists first
 		templates, err := p.client.RegistryList(registryParams)
 		if err != nil {
 			return nil, false, false, err
@@ -141,28 +151,36 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 			if templates[i].Name == remoteVMName {
 				id = templates[i].ID
 				latestTag = templates[i].Latest
-				ui.Say(fmt.Sprintf("Found existing template %s on registry that matches name '%s'", id, remoteVMName))
+				if !pushParams.Force { // avoid revert and error if we're forcing the push with the CLI
+					found = true
+				}
+				foundMessage = fmt.Sprintf("Found existing template %s on registry that matches name '%s'", id, remoteVMName)
+				ui.Say(foundMessage)
 				break
 			}
 		}
 
-		if id != "" && latestTag == remoteTag {
-			err = p.client.RegistryRevert(registryParams.RegistryURL, id)
-			if err != nil {
-				return nil, false, false, err
+		if p.config.PackerForce { // differs from processor's force: true
+			if id != "" && latestTag == remoteTag {
+				err = p.client.RegistryRevert(registryParams.RegistryURL, id)
+				if err != nil {
+					return nil, false, false, err
+				}
+				ui.Say(fmt.Sprintf("Reverted latest tag for template '%s' on registry", id))
 			}
+			found = false
+		}
 
-			ui.Say(fmt.Sprintf("Reverted latest tag for template '%s' on registry", id))
+	}
+
+	if found {
+		err = fmt.Errorf(foundMessage)
+	} else {
+		err = p.client.RegistryPush(registryParams, pushParams)
+		if err == nil {
+			ui.Say("Registry push successful")
 		}
 	}
 
-	if p.config.Local {
-		ui.Say(fmt.Sprintf("Tagging local template %s with tag %s", remoteVMName, remoteTag))
-	} else {
-		ui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", remoteVMName, remoteTag))
-	}
-
-	pushErr := p.client.RegistryPush(registryParams, pushParams)
-
-	return artifact, true, false, pushErr
+	return artifact, true, false, err
 }
