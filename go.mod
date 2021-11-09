@@ -11,6 +11,6 @@ require (
 	github.com/hashicorp/hcl/v2 v2.10.1
 	github.com/hashicorp/packer-plugin-sdk v0.2.6
 	github.com/mitchellh/mapstructure v1.4.2
-	github.com/zclconf/go-cty v1.9.1
+	github.com/zclconf/go-cty v1.10.0
 	gotest.tools/v3 v3.0.3
 )
