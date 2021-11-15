@@ -28,6 +28,7 @@ type FlatConfig struct {
 	Description         *string           `mapstructure:"description" cty:"description" hcl:"description"`
 	RemoteVM            *string           `mapstructure:"remote_vm" cty:"remote_vm" hcl:"remote_vm"`
 	Local               *bool             `mapstructure:"local" cty:"local" hcl:"local"`
+	Force               *bool             `mapstructure:"force" cty:"force" hcl:"force"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -60,6 +61,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"description":                &hcldec.AttrSpec{Name: "description", Type: cty.String, Required: false},
 		"remote_vm":                  &hcldec.AttrSpec{Name: "remote_vm", Type: cty.String, Required: false},
 		"local":                      &hcldec.AttrSpec{Name: "local", Type: cty.Bool, Required: false},
+		"force":                      &hcldec.AttrSpec{Name: "force", Type: cty.Bool, Required: false},
 	}
 	return s
 }

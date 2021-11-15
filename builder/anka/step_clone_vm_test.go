@@ -358,7 +358,7 @@ func TestCloneVMRun(t *testing.T) {
 		// vcpucount
 		gomock.InOrder(
 			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
-			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "set", "cpu", "-c", config.VCPUCount).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "set", "cpu", config.VCPUCount).Return(nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}

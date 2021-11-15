@@ -240,7 +240,7 @@ func (s *StepCloneVM) modifyVMResources(showResponse client.ShowResponse, config
 
 			ui.Say(fmt.Sprintf("Modifying VM %s VCPU core count to %v", showResponse.Name, stringVCPUCount))
 
-			err = s.client.Modify(showResponse.Name, "set", "cpu", "-c", strconv.Itoa(int(stringVCPUCount)))
+			err = s.client.Modify(showResponse.Name, "set", "cpu", strconv.Itoa(int(stringVCPUCount)))
 			if err != nil {
 				return err
 			}
