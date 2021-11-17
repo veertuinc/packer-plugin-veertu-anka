@@ -19,7 +19,7 @@ build {
   ]
   provisioner "file" {
     destination = "/private/tmp/"
-    source      = "./examples/ansible"
+    source      = "/tmp/examples/ansible"
   }
   provisioner "shell" {
     inline = [
