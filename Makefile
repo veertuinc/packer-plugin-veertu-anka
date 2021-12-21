@@ -23,6 +23,7 @@ go.lint:
 
 #go.test:		@ Run `go test` against the current tests
 go.test:
+	go mod tidy -go=1.16 && go mod tidy -go=1.17
 	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
 	go test -v builder/anka/*.go
