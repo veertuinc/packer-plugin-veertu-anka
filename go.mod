@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/packer-plugin-sdk v0.2.11
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/zclconf/go-cty v1.10.0
-	gotest.tools/v3 v3.0.3
+	gotest.tools/v3 v3.1.0
 )
 
 require (
