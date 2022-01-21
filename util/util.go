@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -36,6 +37,7 @@ type Util interface {
 	ObtainMacOSVersionFromInstallerApp(path string) (InstallAppPlist, error)
 	RandSeq(n int) string
 	StepError(ui packer.Ui, state multistep.StateBag, err error) multistep.StepAction
+	ExecuteHostCommand(name string, arg ...string) string
 }
 
 // AnkaUtil implements Util
@@ -159,4 +161,10 @@ func (u *AnkaUtil) RandSeq(n int) string {
 	}
 
 	return string(b)
+}
+
+func (u *AnkaUtil) ExecuteHostCommand(name string, arg ...string) string {
+	output, _ := exec.Command(name, arg...).CombinedOutput()
+
+	return string(output)
 }

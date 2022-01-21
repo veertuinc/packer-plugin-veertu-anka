@@ -64,6 +64,7 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -94,6 +95,7 @@ func TestCloneVMRun(t *testing.T) {
 			ankaUtil.EXPECT().RandSeq(10).Return("ABCDEabcde").Times(1),
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -131,6 +133,7 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -336,6 +339,7 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -414,6 +418,7 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -502,6 +507,7 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 			ankaClient.EXPECT().Describe(config.VMName).Return(clonedDescribeResponse, nil).Times(1),
@@ -519,6 +525,52 @@ func TestCloneVMRun(t *testing.T) {
 		assert.Equal(t, mockui.SayMessages[1].Message, "Ensuring foo port-forwarding (Guest Port: 8080, Host Port: 80, Rule Name: rule1)")
 		assert.Equal(t, mockui.ErrorCalled, true)
 		assert.Equal(t, mockui.ErrorMessage, "Found an existing host port rule (80)! Skipping without setting...")
+		assert.Equal(t, multistep.ActionContinue, stepAction)
+	})
+
+	t.Run("[ARM] clone vm and create local tag if none exists", func(t *testing.T) {
+		config := &Config{
+			VMName:       "foo",
+			SourceVMName: "source_foo",
+			PackerConfig: common.PackerConfig{
+				PackerBuilderType: "veertu-anka-vm-clone",
+			},
+		}
+
+		registryParams := client.RegistryParams{
+			RegistryURL: "http://localhost:1234",
+		}
+		registryPushParams := client.RegistryPushParams{
+			Tag:      "local-tag-123",
+			RemoteVM: "",
+			Local:    true,
+			Force:    false,
+			VMID:     config.SourceVMName,
+		}
+
+		step.vmName = config.VMName
+
+		state.Put("vm_name", step.vmName)
+		state.Put("config", config)
+
+		gomock.InOrder(
+			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("arm64").Times(1),
+			ankaUtil.EXPECT().RandSeq(10).Return("123").Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, registryPushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+		)
+
+		mockui := packer.MockUi{}
+		mockui.Say("Preparing source VM by creating a local tag (necessary in Anka 3 to optimize disk usage of clones)")
+		mockui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShowResponse.Name, step.vmName))
+
+		stepAction := step.Run(ctx, state)
+
+		assert.Equal(t, mockui.SayMessages[0].Message, "Preparing source VM by creating a local tag (necessary in Anka 3 to optimize disk usage of clones)")
+		assert.Equal(t, mockui.SayMessages[1].Message, "Cloning source VM source_foo into a new virtual machine: foo")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 }

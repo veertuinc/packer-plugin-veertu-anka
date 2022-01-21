@@ -66,6 +66,25 @@ func (mr *MockUtilMockRecorder) ConvertDiskSizeToBytes(diskSize interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConvertDiskSizeToBytes", reflect.TypeOf((*MockUtil)(nil).ConvertDiskSizeToBytes), diskSize)
 }
 
+// ExecuteHostCommand mocks base method.
+func (m *MockUtil) ExecuteHostCommand(name string, arg ...string) string {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{name}
+	for _, a := range arg {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExecuteHostCommand", varargs...)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// ExecuteHostCommand indicates an expected call of ExecuteHostCommand.
+func (mr *MockUtilMockRecorder) ExecuteHostCommand(name interface{}, arg ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{name}, arg...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteHostCommand", reflect.TypeOf((*MockUtil)(nil).ExecuteHostCommand), varargs...)
+}
+
 // ObtainMacOSVersionFromInstallerApp mocks base method.
 func (m *MockUtil) ObtainMacOSVersionFromInstallerApp(path string) (util.InstallAppPlist, error) {
 	m.ctrl.T.Helper()
