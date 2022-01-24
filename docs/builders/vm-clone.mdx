@@ -27,6 +27,10 @@ packer {
 }
 ```
 
+## Important Notes
+
+- **In Anka 3.0** we now require a tagged source VM before cloning in order to share the underlying .ank image and optimize disk space. If your source VM is not tagged yet, we will assign one. **We highly recommend pushing this VM Template/Tag to your registry.**
+
 ## Configuration Reference
 
 There are many configuration options available for the builder. They are
