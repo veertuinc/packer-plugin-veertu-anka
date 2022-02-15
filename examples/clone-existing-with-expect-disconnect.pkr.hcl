@@ -22,6 +22,7 @@ build {
     inline = [
       "set -x",
       "echo PRE REBOOT",
+      "sleep 5",
       "sudo reboot",
       "echo SHOULD NOT SEE THIS ECHO"
     ]
