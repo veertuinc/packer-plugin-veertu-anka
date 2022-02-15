@@ -53,8 +53,6 @@ The name for the VM that is created. One is generated using the source_vm_name i
 
 * `vcpu_count` (String)
 
-> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
-
 The number of vCPU cores, defaults to `2`.
 
 * `ram_size` (String)
@@ -123,7 +121,7 @@ The registry name (will use your default configuration if not set).
 
 Specify the tag of the VM we want to clone instead of using the default.
 
-* `update_addons` (Boolean)
+* `update_addons` (Boolean) ()
 
 Update the vm addons. Defaults to false.
 

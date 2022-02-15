@@ -19,6 +19,7 @@ type RegistryParams struct {
 	NodeKeyPath  string
 	CaRootPath   string
 	IsInsecure   bool
+	HostArch     string
 }
 
 // https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-list

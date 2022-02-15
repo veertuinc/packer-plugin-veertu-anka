@@ -64,7 +64,6 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -95,7 +94,6 @@ func TestCloneVMRun(t *testing.T) {
 			ankaUtil.EXPECT().RandSeq(10).Return("ABCDEabcde").Times(1),
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -133,7 +131,6 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -339,7 +336,6 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -418,7 +414,6 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -507,7 +502,6 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("amd64").Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 			ankaClient.EXPECT().Describe(config.VMName).Return(clonedDescribeResponse, nil).Times(1),
@@ -535,10 +529,12 @@ func TestCloneVMRun(t *testing.T) {
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-clone",
 			},
+			HostArch: "arm64",
 		}
 
 		registryParams := client.RegistryParams{
 			RegistryURL: "http://localhost:1234",
+			HostArch:    config.HostArch,
 		}
 		registryPushParams := client.RegistryPushParams{
 			Tag:      "local-tag-123",
@@ -556,7 +552,6 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
-			ankaUtil.EXPECT().ExecuteHostCommand("arch").Return("arm64").Times(1),
 			ankaUtil.EXPECT().RandSeq(10).Return("123").Times(1),
 			ankaClient.EXPECT().RegistryPush(registryParams, registryPushParams).Return(nil).Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),

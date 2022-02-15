@@ -8,6 +8,11 @@ variable "vm_name" {
   default = "anka-packer-from-source"
 }
 
+variable "host_path" {
+  type = string
+  default = "/tmp/"
+}
+
 source "veertu-anka-vm-clone" "anka-packer-from-source" {
   vm_name = "${var.vm_name}"
   source_vm_name = "${var.source_vm_name}"
@@ -19,7 +24,7 @@ build {
   ]
   provisioner "file" {
     destination = "/private/tmp/"
-    source      = "/tmp/examples/ansible"
+    source      = "${var.host_path}/examples/ansible"
   }
   provisioner "shell" {
     inline = [

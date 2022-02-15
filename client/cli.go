@@ -94,7 +94,11 @@ func runRegistryCommand(registryParams RegistryParams, args ...string) (MachineR
 	}
 
 	if registryParams.RegistryURL != "" {
-		cmdArgs = append(cmdArgs, "--registry-path", registryParams.RegistryURL)
+		if registryParams.HostArch == "arm64" {
+			cmdArgs = append(cmdArgs, "--registry-path", registryParams.RegistryURL)
+		} else {
+			cmdArgs = append(cmdArgs, "--remote", registryParams.RegistryURL)
+		}
 	}
 
 	if registryParams.NodeCertPath != "" {
