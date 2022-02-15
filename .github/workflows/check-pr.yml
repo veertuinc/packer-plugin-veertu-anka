@@ -28,4 +28,4 @@ jobs:
           version: latest
           args: build --single-target --snapshot --rm-dist
         env:
-          API_VERSION: ${{ steps.plugin_describe.outputs.api_version }}
+          PACKER_CI_PROJECT_API_VERSION: ${{ steps.plugin_describe.outputs.api_version }}
