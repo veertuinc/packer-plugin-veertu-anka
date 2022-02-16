@@ -275,6 +275,7 @@ type ShowResponse struct {
 	ImageID   string `json:"image_id"`
 	Status    string `json:"status"`
 	HardDrive uint64 `json:"hard_drive"`
+	Version   string `json:"version"`
 }
 
 func (sr ShowResponse) IsRunning() bool {

@@ -82,6 +82,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 			NodeKeyPath:  config.NodeKeyPath,
 			CaRootPath:   config.CaRootPath,
 			IsInsecure:   config.IsInsecure,
+			HostArch:     config.HostArch,
 		}
 
 		registryPullParams := client.RegistryPullParams{
@@ -100,6 +101,27 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	sourceShow, err := s.client.Show(config.SourceVMName)
 	if err != nil {
 		return onError(err)
+	}
+
+	// Check arch of host
+	// // If arm64, ensure the source has a local tag
+	if !doPull {
+		if sourceShow.Version == "" {
+			if config.HostArch == "arm64" {
+				ui.Say("Preparing source VM by creating a local tag (necessary in Anka 3 to optimize disk usage of clones)")
+				pushParams := client.RegistryPushParams{
+					Tag:      fmt.Sprintf("local-tag-%s", ankaUtil.RandSeq(10)),
+					RemoteVM: "",
+					Local:    true,
+					Force:    false,
+					VMID:     config.SourceVMName,
+				}
+				s.client.RegistryPush(client.RegistryParams{
+					RegistryURL: "http://localhost:1234", // Needed to avoid 2.5.4 bug where if you don't have a registry added, it will block --local
+					HostArch:    config.HostArch,
+				}, pushParams)
+			}
+		}
 	}
 
 	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShow.Name, s.vmName))

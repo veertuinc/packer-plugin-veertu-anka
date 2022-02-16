@@ -89,12 +89,20 @@ func runCommandStreamer(outputStreamer chan string, args ...string) (MachineRead
 func runRegistryCommand(registryParams RegistryParams, args ...string) (MachineReadableOutput, error) {
 	cmdArgs := []string{"registry"}
 
-	if registryParams.RegistryName != "" {
-		cmdArgs = append(cmdArgs, "--remote", registryParams.RegistryName)
-	}
-
-	if registryParams.RegistryURL != "" {
-		cmdArgs = append(cmdArgs, "--registry-path", registryParams.RegistryURL)
+	if registryParams.HostArch == "arm64" {
+		// Anka 3 only has --remote and accepts the URL and also the repo name
+		if registryParams.RegistryName != "" {
+			cmdArgs = append(cmdArgs, "--remote", registryParams.RegistryName)
+		} else if registryParams.RegistryURL != "" {
+			cmdArgs = append(cmdArgs, "--remote", registryParams.RegistryURL)
+		}
+	} else { // Anka 2 / Intel
+		if registryParams.RegistryName != "" {
+			cmdArgs = append(cmdArgs, "--remote", registryParams.RegistryName)
+		}
+		if registryParams.RegistryURL != "" {
+			cmdArgs = append(cmdArgs, "--registry-path", registryParams.RegistryURL)
+		}
 	}
 
 	if registryParams.NodeCertPath != "" {

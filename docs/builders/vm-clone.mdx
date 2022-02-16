@@ -27,6 +27,10 @@ packer {
 }
 ```
 
+## Important Notes
+
+- **In Anka 3.0** we now require a tagged source VM before cloning in order to share the underlying .ank image and optimize disk space. If your source VM is not tagged yet, we will assign one . **We highly recommend pushing this VM Template/Tag to your registry so [disk usage is optimized](https://docs.veertu.com/anka/arm/getting-started/creating-your-first-vm/#disk-optimization).**
+
 ## Configuration Reference
 
 There are many configuration options available for the builder. They are
@@ -48,8 +52,6 @@ Must be `veertu-anka-vm-clone`.
 The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
 
 * `vcpu_count` (String)
-
-> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
 
 The number of vCPU cores, defaults to `2`.
 
@@ -85,7 +87,7 @@ Path to a CA Root certificate.
 
 * `cert` (String)
 
-Path to your node certificate (if certificate authority is enabled).
+Path to your node's client certificate to use for registry communication (if certificate authorization is enabled).
 
 * `insecure` (Boolean)
 
@@ -93,9 +95,9 @@ Skip TLS verification.
 
 * `key` (String)
 
-Path to your node certificate key if the client/node certificate doesn't contain one.
+Path to your node's client certificate key, if the `cert` certificate doesn't contain one, to use for registry communication (if certificate authorization is enabled).
 
-* `hw_uuid` (String)
+* `hw_uuid` (String) (Anka 2 only)
 
 The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
@@ -113,13 +115,13 @@ The registry URL (will use your default configuration if not set).
 
 * `remote` (String)
 
-The registry name (will use your default configuration if not set).
+The registry name (will use your default configuration if not set). This takes priority in Anka 3 and `registry-path` will be ignored.
 
 * `source_vm_tag` (String)
 
 Specify the tag of the VM we want to clone instead of using the default.
 
-* `update_addons` (Boolean)
+* `update_addons` (Boolean) (Anka 2 only)
 
 Update the vm addons. Defaults to false.
 

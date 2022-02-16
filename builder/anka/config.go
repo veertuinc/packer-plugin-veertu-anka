@@ -63,6 +63,8 @@ type Config struct {
 
 	StopVM bool `mapstructure:"stop_vm"`
 
+	HostArch string `mapstructure:"host_arch,omitempty"`
+
 	ctx interpolate.Context //nolint:structcheck
 }
 
@@ -98,6 +100,12 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	if c.Comm.Type == "" {
 		c.Comm.Type = "anka"
 	}
+
+	archCommandOutput := util.ExecuteHostCommand("arch")
+	if err != nil {
+		errs = packer.MultiErrorAppend(errs, err)
+	}
+	c.HostArch = string(archCommandOutput[:])
 
 	if c.InstallerApp == "" && c.SourceVMName == "" {
 		errs = packer.MultiErrorAppend(errs, errors.New("installer_app or source_vm_name must be specified"))
