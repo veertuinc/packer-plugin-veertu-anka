@@ -87,7 +87,7 @@ Path to a CA Root certificate.
 
 * `cert` (String)
 
-Path to your node certificate (if certificate authority is enabled).
+Path to your node's client certificate to use for registry communication (if certificate authorization is enabled).
 
 * `insecure` (Boolean)
 
@@ -95,7 +95,7 @@ Skip TLS verification.
 
 * `key` (String)
 
-Path to your node certificate key if the client/node certificate doesn't contain one.
+Path to your node's client certificate key, if the client/node certificate doesn't contain one, to use for registry communication (if certificate authorization is enabled).
 
 * `hw_uuid` (String) (Anka 2 only)
 
@@ -115,7 +115,7 @@ The registry URL (will use your default configuration if not set).
 
 * `remote` (String)
 
-The registry name (will use your default configuration if not set). This takes priority in Anka 3.
+The registry name (will use your default configuration if not set). This takes priority in Anka 3 and `registry-path` will be ignored.
 
 * `source_vm_tag` (String)
 
