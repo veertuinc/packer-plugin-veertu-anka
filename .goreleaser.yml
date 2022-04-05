@@ -7,6 +7,8 @@ before:
     - make go.lint
     - make go.test
     - make go.hcl2spec
+    - make install-packer-sdc
+
 builds:
   # A separated build to run the packer-plugins-check only once for a linux_amd64 binary
   -
@@ -14,9 +16,7 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     hooks:
       post:
-        - cmd: bash -c "rm -f /tmp/packer-plugins-check;
-              ( go install github.com/hashicorp/packer/cmd/packer-plugins-check@v1.7.4 && packer-plugins-check -load={{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ) &>/tmp/packer-plugins-check && exit $? ||
-              EC=$?; [[ $EC -gt 0 ]] && tail /tmp/packer-plugins-check; exit $EC"
+        - cmd: bash -c "packer-sdc plugin-check {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
           dir: "{{ dir .Path }}"
         - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}; ls -lah $(pwd)/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
           dir: "{{ dir .Path }}"

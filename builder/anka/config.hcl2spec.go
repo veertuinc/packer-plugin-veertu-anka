@@ -90,6 +90,7 @@ type FlatConfig struct {
 	UseAnkaCP                 *bool                    `mapstructure:"use_anka_cp" cty:"use_anka_cp" hcl:"use_anka_cp"`
 	DisplayController         *string                  `mapstructure:"display_controller,omitempty" cty:"display_controller" hcl:"display_controller"`
 	StopVM                    *bool                    `mapstructure:"stop_vm" cty:"stop_vm" hcl:"stop_vm"`
+	HostArch                  *string                  `mapstructure:"host_arch,omitempty" cty:"host_arch" hcl:"host_arch"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -184,6 +185,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"use_anka_cp":                  &hcldec.AttrSpec{Name: "use_anka_cp", Type: cty.Bool, Required: false},
 		"display_controller":           &hcldec.AttrSpec{Name: "display_controller", Type: cty.String, Required: false},
 		"stop_vm":                      &hcldec.AttrSpec{Name: "stop_vm", Type: cty.Bool, Required: false},
+		"host_arch":                    &hcldec.AttrSpec{Name: "host_arch", Type: cty.String, Required: false},
 	}
 	return s
 }
