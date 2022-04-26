@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/packer-plugin-sdk v0.2.11
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/zclconf/go-cty v1.10.0
-	gotest.tools/v3 v3.1.0
+	gotest.tools/v3 v3.2.0
 )
 
 require (
@@ -72,7 +72,6 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/packer-community/winrmcp v0.0.0-20180921211025-c76d91c1e7db // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/sftp v1.13.2 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
