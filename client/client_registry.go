@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/net"
 )
@@ -61,6 +63,17 @@ type RegistryListReposResponse struct {
 	Remotes map[string]RegistryRemote
 }
 
+type RegistryRemoteArm64 struct {
+	Default bool   `json:"default"`
+	Url     string `json:"url"`
+	Name    string `json:"name"`
+}
+
+type RegistryListReposResponseArm64 struct {
+	Default int
+	Remotes []RegistryRemoteArm64
+}
+
 func (c *AnkaClient) RegistryListRepos() (RegistryListReposResponse, error) {
 	var response RegistryListReposResponse
 
@@ -77,6 +90,50 @@ func (c *AnkaClient) RegistryListRepos() (RegistryListReposResponse, error) {
 	if err != nil {
 		return response, err
 	}
+	for name, remote := range response.Remotes {
+		if remote.Default {
+			response.Default = name
+		}
+	}
+
+	return response, nil
+}
+
+func (c *AnkaClient) RegistryListReposArm64() (RegistryListReposResponse, error) {
+	var response RegistryListReposResponse
+	var responseArm64 RegistryListReposResponseArm64
+
+	output, err := runRegistryCommand(RegistryParams{}, "list-repos")
+	if err != nil {
+		return response, err
+	}
+	if output.Status != "OK" {
+		log.Print("Error executing 'registry list-repos' command: ", output.ExceptionType, " ", output.Message)
+		return response, fmt.Errorf(output.Message)
+	}
+
+	// Refactor the object in Anka 2 format.
+	err = json.Unmarshal(output.Body, &responseArm64.Remotes)
+	if err != nil {
+		return response, err
+	}
+	tmpBody := make(map[string]RegistryRemote)
+	for _, remote := range responseArm64.Remotes {
+		u, err := url.Parse(remote.Url)
+		if err != nil {
+			return response, err
+		}
+
+		s := strings.Split(u.Host, ":")
+		a := RegistryRemote{
+			Scheme:  u.Scheme,
+			Default: remote.Default,
+			Host:    s[0],
+			Port:    s[1],
+		}
+		tmpBody[remote.Name] = a
+	}
+	response = RegistryListReposResponse{Remotes: tmpBody}
 
 	for name, remote := range response.Remotes {
 		if remote.Default {
