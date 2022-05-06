@@ -35,7 +35,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		t.Fail()
 	}
 
-	err = json.Unmarshal(json.RawMessage(`{"default": true, "url": "http://localhost:8080", "name": "myawesomeregistry"}`), &registryRemoteArm64)
+	err = json.Unmarshal(json.RawMessage(`{"default": true, "url": "http://localhost:8080", "name": "go-mock"}`), &registryRemoteArm64)
 	if err != nil {
 		t.Fail()
 	}

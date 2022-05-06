@@ -70,7 +70,6 @@ type RegistryRemoteArm64 struct {
 }
 
 type RegistryListReposResponseArm64 struct {
-	Default int
 	Remotes []RegistryRemoteArm64
 }
 
@@ -90,6 +89,7 @@ func (c *AnkaClient) RegistryListRepos() (RegistryListReposResponse, error) {
 	if err != nil {
 		return response, err
 	}
+
 	for name, remote := range response.Remotes {
 		if remote.Default {
 			response.Default = name
