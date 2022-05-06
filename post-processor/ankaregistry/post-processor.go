@@ -5,6 +5,7 @@ package ankaregistry
 import (
 	"context"
 	"fmt"
+	"runtime"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/packer-plugin-sdk/common"
@@ -77,6 +78,8 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 
 // PostProcess runs the post processor logic which uploads the artifact to an anka registry
 func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, bool, error) {
+	var reposList client.RegistryListReposResponse
+	var err error
 	if artifact.BuilderId() != anka.BuilderId {
 		err := fmt.Errorf(
 			"unknown artifact type: %s\ncan only import from anka artifacts",
@@ -85,7 +88,11 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 	}
 
 	if p.config.RegistryURL == "" {
-		reposList, err := p.client.RegistryListRepos()
+		if runtime.GOARCH == "amd64" {
+			reposList, err = p.client.RegistryListRepos()
+		} else {
+			reposList, err = p.client.RegistryListReposArm64()
+		}
 		if err != nil {
 			return nil, false, false, err
 		}
@@ -134,7 +141,6 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 	var latestTag string
 	var found bool
 	var foundMessage string
-	var err error
 
 	if p.config.Local {
 		ui.Say(fmt.Sprintf("Tagging local template %s with tag %s", remoteVMName, remoteTag))
