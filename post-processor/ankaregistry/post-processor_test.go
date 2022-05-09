@@ -17,7 +17,9 @@ import (
 
 var templateList []client.RegistryListResponse
 var registryRemote client.RegistryRemote
+var registryRemoteArm64 client.RegistryRemoteArm64
 var reposList client.RegistryListReposResponse
+var reposListArm64 client.RegistryListReposResponseArm64
 
 func TestAnkaRegistryPostProcessor(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -33,9 +35,18 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		t.Fail()
 	}
 
+	err = json.Unmarshal(json.RawMessage(`{"default": true, "url": "http://localhost:8080", "name": "go-mock"}`), &registryRemoteArm64)
+	if err != nil {
+		t.Fail()
+	}
+
 	reposList = client.RegistryListReposResponse{
 		Default: "go-mock",
 		Remotes: map[string]client.RegistryRemote{"go-mock": registryRemote},
+	}
+
+	reposListArm64 = client.RegistryListReposResponseArm64{
+		Remotes: []client.RegistryRemoteArm64{registryRemoteArm64},
 	}
 
 	t.Run("push to registry with defaults", func(t *testing.T) {
@@ -64,6 +75,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
@@ -105,6 +117,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
@@ -144,6 +157,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -186,6 +200,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
@@ -226,6 +241,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -275,6 +291,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(0)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
@@ -326,6 +343,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
@@ -375,6 +393,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(0)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
