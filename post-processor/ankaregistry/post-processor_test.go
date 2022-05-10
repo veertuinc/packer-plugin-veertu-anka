@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/packer-plugin-sdk/common"
-	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/veertuinc/packer-plugin-veertu-anka/builder/anka"
 	"github.com/veertuinc/packer-plugin-veertu-anka/client"
@@ -39,7 +38,6 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 	ankaClient := mocks.NewMockClient(mockCtrl)
 
 	ui := packer.TestUi(t)
-	state := new(multistep.BasicStateBag)
 
 	artifact := &anka.Artifact{}
 
@@ -47,9 +45,6 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		Default: "go-mock",
 		Remotes: map[string]client.RegistryRemote{"go-mock": registryRemote},
 	}
-
-	state.Put("ui", ui)
-	state.Put("client", ankaClient)
 
 	t.Run("push to registry with defaults", func(t *testing.T) {
 		config := Config{
