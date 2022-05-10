@@ -38,14 +38,7 @@ go.build:
 
 #validate-examples:  @ Run `packer validate` against example packer definitions using the built package
 validate-examples:
-	packer validate examples/create-from-installer.pkr.hcl
-	packer validate examples/create-from-installer-with-post-processing.pkr.hcl
-	packer validate examples/clone-existing.pkr.hcl
-	packer validate examples/clone-existing-with-post-processing.pkr.hcl
-	packer validate examples/clone-existing-with-port-forwarding-rules.pkr.hcl
-	packer validate examples/clone-existing-with-hwuuid.pkr.hcl
-	packer validate examples/clone-existing-with-expect-disconnect.pkr.hcl
-	packer validate examples/clone-existing-with-use-anka-cp.pkr.hcl
+	for file in $(ls examples/ | grep hcl); do packer validate examples/$file; done
 
 #install:		@ Copy the binary to the packer plugins folder
 install:

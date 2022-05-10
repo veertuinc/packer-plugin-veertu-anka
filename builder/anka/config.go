@@ -5,6 +5,7 @@ package anka
 import (
 	"errors"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/common"
@@ -101,11 +102,7 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		c.Comm.Type = "anka"
 	}
 
-	archCommandOutput := util.ExecuteHostCommand("arch")
-	if err != nil {
-		errs = packer.MultiErrorAppend(errs, err)
-	}
-	c.HostArch = string(archCommandOutput[:])
+	c.HostArch = runtime.GOARCH
 
 	if c.InstallerApp == "" && c.SourceVMName == "" {
 		errs = packer.MultiErrorAppend(errs, errors.New("installer_app or source_vm_name must be specified"))
