@@ -96,4 +96,4 @@ go.hcl2spec: install-packer-sdc
 #generate-docs:		@ Generate packer docs
 generate-docs: install-packer-sdc
 	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/
-	@/bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"
+	@/bin/sh -c "[ -d dist/docs ] && zip -r docs.zip docs/"
