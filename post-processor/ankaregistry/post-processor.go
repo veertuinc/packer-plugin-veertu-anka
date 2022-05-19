@@ -4,7 +4,9 @@ package ankaregistry
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"runtime"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/packer-plugin-sdk/common"
@@ -36,6 +38,8 @@ type Config struct {
 	Local       bool   `mapstructure:"local"`
 	Force       bool   `mapstructure:"force"`
 
+	HostArch string `mapstructure:"host_arch,omitempty"`
+
 	ctx interpolate.Context
 }
 
@@ -50,6 +54,9 @@ func (p *PostProcessor) ConfigSpec() hcldec.ObjectSpec { return p.config.FlatMap
 
 // Configure sets up the post processor with the decoded config values
 func (p *PostProcessor) Configure(raws ...interface{}) error {
+
+	var errs *packer.MultiError
+
 	err := config.Decode(&p.config, &config.DecodeOpts{
 		PluginType:         BuilderIdRegistry,
 		Interpolate:        true,
@@ -63,20 +70,28 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 	}
 
 	if p.config.Tag == "" {
-		return fmt.Errorf("You must specify a valid tag for your Veertu Anka VM (e.g. 'latest')")
+		errs = packer.MultiErrorAppend(errs, errors.New("you must specify a valid tag for your Veertu Anka VM (e.g. 'latest')"))
 	}
 
 	if p.config.Local && p.config.RemoteVM != "" {
-		return fmt.Errorf("The 'local' and 'remote_vm' settings are mutually exclusive.")
+		errs = packer.MultiErrorAppend(errs, errors.New("the 'local' and 'remote_vm' settings are mutually exclusive"))
 	}
 
+	p.config.HostArch = runtime.GOARCH
+
 	p.client = &client.AnkaClient{}
+
+	if errs != nil && len(errs.Errors) > 0 {
+		return errs
+	}
 
 	return nil
 }
 
 // PostProcess runs the post processor logic which uploads the artifact to an anka registry
 func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, bool, error) {
+	var reposList client.RegistryListReposResponse
+	var err error
 	if artifact.BuilderId() != anka.BuilderId {
 		err := fmt.Errorf(
 			"unknown artifact type: %s\ncan only import from anka artifacts",
@@ -84,19 +99,23 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		return nil, false, false, err
 	}
 
-	if p.config.RegistryURL == "" {
-		reposList, err := p.client.RegistryListRepos()
-		if err != nil {
-			return nil, false, false, err
-		}
+	if p.config.HostArch == "amd64" {
+		reposList, err = p.client.RegistryListRepos()
+	} else {
+		reposList, err = p.client.RegistryListReposArm64()
+	}
+	if err != nil {
+		return nil, false, false, err
+	}
 
+	if p.config.RegistryURL == "" {
 		if p.config.RegistryName == "" {
 			p.config.RegistryName = reposList.Default
 		}
 
 		remote, ok := reposList.Remotes[p.config.RegistryName]
 		if !ok {
-			return nil, false, false, fmt.Errorf("Could not find configuration for registry '%s'", p.config.RegistryName)
+			return nil, false, false, fmt.Errorf("could not find configuration for registry '%s'", p.config.RegistryName)
 		}
 
 		p.config.RegistryURL = fmt.Sprintf("%s://%s:%s", remote.Scheme, remote.Host, remote.Port)
@@ -109,6 +128,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		NodeKeyPath:  p.config.NodeKeyPath,
 		CaRootPath:   p.config.CaRootPath,
 		IsInsecure:   p.config.IsInsecure,
+		HostArch:     p.config.HostArch,
 	}
 
 	remoteVMName := artifact.String()
@@ -134,7 +154,6 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 	var latestTag string
 	var found bool
 	var foundMessage string
-	var err error
 
 	if p.config.Local {
 		ui.Say(fmt.Sprintf("Tagging local template %s with tag %s", remoteVMName, remoteTag))

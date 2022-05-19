@@ -5,6 +5,7 @@ BIN := packer-plugin-veertu-anka
 ARCH := amd64
 OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BIN_FULL ?= bin/$(BIN)_$(OS_TYPE)_$(ARCH)
+HASHICORP_PACKER_PLUGIN_SDK_VERSION?=$(shell go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2)
 
 .PHONY: go.lint validate-examples go.test test clean anka.clean-images
 
@@ -30,12 +31,6 @@ go.test:
 	go test -v builder/anka/*.go
 	go test -v post-processor/ankaregistry/*.go
 
-#go.hcl2spec:		@ Run `go generate` to generate hcl2 config specs
-go.hcl2spec:
-	go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
-	GOOS=$(OS_TYPE) go generate builder/anka/config.go
-	GOOS=$(OS_TYPE) go generate post-processor/ankaregistry/post-processor.go
-
 #go.build:		@ Run `go build` to generate the binary
 go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
@@ -43,14 +38,7 @@ go.build:
 
 #validate-examples:  @ Run `packer validate` against example packer definitions using the built package
 validate-examples:
-	packer validate examples/create-from-installer.pkr.hcl
-	packer validate examples/create-from-installer-with-post-processing.pkr.hcl
-	packer validate examples/clone-existing.pkr.hcl
-	packer validate examples/clone-existing-with-post-processing.pkr.hcl
-	packer validate examples/clone-existing-with-port-forwarding-rules.pkr.hcl
-	packer validate examples/clone-existing-with-hwuuid.pkr.hcl
-	packer validate examples/clone-existing-with-expect-disconnect.pkr.hcl
-	packer validate examples/clone-existing-with-use-anka-cp.pkr.hcl
+	for file in $(ls examples/ | grep hcl); do packer validate examples/$file; done
 
 #install:		@ Copy the binary to the packer plugins folder
 install:
@@ -97,7 +85,15 @@ anka.wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
 	-rm -rf ~/.anka
 
+install-packer-sdc: ## Install packer sofware development command
+	@go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@${HASHICORP_PACKER_PLUGIN_SDK_VERSION}
+
+#go.hcl2spec:		@ Run `go generate` to generate hcl2 config specs
+go.hcl2spec: install-packer-sdc
+	GOOS=$(OS_TYPE) go generate builder/anka/config.go
+	GOOS=$(OS_TYPE) go generate post-processor/ankaregistry/post-processor.go
+
 #generate-docs:		@ Generate packer docs
-generate-docs:
-	@go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
-	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/ && /bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"
+generate-docs: install-packer-sdc
+	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/
+	@/bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"

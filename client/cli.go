@@ -15,10 +15,6 @@ func runAnkaCommand(args ...string) (MachineReadableOutput, error) {
 
 func runCommandStreamer(outputStreamer chan string, args ...string) (MachineReadableOutput, error) {
 
-	if outputStreamer != nil {
-		args = append([]string{"--debug"}, args...)
-	}
-
 	cmdArgs := append([]string{"--machine-readable"}, args...)
 
 	log.Printf("Executing anka %s", strings.Join(cmdArgs, " "))
