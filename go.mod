@@ -6,7 +6,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/groob/plist v0.0.0-20220217120414-63fa881b19a5
 	github.com/hashicorp/hcl/v2 v2.12.0
-	github.com/hashicorp/packer-plugin-sdk v0.2.13
+	github.com/hashicorp/packer-plugin-sdk v0.3.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/zclconf/go-cty v1.10.0
 	gotest.tools/v3 v3.2.0
@@ -40,9 +40,9 @@ require (
 	github.com/hashicorp/consul/api v1.12.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-getter/gcs/v2 v2.0.2 // indirect
-	github.com/hashicorp/go-getter/s3/v2 v2.0.2 // indirect
-	github.com/hashicorp/go-getter/v2 v2.0.2 // indirect
+	github.com/hashicorp/go-getter/gcs/v2 v2.1.0 // indirect
+	github.com/hashicorp/go-getter/s3/v2 v2.1.0 // indirect
+	github.com/hashicorp/go-getter/v2 v2.1.0 // indirect
 	github.com/hashicorp/go-hclog v1.2.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
