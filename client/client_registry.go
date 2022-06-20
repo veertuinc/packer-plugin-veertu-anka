@@ -24,7 +24,7 @@ type RegistryParams struct {
 	HostArch     string
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-list
+// https://docs.veertu.com/anka/intel/command-line-reference/#registry-list
 type RegistryListResponse struct {
 	Latest string `json:"latest"`
 	ID     string `json:"id"`
@@ -183,7 +183,7 @@ func (c *AnkaClient) RegistryPull(registryParams RegistryParams, pullParams Regi
 	return nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-push
+// https://docs.veertu.com/anka/intel/command-line-reference/#registry-push
 type RegistryPushParams struct {
 	VMID        string
 	Tag         string
@@ -229,7 +229,7 @@ func (c *AnkaClient) RegistryPush(registryParams RegistryParams, pushParams Regi
 	return nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-build-cloud/working-with-registry-and-api/#revert
+// https://docs.veertu.com/anka/anka-build-cloud/working-with-registry-and-api/#revert
 func (c *AnkaClient) RegistryRevert(url string, id string) error {
 	response, err := registryRESTRequest("DELETE", fmt.Sprintf("%s/registry/revert?id=%s", url, id), nil)
 	if err != nil {

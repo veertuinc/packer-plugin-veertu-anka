@@ -15,7 +15,7 @@ const (
 	AnkaVMNotFoundExceptionErrorCode = 3
 )
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#clone
+// https://docs.veertu.com/anka/intel/command-line-reference/#clone
 type CloneParams struct {
 	VMName     string
 	SourceUUID string
@@ -36,7 +36,7 @@ func (c *AnkaClient) Clone(params CloneParams) error {
 	return nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#cp
+// https://docs.veertu.com/anka/intel/command-line-reference/#cp
 type CopyParams struct {
 	Src string
 	Dst string
@@ -56,7 +56,7 @@ type CreateParams struct {
 	VCPUCount    string
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#create
+// https://docs.veertu.com/anka/intel/command-line-reference/#create
 type CreateResponse struct {
 	UUID      string `json:"uuid"`
 	Name      string `json:"name"`
@@ -91,7 +91,7 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 	return response, nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#delete
+// https://docs.veertu.com/anka/intel/command-line-reference/#delete
 type DeleteParams struct {
 	VMName string
 }
@@ -108,7 +108,7 @@ func (c *AnkaClient) Delete(params DeleteParams) error {
 	return err
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#describe
+// https://docs.veertu.com/anka/intel/command-line-reference/#describe
 type DescribeResponse struct {
 	Name    string `json:"name"`
 	Version int    `json:"version"`
@@ -185,7 +185,7 @@ func (c *AnkaClient) Describe(vmName string) (DescribeResponse, error) {
 	return response, nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#show
+// https://docs.veertu.com/anka/intel/command-line-reference/#show
 func (c *AnkaClient) Exists(vmName string) (bool, error) {
 	_, err := c.Show(vmName)
 	if err == nil {
@@ -201,7 +201,7 @@ func (c *AnkaClient) Exists(vmName string) (bool, error) {
 	return false, err
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#license
+// https://docs.veertu.com/anka/intel/command-line-reference/#license
 type LicenseResponse struct {
 	LicenseType string `json:"license_type"`
 	Status      string `json:"status"`
@@ -223,7 +223,7 @@ func (c *AnkaClient) License() (LicenseResponse, error) {
 	return response, nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#modify
+// https://docs.veertu.com/anka/intel/command-line-reference/#modify
 func (c *AnkaClient) Modify(vmName string, command string, property string, flags ...string) error {
 	ankaCommand := []string{"modify", vmName, command, property}
 	ankaCommand = append(ankaCommand, flags...)
@@ -240,7 +240,7 @@ func (c *AnkaClient) Modify(vmName string, command string, property string, flag
 	return nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#run
+// https://docs.veertu.com/anka/intel/command-line-reference/#run
 type RunParams struct {
 	VMName            string
 	Volume            string
@@ -266,7 +266,7 @@ func (c *AnkaClient) Run(params RunParams) (int, error) {
 	return runner.Wait()
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#show
+// https://docs.veertu.com/anka/intel/command-line-reference/#show
 type ShowResponse struct {
 	UUID      string `json:"uuid"`
 	Name      string `json:"name"`
@@ -313,7 +313,7 @@ func (c *AnkaClient) Show(vmName string) (ShowResponse, error) {
 	return response, nil
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#start
+// https://docs.veertu.com/anka/intel/command-line-reference/#start
 type StartParams struct {
 	VMName string
 }
@@ -323,7 +323,7 @@ func (c *AnkaClient) Start(params StartParams) error {
 	return err
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#stop
+// https://docs.veertu.com/anka/intel/command-line-reference/#stop
 type StopParams struct {
 	VMName string
 	Force  bool
@@ -360,7 +360,7 @@ func (c *AnkaClient) Stop(params StopParams) error {
 	return err
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#suspend
+// https://docs.veertu.com/anka/intel/command-line-reference/#suspend
 type SuspendParams struct {
 	VMName string
 }
@@ -370,7 +370,7 @@ func (c *AnkaClient) Suspend(params SuspendParams) error {
 	return err
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#start
+// https://docs.veertu.com/anka/intel/command-line-reference/#start
 func (c *AnkaClient) UpdateAddons(vmName string) error {
 	args := []string{"start", "--update-addons", vmName}
 
@@ -378,7 +378,7 @@ func (c *AnkaClient) UpdateAddons(vmName string) error {
 	return err
 }
 
-// https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#version
+// https://docs.veertu.com/anka/intel/command-line-reference/#version
 type VersionResponse struct {
 	Status string              `json:"status"`
 	Body   VersionResponseBody `json:"body"`

@@ -4,7 +4,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 - Note that this plugin does not manage VM templates. Once it creates a Template, it is up to you to use it or delete it.
 
-- For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add).
+- For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/intel/command-line-reference/#registry-add).
 ## v2.0.0 Breaking Changes
 
 - Plugin will only work with Packer v1.7 or later.
