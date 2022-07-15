@@ -102,6 +102,7 @@ func (c *AnkaClient) RegistryListRepos() (RegistryListReposResponse, error) {
 func (c *AnkaClient) RegistryListReposArm64() (RegistryListReposResponse, error) {
 	var response RegistryListReposResponse
 	var responseArm64 RegistryListReposResponseArm64
+	var port string
 
 	output, err := runRegistryCommand(RegistryParams{}, "list-repos")
 	if err != nil {
@@ -125,11 +126,14 @@ func (c *AnkaClient) RegistryListReposArm64() (RegistryListReposResponse, error)
 		}
 
 		s := strings.Split(u.Host, ":")
+		if len(s) == 2 {
+			port = s[1]
+		}
 		a := RegistryRemote{
 			Scheme:  u.Scheme,
 			Default: remote.Default,
 			Host:    s[0],
-			Port:    s[1],
+			Port:    port,
 		}
 		tmpBody[remote.Name] = a
 	}
