@@ -94,7 +94,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 
 		err := s.client.RegistryPull(registryParams, registryPullParams)
 		if err != nil {
-			return onError(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add)", config.SourceVMName, sourceVMTag))
+			return onError(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag))
 		}
 	}
 

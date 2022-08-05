@@ -12,21 +12,21 @@ before:
 builds:
   # A separated build to run the packer-plugins-check only once for a linux_amd64 binary
   -
-    id: build
+    id: build1
     mod_timestamp: '{{ .CommitTimestamp }}'
     hooks:
       post:
-        - cmd: bash -c "packer-sdc plugin-check {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
+        - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
           dir: "{{ dir .Path }}"
-        - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}; ls -lah $(pwd)/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
-          dir: "{{ dir .Path }}"
-        - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }} && make validate-examples"
+        - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }}"
+        - cmd: bash -c "make validate-examples"
+        - cmd: bash -c "packer-sdc plugin-check {{ .ProjectName }}"
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
       - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
     goos:
-      - linux
+      - darwin
     goarch:
       - amd64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
@@ -39,9 +39,21 @@ builds:
     ldflags:
       - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
     goos:
-      - darwin
+      - linux
     goarch:
       - amd64
+    binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+    no_unique_dist_dir: true
+  -
+    id: build3
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath #removes all file system paths from the compiled executable
+    ldflags:
+      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+    goos:
+      - darwin
+    goarch:
       - arm64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true

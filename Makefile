@@ -1,17 +1,22 @@
+WORKDIR := $(shell pwd)
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
 VERSION := $(shell cat VERSION)
 FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
 BIN := packer-plugin-veertu-anka
-ARCH := amd64
+ARCH := $(shell arch)
+ifeq ($(ARCH), i386)
+	ARCH = amd64
+endif
 OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BIN_FULL ?= bin/$(BIN)_$(OS_TYPE)_$(ARCH)
 HASHICORP_PACKER_PLUGIN_SDK_VERSION?=$(shell go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2)
+export PATH := $(shell go env GOPATH)/bin:$(PATH)
 
 .PHONY: go.lint validate-examples go.test test clean anka.clean-images
 
 .DEFAULT_GOAL := help
 
-all: go.lint clean go.hcl2spec go.build go.test install validate-examples anka.clean-images anka.clean-clones uninstall
+all: clean go.releaser anka.clean-images anka.clean-clones generate-docs
 
 #help:	@ List available tasks on this project
 help:
@@ -36,9 +41,16 @@ go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
 	chmod +x $(BIN_FULL)
 
+go.releaser:
+	git tag -d "$(VERSION)" 2>/dev/null || true
+	git tag -a "$(VERSION)" -m "Version $(VERSION)"
+	echo "LATEST TAG: $$(git describe --tags --abbrev=0)"
+	PACKER_CI_PROJECT_API_VERSION=$$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser release --rm-dist
+
 #validate-examples:  @ Run `packer validate` against example packer definitions using the built package
 validate-examples:
-	for file in $(ls examples/ | grep hcl); do packer validate examples/$file; done
+	cp -rfp $(WORKDIR)/examples /tmp/
+	for file in $$(ls $(WORKDIR)/examples/ | grep hcl); do echo $$file; packer validate $(WORKDIR)/examples/$$file; done
 
 #install:		@ Copy the binary to the packer plugins folder
 install:
@@ -66,10 +78,12 @@ build-mac:
 
 #create-test:		@ Run `packer build` with the default .pkr.hcl file
 create-test: lint install
-	PACKER_LOG=1 packer build examples/create-from-installer.pkr.hcl
+	PACKER_LOG=1 packer build $(WORKDIR)/examples/create-from-installer.pkr.hcl
 
 #clean:		@ Remove the plugin binary
 clean:
+	rm -f docs.zip
+	rm -rf dist
 	rm -f $(BIN_FULL)
 
 #anka.clean-images:		@ Remove all anka images with `anka delete`
@@ -95,5 +109,4 @@ go.hcl2spec: install-packer-sdc
 
 #generate-docs:		@ Generate packer docs
 generate-docs: install-packer-sdc
-	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/
-	@/bin/sh -c "[ -d dist/docs ] && zip -r docs.zip docs/"
+	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/ && /bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"

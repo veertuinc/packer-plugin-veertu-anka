@@ -211,10 +211,10 @@ func TestCloneVMRun(t *testing.T) {
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
 			ankaClient.EXPECT().
 				RegistryPull(registryParams, registryPullParams).
-				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
 				Times(1),
 			ankaUtil.EXPECT().
-				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
 				Return(multistep.ActionHalt).
 				Times(1),
 		)
@@ -291,10 +291,10 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().
 				RegistryPull(registryParams, registryPullParams).
-				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
 				Times(1),
 			ankaUtil.EXPECT().
-				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://ankadocs.veertu.com/docs/anka-virtualization/command-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
 				Return(multistep.ActionHalt).
 				Times(1),
 		)
