@@ -28,8 +28,9 @@ go.lint:
 	golangci-lint run --fast
 
 #go.test:		@ Run `go test` against the current tests
+# removed: go mod tidy -go=1.16 && go mod tidy -go=1.17
 go.test:
-	go mod tidy -go=1.16 && go mod tidy -go=1.17
+	go mod tidy
 	go install github.com/golang/mock/mockgen@v1.6.0
 	mockgen -source=util/util.go -destination=mocks/util_mock.go -package=mocks
 	mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
