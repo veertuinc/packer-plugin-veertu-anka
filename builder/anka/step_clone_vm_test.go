@@ -325,7 +325,7 @@ func TestCloneVMRun(t *testing.T) {
 		}
 		runParams := client.RunParams{
 			VMName:  clonedShowResponse.Name,
-			Command: []string{"diskutil", "apfs", "resizeContainer", "disk1", "0"},
+			Command: []string{"diskutil", "apfs", "resizeContainer", "disk0s2", "0"},
 		}
 
 		step.vmName = config.VMName
