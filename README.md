@@ -167,19 +167,19 @@ You will need a recent golang installed and setup. See `go.mod` for which versio
 
 We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our interfaces for testing. This allows us to easily test when we expect logic to be called without having to rewrite golang standard library functions with custom mock logic. To generate one of these mocked interfaces, installed the mockgen binary by following the link provided and then run the `make go.test`.
 
-- You must install `packer-sdc` to generate docs and HCL2spec:
-
-```bash
-go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
-```
+- You must install `packer-sdc` to generate docs and HCL2spec.
 
 ### Building, Linting, and Testing
 
-We recommend using goreleaser to perform all of the building, linting, and testing:
+```bash
+make all
+```
+
+<!-- We recommend using goreleaser to perform all of the building, linting, and testing:
 
 ```bash
 PACKER_CI_PROJECT_API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser build --single-target --snapshot --rm-dist
-```
+``` -->
 
 When testing with an example HCL:
 
