@@ -86,7 +86,7 @@ This will create a "base" VM template using the `.app` you specified in `install
 
 > If you didn't specify `vm_name`, we would automatically pull it from the installer app and create a name like `anka-packer-base-11.4-16.6.01`.
 
-> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, defaults (see below) will be used.
+> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, the Anka CLI will determine what's best for you based on the host's hardware.
 
 > **However, hw_uuid, port_forwarding_rules, and several other configuration settings are ignored for the created "base" vm.** We recommend using the `veertu-anka-vm-clone` builder to modify these values.
 

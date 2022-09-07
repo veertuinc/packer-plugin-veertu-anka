@@ -12,11 +12,12 @@ import (
 	"github.com/veertuinc/packer-plugin-veertu-anka/util"
 )
 
-const (
-	defaultDiskSize  = "100G"
-	defaultRAMSize   = "6G"
-	defaultVCPUCount = "3"
-)
+// Anka CLI will check host resources and provide the best values for the VM. We've commented this out to we can rely on those.
+// const (
+// 	defaultDiskSize  = "100G"
+// 	defaultRAMSize   = "6G"
+// 	defaultVCPUCount = "3"
+// )
 
 // StepCreateVM will be used to run the create step for an 'vm-create' builder types
 type StepCreateVM struct {
@@ -89,17 +90,16 @@ func (s *StepCreateVM) createFromInstallerApp(ui packer.Ui, config *Config) erro
 		RAMSize:      config.RAMSize,
 	}
 
-	if createParams.DiskSize == "" {
-		createParams.DiskSize = defaultDiskSize
-	}
-
-	if createParams.VCPUCount == "" {
-		createParams.VCPUCount = defaultVCPUCount
-	}
-
-	if createParams.RAMSize == "" {
-		createParams.RAMSize = defaultRAMSize
-	}
+	// Anka CLI will check host resources and provide the best values for the VM. We've commented this out to we can rely on those.
+	// if createParams.DiskSize == "" {
+	// 	createParams.DiskSize = defaultDiskSize
+	// }
+	// if createParams.VCPUCount == "" {
+	// 	createParams.VCPUCount = defaultVCPUCount
+	// }
+	// if createParams.RAMSize == "" {
+	// 	createParams.RAMSize = defaultRAMSize
+	// }
 
 	resp, err := s.client.Create(createParams, outputStream)
 	if err != nil {
