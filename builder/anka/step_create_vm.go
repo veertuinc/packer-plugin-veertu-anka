@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	defaultDiskSize  = "40G"
-	defaultRAMSize   = "4G"
-	defaultVCPUCount = "2"
+	defaultDiskSize  = "100G"
+	defaultRAMSize   = "6G"
+	defaultVCPUCount = "3"
 )
 
 // StepCreateVM will be used to run the create step for an 'vm-create' builder types
