@@ -37,69 +37,39 @@ There are many configuration options available for the builder. They are
 segmented below into two categories: required and optional parameters.
 #### _**Required Configuration**_
 
-* `source_vm_name` (String)
+* `source_vm_name` (String) The VM to clone for provisioning, either stopped or suspended.
 
-The VM to clone for provisioning, either stopped or suspended.
-
-* `type` (String)
-
-Must be `veertu-anka-vm-clone`.
+* `type` (String) Must be `veertu-anka-vm-clone`.
 
 #### _**Optional Configuration**_
 
-* `vm_name` (String)
+* `vm_name` (String) The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
 
-The name for the VM that is created. One is generated using the source_vm_name if not provided (`{{ source_vm_name }}-{10RandomChars}`).
+* `vcpu_count` (String) The number of vCPU cores, defaults to `2`.
 
-* `vcpu_count` (String)
+* `ram_size` (String) The size in "[0-9]+G" format, defaults to `2G`.
 
-The number of vCPU cores, defaults to `2`.
-
-* `ram_size` (String)
-
-The size in "[0-9]+G" format, defaults to `2G`.
-
-* `disk_size` (String)
-
-The size in "[0-9]+G" format, defaults to `25G`.
+* `disk_size` (String) The size in "[0-9]+G" format, defaults to `25G`.
 
 > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk0s2 0` inside of the VM
 
-* `stop_vm` (Boolean)
+* `stop_vm` (Boolean) Whether or not to stop the vm after it has been created, defaults to false.
 
-Whether or not to stop the vm after it has been created, defaults to false.
+* `display_controller` (string) The display controller to set (run `anka modify VMNAME set display --help` to see available options).
 
-* `display_controller` (string)
+* `always_fetch` (Boolean) Always pull the source VM from the registry. Defaults to false.
 
-The display controller to set (run `anka modify VMNAME set display --help` to see available options).
+* `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
 
-* `always_fetch` (Boolean)
+* `cacert` (String) Path to a CA Root certificate.
 
-Always pull the source VM from the registry. Defaults to false.
+* `cert` (String) Path to your node's client certificate to use for registry communication (if certificate authorization is enabled).
 
-* `boot_delay` (String)
+* `insecure` (Boolean) Skip TLS verification.
 
-The time to wait before running packer provisioner commands, defaults to `7s`.
+* `key` (String) Path to your node's client certificate key, if the `cert` certificate doesn't contain one, to use for registry communication (if certificate authorization is enabled).
 
-* `cacert` (String)
-
-Path to a CA Root certificate.
-
-* `cert` (String)
-
-Path to your node's client certificate to use for registry communication (if certificate authorization is enabled).
-
-* `insecure` (Boolean)
-
-Skip TLS verification.
-
-* `key` (String)
-
-Path to your node's client certificate key, if the `cert` certificate doesn't contain one, to use for registry communication (if certificate authorization is enabled).
-
-* `hw_uuid` (String) (Anka 2 only)
-
-The Hardware UUID you wish to set (usually generated with `uuidgen`).
+* `hw_uuid` (String) (Anka 2 only) The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
 * `port_forwarding_rules` (Struct)
   
@@ -109,25 +79,15 @@ The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
 > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`
 
-* `registry-path` (String)
+* `registry-path` (String) The registry URL (will use your default configuration if not set).
 
-The registry URL (will use your default configuration if not set).
+* `remote` (String) The registry name (will use your default configuration if not set). This takes priority in Anka 3 and `registry-path` will be ignored.
 
-* `remote` (String)
+* `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default.
 
-The registry name (will use your default configuration if not set). This takes priority in Anka 3 and `registry-path` will be ignored.
+* `update_addons` (Boolean) (Anka 2 only) Update the vm addons. Defaults to false.
 
-* `source_vm_tag` (String)
-
-Specify the tag of the VM we want to clone instead of using the default.
-
-* `update_addons` (Boolean) (Anka 2 only)
-
-Update the vm addons. Defaults to false.
-
-* `use_anka_cp` (Boolean)
-
-Use built in anka cp command. Defaults to false.
+* `use_anka_cp` (Boolean) Use built in anka cp command. Defaults to false.
 
 ## Example
 
