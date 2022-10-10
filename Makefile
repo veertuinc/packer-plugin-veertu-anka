@@ -7,8 +7,9 @@ ARCH := $(shell arch)
 ifeq ($(ARCH), i386)
 	ARCH = amd64
 endif
+PACKER_CI_PROJECT_API_VERSION?=$(shell go run . describe 2>/dev/null | jq -r '.api_version')
 OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
-BIN_FULL ?= bin/$(BIN)_$(OS_TYPE)_$(ARCH)
+BIN_FULL ?= dist/$(BIN)_v$(VERSION)_$(PACKER_CI_PROJECT_API_VERSION)_$(OS_TYPE)_$(ARCH)
 HASHICORP_PACKER_PLUGIN_SDK_VERSION?=$(shell go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2)
 export PATH := $(shell go env GOPATH)/bin:$(PATH)
 
@@ -27,7 +28,7 @@ go.lint:
   curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/local/bin v1.40.1
 	golangci-lint run --fast
 
-#go.test:		@ Run `go test` against the current tests
+#go.test:		@ Install modules, mockgen, generate mocks, and run `go test` against the current tests
 # removed: go mod tidy -go=1.16 && go mod tidy -go=1.17
 go.test:
 	go mod tidy
@@ -40,13 +41,14 @@ go.test:
 #go.build:		@ Run `go build` to generate the binary
 go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
-	chmod +x $(BIN_FULL)
+	chmod +x $(BIN)*
 
+#go.releaser 	@ Run goreleaser release --rm-dist for current version
 go.releaser:
 	git tag -d "$(VERSION)" 2>/dev/null || true
 	git tag -a "$(VERSION)" -m "Version $(VERSION)"
 	echo "LATEST TAG: $$(git describe --tags --abbrev=0)"
-	PACKER_CI_PROJECT_API_VERSION=$$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser release --rm-dist
+	PACKER_CI_PROJECT_API_VERSION=$(PACKER_CI_PROJECT_API_VERSION) goreleaser release --rm-dist
 
 #validate-examples:  @ Run `packer validate` against example packer definitions using the built package
 validate-examples:
@@ -83,9 +85,9 @@ create-test: lint install
 
 #clean:		@ Remove the plugin binary
 clean:
+	$(MAKE) uninstall
 	rm -f docs.zip
 	rm -rf dist
-	rm -f $(BIN_FULL)
 
 #anka.clean-images:		@ Remove all anka images with `anka delete`
 anka.clean-images:
@@ -100,6 +102,7 @@ anka.wipe-anka:
 	-rm -rf ~/Library/Application\ Support/Veertu
 	-rm -rf ~/.anka
 
+#install-packer-sdc:	@ Install the hashicorp packer sdc
 install-packer-sdc: ## Install packer sofware development command
 	@go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@${HASHICORP_PACKER_PLUGIN_SDK_VERSION}
 

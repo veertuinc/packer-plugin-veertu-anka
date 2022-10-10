@@ -3,13 +3,13 @@ variable "vm_name" {
   default = "anka-packer-base-macos-post-processor"
 }
 
-variable "installer_app" {
+variable "installer" {
   type = string
   default = "/Applications/Install macOS Big Sur.app/"
 }
 
 source "veertu-anka-vm-create" "anka-packer-base-macos-post-processor" {
-  installer_app = "${var.installer_app}"
+  installer = "${var.installer}"
   vm_name = "${var.vm_name}"
 }
 

@@ -21,6 +21,7 @@ builds:
         - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }}"
         - cmd: bash -c "make validate-examples"
         - cmd: bash -c "packer-sdc plugin-check {{ .ProjectName }}"
+        - cmd: bash -c "rm -f ./{{ .ProjectName }}"
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
