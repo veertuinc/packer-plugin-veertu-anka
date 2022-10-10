@@ -49,7 +49,7 @@ func (c *AnkaClient) Copy(params CopyParams) error {
 
 type CreateParams struct {
 	Name         string
-	InstallerApp string
+	Installer string
 	OpticalDrive string
 	RAMSize      string
 	DiskSize     string
@@ -71,7 +71,7 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 
 	args := []string{
 		"create",
-		"--app", params.InstallerApp,
+		"--app", params.Installer,
 		"--ram-size", params.RAMSize,
 		"--cpu-count", params.VCPUCount,
 		"--disk-size", params.DiskSize,

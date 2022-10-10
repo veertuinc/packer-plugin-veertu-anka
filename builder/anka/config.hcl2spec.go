@@ -69,7 +69,7 @@ type FlatConfig struct {
 	WinRMUseNTLM              *bool                    `mapstructure:"winrm_use_ntlm" cty:"winrm_use_ntlm" hcl:"winrm_use_ntlm"`
 	AnkaUser                  *string                  `mapstructure:"anka_user" cty:"anka_user" hcl:"anka_user"`
 	AnkaPassword              *string                  `mapstructure:"anka_password" cty:"anka_password" hcl:"anka_password"`
-	InstallerApp              *string                  `mapstructure:"installer_app" cty:"installer_app" hcl:"installer_app"`
+	Installer                 *string                  `mapstructure:"installer" cty:"installer" hcl:"installer"`
 	SourceVMName              *string                  `mapstructure:"source_vm_name" cty:"source_vm_name" hcl:"source_vm_name"`
 	SourceVMTag               *string                  `mapstructure:"source_vm_tag" cty:"source_vm_tag" hcl:"source_vm_tag"`
 	VMName                    *string                  `mapstructure:"vm_name" cty:"vm_name" hcl:"vm_name"`
@@ -164,7 +164,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"winrm_use_ntlm":               &hcldec.AttrSpec{Name: "winrm_use_ntlm", Type: cty.Bool, Required: false},
 		"anka_user":                    &hcldec.AttrSpec{Name: "anka_user", Type: cty.String, Required: false},
 		"anka_password":                &hcldec.AttrSpec{Name: "anka_password", Type: cty.String, Required: false},
-		"installer_app":                &hcldec.AttrSpec{Name: "installer_app", Type: cty.String, Required: false},
+		"installer":                    &hcldec.AttrSpec{Name: "installer", Type: cty.String, Required: false},
 		"source_vm_name":               &hcldec.AttrSpec{Name: "source_vm_name", Type: cty.String, Required: false},
 		"source_vm_tag":                &hcldec.AttrSpec{Name: "source_vm_tag", Type: cty.String, Required: false},
 		"vm_name":                      &hcldec.AttrSpec{Name: "vm_name", Type: cty.String, Required: false},

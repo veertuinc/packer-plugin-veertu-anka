@@ -33,7 +33,7 @@ func TestCreateVMRun(t *testing.T) {
 	ui := packer.TestUi(t)
 	ctx := context.Background()
 	state := new(multistep.BasicStateBag)
-	installerAppInfo := util.InstallAppPlist{
+	InstallerInfo := util.InstallerAppPlist{
 		OSVersion:      "11.2",
 		BundlerVersion: "16.4.06",
 	}
@@ -47,7 +47,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/fake/InstallApp.app/",
+			Installer: "/fake/InstallApp.app/",
 			VMName:       "foo",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
@@ -60,7 +60,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
@@ -84,7 +84,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/fake/InstallApp.app/",
+			Installer: "/fake/InstallApp.app/",
 			VMName:       "foo",
 			PackerConfig: common.PackerConfig{
 				PackerForce:       true,
@@ -98,7 +98,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
@@ -128,7 +128,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/does/not/exist/InstallApp.app/",
+			Installer: "/does/not/exist/InstallApp.app/",
 			VMName:       "foo",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
@@ -141,7 +141,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
@@ -151,10 +151,10 @@ func TestCreateVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().
 				Create(createParams, gomock.Any()).
-				Return(client.CreateResponse{}, fmt.Errorf("installer app does not exist at %q", config.InstallerApp)).
+				Return(client.CreateResponse{}, fmt.Errorf("installer app does not exist at %q", config.Installer)).
 				Times(1),
 			ankaUtil.EXPECT().
-				StepError(ui, state, fmt.Errorf("installer app does not exist at %q", config.InstallerApp)).
+				StepError(ui, state, fmt.Errorf("installer app does not exist at %q", config.Installer)).
 				Return(multistep.ActionHalt).
 				Times(1),
 		)
@@ -168,7 +168,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/fake/InstallApp.app/",
+			Installer: "/fake/InstallApp.app/",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
 			},
@@ -176,11 +176,11 @@ func TestCreateVMRun(t *testing.T) {
 
 		state.Put("config", config)
 
-		step.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerAppInfo.OSVersion, installerAppInfo.BundlerVersion)
+		step.vmName = fmt.Sprintf("anka-packer-base-%s-%s", InstallerInfo.OSVersion, InstallerInfo.BundlerVersion)
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
@@ -188,7 +188,7 @@ func TestCreateVMRun(t *testing.T) {
 		}
 
 		gomock.InOrder(
-			ankaUtil.EXPECT().ObtainMacOSVersionFromInstallerApp(config.InstallerApp).Return(installerAppInfo, nil).Times(1),
+			ankaUtil.EXPECT().ObtainMacOSVersionFromInstallerApp(config.Installer).Return(InstallerInfo, nil).Times(1),
 			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1),
 		)
 

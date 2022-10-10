@@ -3,7 +3,7 @@ variable "vm_name" {
   default = "anka-packer-base-macos"
 }
 
-variable "installer_app" {
+variable "installer" {
   type = string
   default = "/Applications/Install macOS Big Sur.app/"
 }
@@ -14,7 +14,7 @@ variable "vcpu_count" {
 }
 
 source "veertu-anka-vm-create" "base" {
-  installer_app = "${var.installer_app}"
+  installer = "${var.installer}"
   vm_name = "${var.vm_name}"
   vcpu_count = "${var.vcpu_count}"
 }

@@ -33,17 +33,27 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	onError := func(err error) multistep.StepAction {
 		return ankaUtil.StepError(ui, state, err)
 	}
-	installerAppData := util.InstallAppPlist{}
 
 	s.client = state.Get("client").(client.Client)
 	s.vmName = config.VMName
 
 	if s.vmName == "" {
-		installerAppData, err = ankaUtil.ObtainMacOSVersionFromInstallerApp(config.InstallerApp)
-		if err != nil {
-			return onError(err)
+		ui.Say(config.HostArch)
+		if config.HostArch == "arm64" {
+			installerData := util.InstallerIPSWPlist{}
+			installerData, err = ankaUtil.ObtainMacOSVersionFromInstallerIPSW(config.Installer)
+			if err != nil {
+				return onError(err)
+			}
+			s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerData.ProductVersion, installerData.ProductBuildVersion)
+		} else {
+			installerData := util.InstallerAppPlist{}
+			installerData, err = ankaUtil.ObtainMacOSVersionFromInstallerApp(config.Installer)
+			if err != nil {
+				return onError(err)
+			}
+			s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerData.OSVersion, installerData.BundlerVersion)
 		}
-		s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerAppData.OSVersion, installerAppData.BundlerVersion)
 	}
 
 	state.Put("vm_name", s.vmName)
@@ -63,7 +73,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		}
 	}
 
-	err = s.createFromInstallerApp(ui, config)
+	err = s.createFromInstaller(ui, config)
 	if err != nil {
 		return onError(err)
 	}
@@ -71,7 +81,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	return multistep.ActionContinue
 }
 
-func (s *StepCreateVM) createFromInstallerApp(ui packer.Ui, config *Config) error {
+func (s *StepCreateVM) createFromInstaller(ui packer.Ui, config *Config) error {
 	ui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", s.vmName))
 
 	outputStream := make(chan string)
@@ -83,7 +93,7 @@ func (s *StepCreateVM) createFromInstallerApp(ui packer.Ui, config *Config) erro
 	}()
 
 	createParams := client.CreateParams{
-		InstallerApp: config.InstallerApp,
+		Installer: config.Installer,
 		Name:         s.vmName,
 		DiskSize:     config.DiskSize,
 		VCPUCount:    config.VCPUCount,

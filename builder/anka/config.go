@@ -35,7 +35,7 @@ type Config struct {
 	AnkaUser     string `mapstructure:"anka_user"`
 	AnkaPassword string `mapstructure:"anka_password"`
 
-	InstallerApp string `mapstructure:"installer_app"`
+	Installer string `mapstructure:"installer"`
 	SourceVMName string `mapstructure:"source_vm_name"`
 	SourceVMTag  string `mapstructure:"source_vm_tag"`
 
@@ -104,12 +104,12 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 
 	c.HostArch = runtime.GOARCH
 
-	if c.InstallerApp == "" && c.SourceVMName == "" {
-		errs = packer.MultiErrorAppend(errs, errors.New("installer_app or source_vm_name must be specified"))
+	if c.Installer == "" && c.SourceVMName == "" {
+		errs = packer.MultiErrorAppend(errs, errors.New("installer or source_vm_name must be specified"))
 	}
 
-	if c.InstallerApp != "" && c.SourceVMName != "" {
-		errs = packer.MultiErrorAppend(errs, errors.New("cannot specify both an installer_app and source_vm_name"))
+	if c.Installer != "" && c.SourceVMName != "" {
+		errs = packer.MultiErrorAppend(errs, errors.New("cannot specify both an installer and source_vm_name"))
 	}
 
 	if c.SourceVMName != "" && strings.ContainsAny(c.SourceVMName, " \n") {

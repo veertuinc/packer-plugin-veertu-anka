@@ -67,7 +67,7 @@ The most basic pkr.hcl file you can build from is:
 
 ```hcl
 source "veertu-anka-vm-create" "anka-packer-base-macos" {
-  installer_app = "/Applications/Install macOS Big Sur.app/"
+  installer = "/Applications/Install macOS Big Sur.app/"
   vm_name = "anka-packer-base-macos"
 }
 
@@ -82,11 +82,11 @@ build {
 }
 ```
 
-This will create a "base" VM template using the `.app` you specified in `installer_app` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the `veertu-registry-push-test` tag.
+This will create a "base" VM template using the `.app` you specified in `installer` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the `veertu-registry-push-test` tag.
 
 > If you didn't specify `vm_name`, we would automatically pull it from the installer app and create a name like `anka-packer-base-11.4-16.6.01`.
 
-> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, the Anka CLI will determine what's best for you based on the host's hardware.
+> When using `installer`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, the Anka CLI will determine what's best for you based on the host's hardware.
 
 > **However, hw_uuid, port_forwarding_rules, and several other configuration settings are ignored for the created "base" vm.** We recommend using the `veertu-anka-vm-clone` builder to modify these values.
 

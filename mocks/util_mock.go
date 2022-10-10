@@ -67,10 +67,10 @@ func (mr *MockUtilMockRecorder) ConvertDiskSizeToBytes(diskSize interface{}) *go
 }
 
 // ObtainMacOSVersionFromInstallerApp mocks base method.
-func (m *MockUtil) ObtainMacOSVersionFromInstallerApp(path string) (util.InstallAppPlist, error) {
+func (m *MockUtil) ObtainMacOSVersionFromInstallerApp(path string) (util.InstallerAppPlist, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ObtainMacOSVersionFromInstallerApp", path)
-	ret0, _ := ret[0].(util.InstallAppPlist)
+	ret0, _ := ret[0].(util.InstallerAppPlist)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -79,6 +79,21 @@ func (m *MockUtil) ObtainMacOSVersionFromInstallerApp(path string) (util.Install
 func (mr *MockUtilMockRecorder) ObtainMacOSVersionFromInstallerApp(path interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObtainMacOSVersionFromInstallerApp", reflect.TypeOf((*MockUtil)(nil).ObtainMacOSVersionFromInstallerApp), path)
+}
+
+// ObtainMacOSVersionFromInstallerIPSW mocks base method.
+func (m *MockUtil) ObtainMacOSVersionFromInstallerIPSW(path string) (util.InstallerIPSWPlist, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ObtainMacOSVersionFromInstallerIPSW", path)
+	ret0, _ := ret[0].(util.InstallerIPSWPlist)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ObtainMacOSVersionFromInstallerIPSW indicates an expected call of ObtainMacOSVersionFromInstallerIPSW.
+func (mr *MockUtilMockRecorder) ObtainMacOSVersionFromInstallerIPSW(path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObtainMacOSVersionFromInstallerIPSW", reflect.TypeOf((*MockUtil)(nil).ObtainMacOSVersionFromInstallerIPSW), path)
 }
 
 // RandSeq mocks base method.
