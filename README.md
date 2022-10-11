@@ -172,7 +172,7 @@ We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our
 ### Building, Linting, and Testing
 
 ```bash
-make all
+make all && make install
 ```
 
 <!-- We recommend using goreleaser to perform all of the building, linting, and testing:
