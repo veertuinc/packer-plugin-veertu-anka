@@ -2,7 +2,6 @@ package anka
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -16,13 +15,9 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-var createResponse client.CreateResponse
-
 func TestCreateVMRun(t *testing.T) {
-	err := json.Unmarshal(json.RawMessage(`{"UUID": "abcd-efgh-1234-5678"}`), &createResponse)
-	if err != nil {
-		t.Fail()
-	}
+	
+	createdVMUUID := "abcd-efgh-1234-5678"
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -67,11 +62,11 @@ func TestCreateVMRun(t *testing.T) {
 			RAMSize:      config.RAMSize,
 		}
 
-		ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1)
+		ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createResponse.UUID))
+		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Creating a new VM Template (foo) from installer, this will take a while")
@@ -108,13 +103,13 @@ func TestCreateVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(step.vmName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: step.vmName}).Return(nil).Times(1),
-			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1),
+			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Deleting existing virtual machine %s", step.vmName))
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createResponse.UUID))
+		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Deleting existing virtual machine foo")
@@ -151,7 +146,7 @@ func TestCreateVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().
 				Create(createParams, gomock.Any()).
-				Return(client.CreateResponse{}, fmt.Errorf("installer app does not exist at %q", config.Installer)).
+				Return(createdVMUUID, fmt.Errorf("installer app does not exist at %q", config.Installer)).
 				Times(1),
 			ankaUtil.EXPECT().
 				StepError(ui, state, fmt.Errorf("installer app does not exist at %q", config.Installer)).
@@ -189,12 +184,12 @@ func TestCreateVMRun(t *testing.T) {
 
 		gomock.InOrder(
 			ankaUtil.EXPECT().ObtainMacOSVersionFromInstallerApp(config.Installer).Return(InstallerInfo, nil).Times(1),
-			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1),
+			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createResponse.UUID))
+		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Creating a new VM Template (anka-packer-base-11.2-16.4.06) from installer, this will take a while")

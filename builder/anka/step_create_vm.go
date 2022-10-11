@@ -92,12 +92,12 @@ func (s *StepCreateVM) createFromInstaller(ui packer.Ui, config *Config) error {
 		RAMSize:      config.RAMSize,
 	}
 
-	resp, err := s.client.Create(createParams, outputStream)
+	createdVMUUID, err := s.client.Create(createParams, outputStream)
 	if err != nil {
 		return err
 	}
 
-	ui.Say(fmt.Sprintf("VM %s was created (%s)", s.vmName, resp.UUID))
+	ui.Say(fmt.Sprintf("VM %s was created (%s)", s.vmName, createdVMUUID))
 
 	close(outputStream)
 

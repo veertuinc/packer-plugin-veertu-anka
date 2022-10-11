@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"bytes"
 
 	"github.com/veertuinc/packer-plugin-veertu-anka/common"
 )
@@ -56,13 +57,7 @@ type CreateParams struct {
 	VCPUCount    string
 }
 
-// https://docs.veertu.com/anka/intel/command-line-reference/#create
-type CreateResponse struct {
-	UUID      string `json:"body"`
-}
-
-func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (CreateResponse, error) {
-	var response CreateResponse
+func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (string, error) {
 
 	args := []string{
 		"create",
@@ -82,16 +77,12 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 	args = append(args,params.Name)
 
 	output, err := runCommandStreamer(outputStreamer, args...)
+	createdVMUUID := bytes.NewBuffer(output.Body).String()
 	if err != nil {
-		return response, err
+		return createdVMUUID, err
 	}
 
-	err = json.Unmarshal(output, &response)
-	if err != nil {
-		return response, fmt.Errorf("Failed parsing output: %q (%v)", output, err)
-	}
-
-	return response, nil
+	return createdVMUUID, nil
 }
 
 // https://docs.veertu.com/anka/intel/command-line-reference/#delete
