@@ -58,12 +58,7 @@ type CreateParams struct {
 
 // https://docs.veertu.com/anka/intel/command-line-reference/#create
 type CreateResponse struct {
-	UUID      string `json:"uuid"`
-	Name      string `json:"name"`
-	VCPUCores int    `json:"cpu_cores"`
-	RAM       string `json:"ram"`
-	ImageID   string `json:"image_id"`
-	Status    string `json:"status"`
+	UUID      string `json:"body"`
 }
 
 func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (CreateResponse, error) {
@@ -91,9 +86,9 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 		return response, err
 	}
 
-	err = json.Unmarshal(output.Body, &response)
+	err = json.Unmarshal(output, &response)
 	if err != nil {
-		return response, fmt.Errorf("Failed parsing output: %q (%v)", output.Body, err)
+		return response, fmt.Errorf("Failed parsing output: %q (%v)", output, err)
 	}
 
 	return response, nil
