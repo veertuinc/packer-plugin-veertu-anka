@@ -12,13 +12,6 @@ import (
 	"github.com/veertuinc/packer-plugin-veertu-anka/util"
 )
 
-// Anka CLI will check host resources and provide the best values for the VM. We've commented this out to we can rely on those.
-// const (
-// 	defaultDiskSize  = "100G"
-// 	defaultRAMSize   = "6G"
-// 	defaultVCPUCount = "3"
-// )
-
 // StepCreateVM will be used to run the create step for an 'vm-create' builder types
 type StepCreateVM struct {
 	client client.Client
