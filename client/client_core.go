@@ -71,12 +71,20 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 
 	args := []string{
 		"create",
-		"--app", params.Installer,
-		"--ram-size", params.RAMSize,
-		"--cpu-count", params.VCPUCount,
-		"--disk-size", params.DiskSize,
-		params.Name,
+		"--app", params.Installer
 	}
+
+	if params.DiskSize != "" {
+		args = append(args,"--disk-size", params.DiskSize)
+	}
+	if params.VCPUCount != "" {
+		args = append(args,"--cpu-count", params.VCPUCount)
+	}
+	if params.RAMSize != "" {
+		args = append(args,"--ram-size", params.RAMSize)
+	}
+
+	args = append(args,params.Name)
 
 	output, err := runCommandStreamer(outputStreamer, args...)
 	if err != nil {

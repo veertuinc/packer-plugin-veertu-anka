@@ -100,17 +100,6 @@ func (s *StepCreateVM) createFromInstaller(ui packer.Ui, config *Config) error {
 		RAMSize:      config.RAMSize,
 	}
 
-	// Anka CLI will check host resources and provide the best values for the VM. We've commented this out to we can rely on those.
-	// if createParams.DiskSize == "" {
-	// 	createParams.DiskSize = defaultDiskSize
-	// }
-	// if createParams.VCPUCount == "" {
-	// 	createParams.VCPUCount = defaultVCPUCount
-	// }
-	// if createParams.RAMSize == "" {
-	// 	createParams.RAMSize = defaultRAMSize
-	// }
-
 	resp, err := s.client.Create(createParams, outputStream)
 	if err != nil {
 		return err
