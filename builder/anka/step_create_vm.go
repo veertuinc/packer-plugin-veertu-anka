@@ -38,7 +38,6 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	s.vmName = config.VMName
 
 	if s.vmName == "" {
-		ui.Say(config.HostArch)
 		if config.HostArch == "arm64" {
 			installerData := util.InstallerIPSWPlist{}
 			installerData, err = ankaUtil.ObtainMacOSVersionFromInstallerIPSW(config.Installer)
