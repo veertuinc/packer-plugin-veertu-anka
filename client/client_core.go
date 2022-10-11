@@ -71,7 +71,7 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (Cr
 
 	args := []string{
 		"create",
-		"--app", params.Installer
+		"--app", params.Installer,
 	}
 
 	if params.DiskSize != "" {
