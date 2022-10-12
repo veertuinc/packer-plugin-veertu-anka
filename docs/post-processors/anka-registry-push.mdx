@@ -17,7 +17,7 @@ This post-processor is part of the [Veertu Anka plugin](https://github.com/veert
 packer {
   required_plugins {
     veertu-anka = {
-      version = ">= 2.1.0"
+      version = ">= 3.0.0"
       source  = "github.com/veertuinc/packer-plugin-veertu-anka"
     }
   }
@@ -55,7 +55,7 @@ segmented below into two categories: required and optional parameters.
 
 * `tag` (String) The name of the tag to push (will default as 'latest' if not set).
 
-* `force` (String) Whether or not to forcefully push, regardless of a tag already existing
+* `force` (Boolean) Whether or not to forcefully push, regardless of a tag already existing
 
 ## Other 
 
