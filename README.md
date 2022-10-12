@@ -24,7 +24,7 @@ below 1.7.0 | < 2.0.0
     packer {
       required_plugins {
         veertu-anka = {
-          version = ">= v2.1.0"
+          version = ">= v3.0.0"
           source = "github.com/veertuinc/veertu-anka"
         }
       }
@@ -36,15 +36,15 @@ below 1.7.0 | < 2.0.0
 
 ## Installing from Binary
 
-1. [Install Packer v1.7 or newer](https://www.packer.io/downloads)
-2. [Install Veertu Anka v2.3.1 or newer](https://veertu.com/download-anka-build/)
-3. Download the [latest release](https://github.com/veertuinc/packer-plugin-veertu-anka/releases) for your host environment
+1. [Install Packer v1.8 or newer](https://www.packer.io/downloads).
+2. [Install Veertu Anka](https://veertu.com/download-anka-build/).
+3. Download the [latest release](https://github.com/veertuinc/packer-plugin-veertu-anka/releases) for your host environment.
 4. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
     * The directory where the packer binary is.
     * The `~/.packer.d/plugins` directory.
     * The current working directory.
-5. Rename the binary file to `packer-plugin-veertu-anka`
-6. Run your `packer build` command with your hcl template
+5. Rename the binary file to `packer-plugin-veertu-anka`.
+6. Run your `packer build` command with your hcl template.
 
 ## Documentation
 
@@ -76,11 +76,9 @@ build {
 }
 ```
 
-This will create a "base" VM template using the `.app` you specified in `installer` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the `veertu-registry-push-test` tag.
+This will create a "base" VM template using the `.app` or `.ipsw` you specified in `installer = "/Applications/Install macOS Big Sur.app/"` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the tag `veertu-registry-push-test`.
 
-> If you didn't specify `vm_name`, we would automatically pull it from the installer app and create a name like `anka-packer-base-11.4-16.6.01`.
-
-> When using `installer`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, the Anka CLI will determine what's best for you based on the host's hardware.
+> If you don't specify `vm_name`, we will obtain it from the installer and create a name like `anka-packer-base-12.6-21G115`.
 
 > **However, hw_uuid, port_forwarding_rules, and several other configuration settings are ignored for the created "base" vm.** We recommend using the `veertu-anka-vm-clone` builder to modify these values.
 
@@ -90,6 +88,7 @@ You can also skip the creation of the base VM template and use an existing VM te
 source "veertu-anka-vm-clone" "anka-packer-from-source" { 
   vm_name = "anka-packer-from-source"
   source_vm_name = "anka-packer-base-macos"
+  always_fetch = true
 }
 
 build {
@@ -114,7 +113,7 @@ This will check to see if the VM template/tag exists locally, and if not, pull i
 
 This will clone `anka-packer-base-macos` to a new VM and, if there are set configurations, make them.
 
-> Check out the [examples directory](./examples) to see how port-forwarding and other options are used
+> Check out the [examples directory](./examples) to see how port-forwarding and other options are used.
 
 ### Build Variables
 
