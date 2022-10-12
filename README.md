@@ -6,7 +6,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 ## v3.0.0 Breaking Changes
 
-- In order to minimize code complexity, Anka 2.x returns json which is no longer supported by packer 3.x. Packer 2.x will continue to function with Anka 2.x.
+- In order to minimize code complexity, Anka 2.x returns json which is not supported by Packer Plugin for Anka 3.x. However, Packer Plugin for Anka 2.x will continue to function with Anka 2.x.
 
 ## Compatibility
 
