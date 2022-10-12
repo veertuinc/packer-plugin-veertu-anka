@@ -2,18 +2,11 @@
 
 This is a [Packer](https://www.packer.io/) Plugin for building images that work with [Veertu's Anka macOS Virtualization tool](https://veertu.com/).
 
-- Note that this plugin does not manage VM templates. Once it creates a Template, it is up to you to use it or delete it.
-
 - For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/intel/command-line-reference/#registry-add).
-## v2.0.0 Breaking Changes
 
-- Plugin will only work with Packer v1.7 or later.
+## v3.0.0 Breaking Changes
 
-- Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
-
-- Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
-
-- Pre-version-1.5 "legacy" Packer templates, which were exclusively JSON and follow a different format, are no longer compatible and must be updated to either HCL or the new JSON format: https://www.packer.io/docs/templates/hcl_templates/syntax-json
+- In order to minimize code complexity, Anka 2.x returns json which is no longer supported by packer 3.x. Packer 2.x will continue to function with Anka 2.x.
 
 ## Compatibility
 
@@ -21,6 +14,7 @@ Packer Version | Veertu Anka Plugin Version
 --- | ---
 1.7.0 and above | >= 2.0.0
 below 1.7.0 | < 2.0.0
+>= 2.0.0 | < 3.1.0
 
 ## Installing with `packer init`
 
