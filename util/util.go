@@ -6,11 +6,13 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"bytes"
 
 	"github.com/groob/plist"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
@@ -23,17 +25,24 @@ var (
 	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 )
 
-// InstallAppPlist is a list of variables that comes from the installer app
-type InstallAppPlist struct {
+// InstallerAppPlist is a list of variables that comes from the installer app
+type InstallerAppPlist struct {
 	OSVersion      string `plist:"DTPlatformVersion"`
 	BundlerVersion string `plist:"CFBundleShortVersionString"`
+}
+
+// InstallerIPSWPlist is a list of variables that comes from the ipsw
+type InstallerIPSWPlist struct {
+	ProductVersion      string `plist:"ProductVersion"`
+	ProductBuildVersion string `plist:"ProductBuildVersion"`
 }
 
 // Util defines everything this utility can do
 type Util interface {
 	ConfigTmpDir() (string, error)
 	ConvertDiskSizeToBytes(diskSize string) (uint64, error)
-	ObtainMacOSVersionFromInstallerApp(path string) (InstallAppPlist, error)
+	ObtainMacOSVersionFromInstallerApp(path string) (InstallerAppPlist, error)
+	ObtainMacOSVersionFromInstallerIPSW(path string) (InstallerIPSWPlist, error)
 	RandSeq(n int) string
 	StepError(ui packer.Ui, state multistep.StateBag, err error) multistep.StepAction
 	// ExecuteHostCommand(name string, arg ...string) string
@@ -78,36 +87,41 @@ func (u *AnkaUtil) ConvertDiskSizeToBytes(diskSize string) (uint64, error) {
 	}
 }
 
-// ObtainMacOSVersionFromInstallerApp abstracts the os version from the installer app provided
-func (u *AnkaUtil) ObtainMacOSVersionFromInstallerApp(path string) (InstallAppPlist, error) {
-	installerAppPlist := InstallAppPlist{}
+// ObtainMacOSVersionFromInstaller abstracts the os version from the installer ipsw provided
+func (u *AnkaUtil) ObtainMacOSVersionFromInstallerIPSW(path string) (InstallerIPSWPlist, error) {
+	installerPlist := InstallerIPSWPlist{}
+	plistContent := bytes.NewReader([]byte(executeHostCommand("unzip", "-p", path, "SystemVersion.plist")))
+	err := plist.NewXMLDecoder(plistContent).Decode(&installerPlist)
+	if err != nil {
+		return installerPlist, err
+	}
+	return installerPlist, nil
+}
 
+// ObtainMacOSVersionFromInstaller abstracts the os version from the installer app provided
+func (u *AnkaUtil) ObtainMacOSVersionFromInstallerApp(path string) (InstallerAppPlist, error) {
+	installerPlist := InstallerAppPlist{}
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		return installerAppPlist, fmt.Errorf("installer app does not exist at %q: %w", path, err)
+		return installerPlist, fmt.Errorf("installer app does not exist at %q: %w", path, err)
 	}
 	if err != nil {
-		return installerAppPlist, fmt.Errorf("failed to stat installer at %q: %w", path, err)
+		return installerPlist, fmt.Errorf("failed to stat installer at %q: %w", path, err)
 	}
-
-	plistPath := filepath.Join(path, "Contents", "Info.plist")
-
+	plistPath := filepath.Join(path, "Contents", "Info.plist")	
 	_, err = os.Stat(plistPath)
 	if os.IsNotExist(err) {
-		return installerAppPlist, fmt.Errorf("installer app info plist did not exist at %q: %w", plistPath, err)
+		return installerPlist, fmt.Errorf("installer app info plist did not exist at %q: %w", plistPath, err)
 	}
 	if err != nil {
-		return installerAppPlist, fmt.Errorf("failed to stat installer app info plist at %q: %w", plistPath, err)
+		return installerPlist, fmt.Errorf("failed to stat installer app info plist at %q: %w", plistPath, err)
 	}
-
 	plistContent, _ := os.Open(plistPath)
-
-	err = plist.NewXMLDecoder(plistContent).Decode(&installerAppPlist)
+	err = plist.NewXMLDecoder(plistContent).Decode(&installerPlist)
 	if err != nil {
-		return installerAppPlist, err
+		return installerPlist, err
 	}
-
-	return installerAppPlist, nil
+	return installerPlist, nil
 }
 
 // ConfigTmpDir creates the temp dir used by packer during runtime
@@ -162,8 +176,8 @@ func (u *AnkaUtil) RandSeq(n int) string {
 	return string(b)
 }
 
-// func (u *AnkaUtil) ExecuteHostCommand(name string, arg ...string) string {
-// 	output, _ := exec.Command(name, arg...).CombinedOutput()
+func executeHostCommand(name string, arg ...string) string {
+	output, _ := exec.Command(name, arg...).CombinedOutput()
 
-// 	return string(output)
-// }
+	return string(output)
+}

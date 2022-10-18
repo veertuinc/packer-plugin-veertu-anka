@@ -63,10 +63,10 @@ func (mr *MockClientMockRecorder) Copy(params interface{}) *gomock.Call {
 }
 
 // Create mocks base method.
-func (m *MockClient) Create(params client.CreateParams, outputStreamer chan string) (client.CreateResponse, error) {
+func (m *MockClient) Create(params client.CreateParams, outputStreamer chan string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", params, outputStreamer)
-	ret0, _ := ret[0].(client.CreateResponse)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

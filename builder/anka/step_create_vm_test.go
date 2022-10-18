@@ -2,7 +2,6 @@ package anka
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -16,13 +15,9 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-var createResponse client.CreateResponse
-
 func TestCreateVMRun(t *testing.T) {
-	err := json.Unmarshal(json.RawMessage(`{"UUID": "abcd-efgh-1234-5678"}`), &createResponse)
-	if err != nil {
-		t.Fail()
-	}
+	
+	createdVMUUID := "abcd-efgh-1234-5678"
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -33,7 +28,7 @@ func TestCreateVMRun(t *testing.T) {
 	ui := packer.TestUi(t)
 	ctx := context.Background()
 	state := new(multistep.BasicStateBag)
-	installerAppInfo := util.InstallAppPlist{
+	InstallerInfo := util.InstallerAppPlist{
 		OSVersion:      "11.2",
 		BundlerVersion: "16.4.06",
 	}
@@ -47,7 +42,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/fake/InstallApp.app/",
+			Installer: "/fake/InstallApp.app/",
 			VMName:       "foo",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
@@ -60,18 +55,18 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
 			RAMSize:      config.RAMSize,
 		}
 
-		ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1)
+		ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createResponse.UUID))
+		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Creating a new VM Template (foo) from installer, this will take a while")
@@ -84,7 +79,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/fake/InstallApp.app/",
+			Installer: "/fake/InstallApp.app/",
 			VMName:       "foo",
 			PackerConfig: common.PackerConfig{
 				PackerForce:       true,
@@ -98,7 +93,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
@@ -108,13 +103,13 @@ func TestCreateVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(step.vmName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: step.vmName}).Return(nil).Times(1),
-			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1),
+			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Deleting existing virtual machine %s", step.vmName))
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createResponse.UUID))
+		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Deleting existing virtual machine foo")
@@ -128,7 +123,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/does/not/exist/InstallApp.app/",
+			Installer: "/does/not/exist/InstallApp.app/",
 			VMName:       "foo",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
@@ -141,7 +136,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
@@ -151,10 +146,10 @@ func TestCreateVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().
 				Create(createParams, gomock.Any()).
-				Return(client.CreateResponse{}, fmt.Errorf("installer app does not exist at %q", config.InstallerApp)).
+				Return(createdVMUUID, fmt.Errorf("installer app does not exist at %q", config.Installer)).
 				Times(1),
 			ankaUtil.EXPECT().
-				StepError(ui, state, fmt.Errorf("installer app does not exist at %q", config.InstallerApp)).
+				StepError(ui, state, fmt.Errorf("installer app does not exist at %q", config.Installer)).
 				Return(multistep.ActionHalt).
 				Times(1),
 		)
@@ -168,7 +163,7 @@ func TestCreateVMRun(t *testing.T) {
 			DiskSize:     "500G",
 			VCPUCount:    "32G",
 			RAMSize:      "16G",
-			InstallerApp: "/fake/InstallApp.app/",
+			Installer: "/fake/InstallApp.app/",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
 			},
@@ -176,11 +171,11 @@ func TestCreateVMRun(t *testing.T) {
 
 		state.Put("config", config)
 
-		step.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerAppInfo.OSVersion, installerAppInfo.BundlerVersion)
+		step.vmName = fmt.Sprintf("anka-packer-base-%s-%s", InstallerInfo.OSVersion, InstallerInfo.BundlerVersion)
 		state.Put("vm_name", step.vmName)
 
 		createParams := client.CreateParams{
-			InstallerApp: config.InstallerApp,
+			Installer: config.Installer,
 			Name:         step.vmName,
 			DiskSize:     config.DiskSize,
 			VCPUCount:    config.VCPUCount,
@@ -188,13 +183,13 @@ func TestCreateVMRun(t *testing.T) {
 		}
 
 		gomock.InOrder(
-			ankaUtil.EXPECT().ObtainMacOSVersionFromInstallerApp(config.InstallerApp).Return(installerAppInfo, nil).Times(1),
-			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createResponse, nil).Times(1),
+			ankaUtil.EXPECT().ObtainMacOSVersionFromInstallerApp(config.Installer).Return(InstallerInfo, nil).Times(1),
+			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createResponse.UUID))
+		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Creating a new VM Template (anka-packer-base-11.2-16.4.06) from installer, this will take a while")

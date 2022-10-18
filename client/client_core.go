@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"bytes"
 
 	"github.com/veertuinc/packer-plugin-veertu-anka/common"
 )
@@ -49,46 +50,39 @@ func (c *AnkaClient) Copy(params CopyParams) error {
 
 type CreateParams struct {
 	Name         string
-	InstallerApp string
+	Installer string
 	OpticalDrive string
 	RAMSize      string
 	DiskSize     string
 	VCPUCount    string
 }
 
-// https://docs.veertu.com/anka/intel/command-line-reference/#create
-type CreateResponse struct {
-	UUID      string `json:"uuid"`
-	Name      string `json:"name"`
-	VCPUCores int    `json:"cpu_cores"`
-	RAM       string `json:"ram"`
-	ImageID   string `json:"image_id"`
-	Status    string `json:"status"`
-}
-
-func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (CreateResponse, error) {
-	var response CreateResponse
+func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (string, error) {
 
 	args := []string{
 		"create",
-		"--app", params.InstallerApp,
-		"--ram-size", params.RAMSize,
-		"--cpu-count", params.VCPUCount,
-		"--disk-size", params.DiskSize,
-		params.Name,
+		"--app", params.Installer,
 	}
+
+	if params.DiskSize != "" {
+		args = append(args,"--disk-size", params.DiskSize)
+	}
+	if params.VCPUCount != "" {
+		args = append(args,"--cpu-count", params.VCPUCount)
+	}
+	if params.RAMSize != "" {
+		args = append(args,"--ram-size", params.RAMSize)
+	}
+
+	args = append(args,params.Name)
 
 	output, err := runCommandStreamer(outputStreamer, args...)
+	createdVMUUID := bytes.NewBuffer(output.Body).String()
 	if err != nil {
-		return response, err
+		return createdVMUUID, err
 	}
 
-	err = json.Unmarshal(output.Body, &response)
-	if err != nil {
-		return response, fmt.Errorf("Failed parsing output: %q (%v)", output.Body, err)
-	}
-
-	return response, nil
+	return createdVMUUID, nil
 }
 
 // https://docs.veertu.com/anka/intel/command-line-reference/#delete

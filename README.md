@@ -2,25 +2,19 @@
 
 This is a [Packer](https://www.packer.io/) Plugin for building images that work with [Veertu's Anka macOS Virtualization tool](https://veertu.com/).
 
-- Note that this plugin does not manage VM templates. Once it creates a Template, it is up to you to use it or delete it.
+- For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/apple/command-line-reference/#registry-add).
 
-- For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/intel/command-line-reference/#registry-add).
-## v2.0.0 Breaking Changes
+## v3.0.0 Breaking Changes
 
-- Plugin will only work with Packer v1.7 or later.
-
-- Plugin has been renamed from `packer-builder-veertu-anka` to `packer-plugin-veertu-anka`.
-
-- Builder has been renamed from `veertu-anka` to `veertu-anka-vm-clone` and `veertu-anka-vm-create`.
-
-- Pre-version-1.5 "legacy" Packer templates, which were exclusively JSON and follow a different format, are no longer compatible and must be updated to either HCL or the new JSON format: https://www.packer.io/docs/templates/hcl_templates/syntax-json
+- In order to minimize code complexity, Anka 2.x returns json which is not supported by Packer Plugin for Anka 3.x. However, Packer Plugin for Anka 2.x will continue to function with Anka 2.x.
 
 ## Compatibility
 
 Packer Version | Veertu Anka Plugin Version
---- | ---
-1.7.0 and above | >= 2.0.0
-below 1.7.0 | < 2.0.0
+| --- | --- |
+| 1.7.0 and above | >= 2.0.0 |
+| below 1.7.0 | < 2.0.0 |
+| 2.x | < 3.1.0 |
 
 ## Installing with `packer init`
 
@@ -30,7 +24,7 @@ below 1.7.0 | < 2.0.0
     packer {
       required_plugins {
         veertu-anka = {
-          version = ">= v2.1.0"
+          version = ">= v3.0.0"
           source = "github.com/veertuinc/veertu-anka"
         }
       }
@@ -42,15 +36,15 @@ below 1.7.0 | < 2.0.0
 
 ## Installing from Binary
 
-1. [Install Packer v1.7 or newer](https://www.packer.io/downloads)
-2. [Install Veertu Anka v2.3.1 or newer](https://veertu.com/download-anka-build/)
-3. Download the [latest release](https://github.com/veertuinc/packer-plugin-veertu-anka/releases) for your host environment
+1. [Install Packer v1.8 or newer](https://www.packer.io/downloads).
+2. [Install Veertu Anka](https://veertu.com/download-anka-build/).
+3. Download the [latest release](https://github.com/veertuinc/packer-plugin-veertu-anka/releases) for your host environment.
 4. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
     * The directory where the packer binary is.
     * The `~/.packer.d/plugins` directory.
     * The current working directory.
-5. Rename the binary file to `packer-plugin-veertu-anka`
-6. Run your `packer build` command with your hcl template
+5. Rename the binary file to `packer-plugin-veertu-anka`.
+6. Run your `packer build` command with your hcl template.
 
 ## Documentation
 
@@ -67,7 +61,7 @@ The most basic pkr.hcl file you can build from is:
 
 ```hcl
 source "veertu-anka-vm-create" "anka-packer-base-macos" {
-  installer_app = "/Applications/Install macOS Big Sur.app/"
+  installer = "/Applications/Install macOS Big Sur.app/"
   vm_name = "anka-packer-base-macos"
 }
 
@@ -82,11 +76,9 @@ build {
 }
 ```
 
-This will create a "base" VM template using the `.app` you specified in `installer_app` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the `veertu-registry-push-test` tag.
+This will create a "base" VM template using the `.app` or `.ipsw` you specified in `installer = "/Applications/Install macOS Big Sur.app/"` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the tag `veertu-registry-push-test`.
 
-> If you didn't specify `vm_name`, we would automatically pull it from the installer app and create a name like `anka-packer-base-11.4-16.6.01`.
-
-> When using `installer_app`, you can modify the base VM default resource values with `disk_size`, `ram_size`, and `vcpu_count`. Otherwise, defaults (see below) will be used.
+> If you don't specify `vm_name`, we will obtain it from the installer and create a name like `anka-packer-base-12.6-21G115`.
 
 > **However, hw_uuid, port_forwarding_rules, and several other configuration settings are ignored for the created "base" vm.** We recommend using the `veertu-anka-vm-clone` builder to modify these values.
 
@@ -96,6 +88,7 @@ You can also skip the creation of the base VM template and use an existing VM te
 source "veertu-anka-vm-clone" "anka-packer-from-source" { 
   vm_name = "anka-packer-from-source"
   source_vm_name = "anka-packer-base-macos"
+  always_fetch = true
 }
 
 build {
@@ -120,7 +113,7 @@ This will check to see if the VM template/tag exists locally, and if not, pull i
 
 This will clone `anka-packer-base-macos` to a new VM and, if there are set configurations, make them.
 
-> Check out the [examples directory](./examples) to see how port-forwarding and other options are used
+> Check out the [examples directory](./examples) to see how port-forwarding and other options are used.
 
 ### Build Variables
 
@@ -167,19 +160,19 @@ You will need a recent golang installed and setup. See `go.mod` for which versio
 
 We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our interfaces for testing. This allows us to easily test when we expect logic to be called without having to rewrite golang standard library functions with custom mock logic. To generate one of these mocked interfaces, installed the mockgen binary by following the link provided and then run the `make go.test`.
 
-- You must install `packer-sdc` to generate docs and HCL2spec:
-
-```bash
-go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
-```
+- You must install `packer-sdc` to generate docs and HCL2spec.
 
 ### Building, Linting, and Testing
 
-We recommend using goreleaser to perform all of the building, linting, and testing:
+```bash
+make all && make install
+```
+
+<!-- We recommend using goreleaser to perform all of the building, linting, and testing:
 
 ```bash
 PACKER_CI_PROJECT_API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser build --single-target --snapshot --rm-dist
-```
+``` -->
 
 When testing with an example HCL:
 

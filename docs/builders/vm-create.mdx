@@ -10,7 +10,7 @@ nav_title: VM Create
 
 Type: `veertu-anka-vm-create`
 
-**NOT CURRENTLY COMPATIBLE WITH ANKA 3.**
+**Packer 3.x will no longer support Anka 2.x. You can still however use the Packer 2.x release for support.**
 
 The `veertu-anka-vm-create` Packer builder is able to create new Anka VM Templates for use with the
 [Anka Virtualization](https://veertu.com/technology/) package and the [Anka Build Cloud](https://veertu.com/anka-build/). The builder takes the path to macOS installer .app 
@@ -26,7 +26,7 @@ your hcl template:
 packer {
   required_plugins {
     veertu-anka = {
-      version = ">= 2.1.0"
+      version = ">= 3.0.0"
       source  = "github.com/veertuinc/packer-plugin-veertu-anka"
     }
   }
@@ -40,55 +40,33 @@ segmented below into two categories: required and optional parameters.
 
 #### Required Configuration
 
-* `installer_app` (String)
+* `installer` (String) The path to a macOS installer. This process takes about 20 minutes.
 
-The path to a macOS installer. This process takes about 20 minutes.
-
-* `type` (String)
-
-Must be `veertu-anka-vm-create`.
+* `type` (String) Must be `veertu-anka-vm-create`.
 
 #### Optional Configuration
 
-* `vm_name` (String)
+* `vm_name` (String) The name for the VM that is created. One is generated with installer data if not provided (`anka-packer-base-{{ installer.OSVersion }}-{{ installer.BundlerVersion }}`).
 
-The name for the VM that is created. One is generated with installer_app data if not provided (`anka-packer-base-{{ installer_app.OSVersion }}-{{ installer_app.BundlerVersion }}`).
+* `vcpu_count` (String) The number of vCPU cores, defaults to `2`.
 
-* `vcpu_count` (String)
+  > This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
 
-> This change gears us up for Anka 3.0 release when cpu_count will be vcpu_count. For now this is still CPU and not vCPU.
+* `ram_size` (String) The size in "[0-9]+G" format, defaults to `4G`.
 
-The number of vCPU cores, defaults to `2`.
+* `disk_size` (String) The size in "[0-9]+G" format, defaults to `40G`.
 
-* `ram_size` (String)
+  > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk0s2 0` inside of the VM
 
-The size in "[0-9]+G" format, defaults to `4G`.
+* `stop_vm` (Boolean) Whether or not to stop the vm after it has been created, defaults to false.
 
-* `disk_size` (String)
+* `use_anka_cp` (Boolean) Use built in anka cp command. You shouldn't need this option. Defaults to false.
 
-The size in "[0-9]+G" format, defaults to `40G`.
+* `anka_password` (String) Sets the password for the vm. Can also be set with `ANKA_DEFAULT_PASSWD` env var. Defaults to `admin`.
 
-> We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk1 0` inside of the VM
+* `anka_user` (String) Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. Defaults to `anka`.
 
-* `stop_vm` (Boolean)
-
-Whether or not to stop the vm after it has been created, defaults to false.
-
-* `use_anka_cp` (Boolean)
-
-Use built in anka cp command. You shouldn't need this option. Defaults to false.
-
-* `anka_password` (String)
-
-Sets the password for the vm. Can also be set with `ANKA_DEFAULT_PASSWD` env var. Defaults to `admin`.
-
-* `anka_user` (String)
-
-Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. Defaults to `anka`.
-
-* `boot_delay` (String)
-
-The time to wait before running packer provisioner commands, defaults to `7s`.
+* `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
 
 ## Example
 
@@ -101,7 +79,7 @@ variable "vm_name" {
   default = "anka-packer-base-macos"
 }
 
-variable "installer_app" {
+variable "installer" {
   type = string
   default = "/Applications/Install macOS Big Sur.app/"
 }
@@ -112,7 +90,7 @@ variable "vcpu_count" {
 }
 
 source "veertu-anka-vm-create" "base" {
-  installer_app = "${var.installer_app}"
+  installer = "${var.installer}"
   vm_name = "${var.vm_name}"
   vcpu_count = "${var.vcpu_count}"
 }
