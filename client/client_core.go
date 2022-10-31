@@ -1,12 +1,12 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os/exec"
-	"bytes"
 
 	"github.com/veertuinc/packer-plugin-veertu-anka/common"
 )
@@ -50,7 +50,7 @@ func (c *AnkaClient) Copy(params CopyParams) error {
 
 type CreateParams struct {
 	Name         string
-	Installer string
+	Installer    string
 	OpticalDrive string
 	RAMSize      string
 	DiskSize     string
@@ -65,16 +65,16 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (st
 	}
 
 	if params.DiskSize != "" {
-		args = append(args,"--disk-size", params.DiskSize)
+		args = append(args, "--disk-size", params.DiskSize)
 	}
 	if params.VCPUCount != "" {
-		args = append(args,"--cpu-count", params.VCPUCount)
+		args = append(args, "--cpu-count", params.VCPUCount)
 	}
 	if params.RAMSize != "" {
-		args = append(args,"--ram-size", params.RAMSize)
+		args = append(args, "--ram-size", params.RAMSize)
 	}
 
-	args = append(args,params.Name)
+	args = append(args, params.Name)
 
 	output, err := runCommandStreamer(outputStreamer, args...)
 	createdVMUUID := bytes.NewBuffer(output.Body).String()
@@ -153,12 +153,12 @@ type DescribeResponse struct {
 	Display struct {
 		Headless    int `json:"headless"`
 		FrameBuffer struct {
-			PciSlot  int    `json:"pci_slot"`
-			VncPort  int    `json:"vnc_port"`
-			Height   int    `json:"height"`
-			Width    int    `json:"width"`
-			VncIP    string `json:"vnc_ip"`
-			Password string `json:"password"`
+			PciSlot  int         `json:"pci_slot"`
+			VncPort  int         `json:"vnc_port"`
+			Height   int         `json:"height"`
+			Width    json.Number `json:"width"` // json.Number to work around bug in 2.5.7 where width existed twice and was both an int and string
+			VncIP    string      `json:"vnc_ip"`
+			Password string      `json:"password"`
 		} `json:"frame_buffer"`
 	} `json:"display"`
 }
