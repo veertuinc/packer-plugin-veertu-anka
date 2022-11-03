@@ -102,7 +102,7 @@ build {
 This will check to see if the VM template/tag exists locally, and if not, pull it from the registry:
 
 ```bash
-❯ PKR_VAR_source_vm_tag="v1" PACKER_LOG=1 packer build -var 'source_vm_name=anka-packer-base-macos' examples/clone-existing-with-port-forwarding-rules.pkr.hcl
+❯ PKR_VAR_source_vm_tag="v1" export PACKER_LOG=1; packer build -var 'source_vm_name=anka-packer-base-macos' examples/clone-existing-with-port-forwarding-rules.pkr.hcl
 . . .
 2021/04/07 14:11:52 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:52 Searching for anka-packer-base-macos locally...
 2021/04/07 14:11:52 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:52 Executing anka --machine-readable show anka-packer-base-macos
