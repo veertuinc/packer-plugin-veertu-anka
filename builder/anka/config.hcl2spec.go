@@ -67,6 +67,7 @@ type FlatConfig struct {
 	WinRMUseSSL               *bool                    `mapstructure:"winrm_use_ssl" cty:"winrm_use_ssl" hcl:"winrm_use_ssl"`
 	WinRMInsecure             *bool                    `mapstructure:"winrm_insecure" cty:"winrm_insecure" hcl:"winrm_insecure"`
 	WinRMUseNTLM              *bool                    `mapstructure:"winrm_use_ntlm" cty:"winrm_use_ntlm" hcl:"winrm_use_ntlm"`
+	AnkaLogLevel              *string                  `mapstructure:"log_level" cty:"log_level" hcl:"log_level"`
 	AnkaUser                  *string                  `mapstructure:"anka_user" cty:"anka_user" hcl:"anka_user"`
 	AnkaPassword              *string                  `mapstructure:"anka_password" cty:"anka_password" hcl:"anka_password"`
 	Installer                 *string                  `mapstructure:"installer" cty:"installer" hcl:"installer"`
@@ -162,6 +163,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"winrm_use_ssl":                &hcldec.AttrSpec{Name: "winrm_use_ssl", Type: cty.Bool, Required: false},
 		"winrm_insecure":               &hcldec.AttrSpec{Name: "winrm_insecure", Type: cty.Bool, Required: false},
 		"winrm_use_ntlm":               &hcldec.AttrSpec{Name: "winrm_use_ntlm", Type: cty.Bool, Required: false},
+		"log_level":                    &hcldec.AttrSpec{Name: "log_level", Type: cty.String, Required: false},
 		"anka_user":                    &hcldec.AttrSpec{Name: "anka_user", Type: cty.String, Required: false},
 		"anka_password":                &hcldec.AttrSpec{Name: "anka_password", Type: cty.String, Required: false},
 		"installer":                    &hcldec.AttrSpec{Name: "installer", Type: cty.String, Required: false},
