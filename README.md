@@ -25,7 +25,7 @@ Packer Version | Veertu Anka Plugin Version
     packer {
       required_plugins {
         veertu-anka = {
-          version = ">= v3.0.0"
+          version = ">= v3.1.0"
           source = "github.com/veertuinc/veertu-anka"
         }
       }
@@ -102,7 +102,7 @@ build {
 This will check to see if the VM template/tag exists locally, and if not, pull it from the registry:
 
 ```bash
-❯ PKR_VAR_source_vm_tag="v1" export PACKER_LOG=1; packer build -var 'source_vm_name=anka-packer-base-macos' examples/clone-existing-with-port-forwarding-rules.pkr.hcl
+❯ PKR_VAR_source_vm_tag="v1" PACKER_LOG=1 packer build -var 'source_vm_name=anka-packer-base-macos' examples/clone-existing-with-port-forwarding-rules.pkr.hcl
 . . .
 2021/04/07 14:11:52 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:52 Searching for anka-packer-base-macos locally...
 2021/04/07 14:11:52 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:52 Executing anka --machine-readable show anka-packer-base-macos
@@ -178,7 +178,7 @@ PACKER_CI_PROJECT_API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_vers
 When testing with an example HCL:
 
 ```bash
-export ANKA_LOG_LEVEL=debug; export ANKA_DELETE_LOGS=0; export PACKER_LOG=1; packer build examples/create-from-installer.pkr.hcl
+export ANKA_LOG_LEVEL=debug; export ANKA_DELETE_LOGS=0; PACKER_LOG=1 packer build examples/create-from-installer.pkr.hcl
 ```
 
 To test the post processor you will need an active vpn connection that can reach an anka registry. You can setup an anka registry by either adding the registry locally with:
