@@ -185,10 +185,10 @@ func (mr *MockClientMockRecorder) RegistryList(registryParams interface{}) *gomo
 }
 
 // RegistryListRepos mocks base method.
-func (m *MockClient) RegistryListRepos() (client.RegistryListReposResponse, error) {
+func (m *MockClient) RegistryListRepos() ([]client.RegistryRemote, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegistryListRepos")
-	ret0, _ := ret[0].(client.RegistryListReposResponse)
+	ret0, _ := ret[0].([]client.RegistryRemote)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -197,21 +197,6 @@ func (m *MockClient) RegistryListRepos() (client.RegistryListReposResponse, erro
 func (mr *MockClientMockRecorder) RegistryListRepos() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryListRepos", reflect.TypeOf((*MockClient)(nil).RegistryListRepos))
-}
-
-// RegistryListReposArm64 mocks base method.
-func (m *MockClient) RegistryListReposArm64() (client.RegistryListReposResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryListReposArm64")
-	ret0, _ := ret[0].(client.RegistryListReposResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RegistryListReposArm64 indicates an expected call of RegistryListReposArm64.
-func (mr *MockClientMockRecorder) RegistryListReposArm64() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryListReposArm64", reflect.TypeOf((*MockClient)(nil).RegistryListReposArm64))
 }
 
 // RegistryPull mocks base method.

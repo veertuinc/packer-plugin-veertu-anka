@@ -79,8 +79,7 @@ type FlatConfig struct {
 	VCPUCount                 *string                  `mapstructure:"vcpu_count" cty:"vcpu_count" hcl:"vcpu_count"`
 	AlwaysFetch               *bool                    `mapstructure:"always_fetch" cty:"always_fetch" hcl:"always_fetch"`
 	UpdateAddons              *bool                    `mapstructure:"update_addons" cty:"update_addons" hcl:"update_addons"`
-	RegistryName              *string                  `mapstructure:"registry_name" cty:"registry_name" hcl:"registry_name"`
-	RegistryURL               *string                  `mapstructure:"registry_path" cty:"registry_path" hcl:"registry_path"`
+	Remote                    *string                  `mapstructure:"remote" cty:"remote" hcl:"remote"`
 	NodeCertPath              *string                  `mapstructure:"cert" cty:"cert" hcl:"cert"`
 	NodeKeyPath               *string                  `mapstructure:"key" cty:"key" hcl:"key"`
 	CaRootPath                *string                  `mapstructure:"cacert" cty:"cacert" hcl:"cacert"`
@@ -175,8 +174,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"vcpu_count":                   &hcldec.AttrSpec{Name: "vcpu_count", Type: cty.String, Required: false},
 		"always_fetch":                 &hcldec.AttrSpec{Name: "always_fetch", Type: cty.Bool, Required: false},
 		"update_addons":                &hcldec.AttrSpec{Name: "update_addons", Type: cty.Bool, Required: false},
-		"registry_name":                &hcldec.AttrSpec{Name: "registry_name", Type: cty.String, Required: false},
-		"registry_path":                &hcldec.AttrSpec{Name: "registry_path", Type: cty.String, Required: false},
+		"remote":                       &hcldec.AttrSpec{Name: "remote", Type: cty.String, Required: false},
 		"cert":                         &hcldec.AttrSpec{Name: "cert", Type: cty.String, Required: false},
 		"key":                          &hcldec.AttrSpec{Name: "key", Type: cty.String, Required: false},
 		"cacert":                       &hcldec.AttrSpec{Name: "cacert", Type: cty.String, Required: false},

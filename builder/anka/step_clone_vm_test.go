@@ -533,8 +533,7 @@ func TestCloneVMRun(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryURL: "http://localhost:1234",
-			HostArch:    config.HostArch,
+			HostArch: config.HostArch,
 		}
 		registryPushParams := client.RegistryPushParams{
 			Tag:      "local-tag-123",

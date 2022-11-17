@@ -76,8 +76,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 		ui.Say(fmt.Sprintf("Pulling source VM %s with tag %s from Anka Registry", config.SourceVMName, sourceVMTag))
 
 		registryParams := client.RegistryParams{
-			RegistryName: config.RegistryName,
-			RegistryURL:  config.RegistryURL,
+			Remote:       config.Remote,
 			NodeCertPath: config.NodeCertPath,
 			NodeKeyPath:  config.NodeKeyPath,
 			CaRootPath:   config.CaRootPath,
@@ -116,10 +115,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 					Force:    false,
 					VMID:     config.SourceVMName,
 				}
-				s.client.RegistryPush(client.RegistryParams{
-					RegistryURL: "http://localhost:1234", // Needed to avoid 2.5.4 bug where if you don't have a registry added, it will block --local
-					HostArch:    config.HostArch,
-				}, pushParams)
+				s.client.RegistryPush(client.RegistryParams{HostArch: config.HostArch}, pushParams)
 			}
 		}
 	}

@@ -86,10 +86,10 @@ func (s *StepCreateVM) createFromInstaller(ui packer.Ui, config *Config) error {
 
 	createParams := client.CreateParams{
 		Installer: config.Installer,
-		Name:         s.vmName,
-		DiskSize:     config.DiskSize,
-		VCPUCount:    config.VCPUCount,
-		RAMSize:      config.RAMSize,
+		Name:      s.vmName,
+		DiskSize:  config.DiskSize,
+		VCPUCount: config.VCPUCount,
+		RAMSize:   config.RAMSize,
 	}
 
 	createdVMUUID, err := s.client.Create(createParams, outputStream)

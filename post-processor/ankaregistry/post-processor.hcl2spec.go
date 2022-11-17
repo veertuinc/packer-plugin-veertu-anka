@@ -18,8 +18,7 @@ type FlatConfig struct {
 	PackerOnError       *string           `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
 	PackerUserVars      map[string]string `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
 	PackerSensitiveVars []string          `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
-	RegistryName        *string           `mapstructure:"registry_name" cty:"registry_name" hcl:"registry_name"`
-	RegistryURL         *string           `mapstructure:"registry_path" cty:"registry_path" hcl:"registry_path"`
+	Remote              *string           `mapstructure:"remote" cty:"remote" hcl:"remote"`
 	NodeCertPath        *string           `mapstructure:"cert" cty:"cert" hcl:"cert"`
 	NodeKeyPath         *string           `mapstructure:"key" cty:"key" hcl:"key"`
 	CaRootPath          *string           `mapstructure:"cacert" cty:"cacert" hcl:"cacert"`
@@ -52,8 +51,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"packer_on_error":            &hcldec.AttrSpec{Name: "packer_on_error", Type: cty.String, Required: false},
 		"packer_user_variables":      &hcldec.AttrSpec{Name: "packer_user_variables", Type: cty.Map(cty.String), Required: false},
 		"packer_sensitive_variables": &hcldec.AttrSpec{Name: "packer_sensitive_variables", Type: cty.List(cty.String), Required: false},
-		"registry_name":              &hcldec.AttrSpec{Name: "registry_name", Type: cty.String, Required: false},
-		"registry_path":              &hcldec.AttrSpec{Name: "registry_path", Type: cty.String, Required: false},
+		"remote":                     &hcldec.AttrSpec{Name: "remote", Type: cty.String, Required: false},
 		"cert":                       &hcldec.AttrSpec{Name: "cert", Type: cty.String, Required: false},
 		"key":                        &hcldec.AttrSpec{Name: "key", Type: cty.String, Required: false},
 		"cacert":                     &hcldec.AttrSpec{Name: "cacert", Type: cty.String, Required: false},

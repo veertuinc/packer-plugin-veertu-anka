@@ -25,5 +25,6 @@ build {
 
   post-processor "veertu-anka-registry-push" {
     tag = "${build.OSVersion}-${build.DarwinVersion}"
+    description = "Xcode 14.1, Fastlane X.X, Go, Brew, Git"
   }
 }

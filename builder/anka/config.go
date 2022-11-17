@@ -49,8 +49,7 @@ type Config struct {
 
 	UpdateAddons bool `mapstructure:"update_addons"`
 
-	RegistryName string `mapstructure:"registry_name"`
-	RegistryURL  string `mapstructure:"registry_path"`
+	Remote       string `mapstructure:"remote"`
 	NodeCertPath string `mapstructure:"cert"`
 	NodeKeyPath  string `mapstructure:"key"`
 	CaRootPath   string `mapstructure:"cacert"`
