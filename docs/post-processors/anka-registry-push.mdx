@@ -17,7 +17,7 @@ This post-processor is part of the [Veertu Anka plugin](https://github.com/veert
 packer {
   required_plugins {
     veertu-anka = {
-      version = ">= 3.0.0"
+      version = "= 3.1.0"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }
@@ -47,9 +47,7 @@ segmented below into two categories: required and optional parameters.
 
 * `local` (Boolean) Assign a tag to your local template and avoid pushing to the Registry.
 
-* `registry_path` (String) The registry URL (will use your default configuration if not set).
-
-* `registry_name` (String) The registry name (will use your default configuration if not set).
+* `remote` (String) The registry URL or name to target for registry operation (will use your default configuration if not set).
 
 * `remote_vm` (String) The name of a registry template you want to push the local template onto.
 

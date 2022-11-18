@@ -19,8 +19,7 @@ type Client interface {
 	License() (LicenseResponse, error)
 	Modify(vmName string, command string, property string, flags ...string) error
 	RegistryList(registryParams RegistryParams) ([]RegistryListResponse, error)
-	RegistryListRepos() (RegistryListReposResponse, error)
-	RegistryListReposArm64() (RegistryListReposResponse, error)
+	RegistryListRepos() ([]RegistryRemote, error)
 	RegistryPull(registryParams RegistryParams, pullParams RegistryPullParams) error
 	RegistryPush(registryParams RegistryParams, pushParams RegistryPushParams) error
 	RegistryRevert(url string, id string) error

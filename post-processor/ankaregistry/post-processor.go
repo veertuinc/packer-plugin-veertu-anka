@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"runtime"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
@@ -25,8 +26,7 @@ const BuilderIdRegistry = "packer.post-processor.veertu-anka-registry"
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 
-	RegistryName string `mapstructure:"registry_name"`
-	RegistryURL  string `mapstructure:"registry_path"`
+	Remote       string `mapstructure:"remote"`
 	NodeCertPath string `mapstructure:"cert"`
 	NodeKeyPath  string `mapstructure:"key"`
 	CaRootPath   string `mapstructure:"cacert"`
@@ -90,7 +90,7 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 
 // PostProcess runs the post processor logic which uploads the artifact to an anka registry
 func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, bool, error) {
-	var reposList client.RegistryListReposResponse
+	var reposList []client.RegistryRemote
 	var err error
 	if artifact.BuilderId() != anka.BuilderId {
 		err := fmt.Errorf(
@@ -99,31 +99,34 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		return nil, false, false, err
 	}
 
-	if p.config.HostArch == "amd64" {
-		reposList, err = p.client.RegistryListRepos()
-	} else {
-		reposList, err = p.client.RegistryListReposArm64()
-	}
+	reposList, err = p.client.RegistryListRepos()
 	if err != nil {
 		return nil, false, false, err
 	}
 
-	if p.config.RegistryURL == "" {
-		if p.config.RegistryName == "" {
-			p.config.RegistryName = reposList.Default
+	if p.config.Remote == "" { // no remote set by user? use the default on the host
+		for _, remote := range reposList {
+			if remote.Default {
+				p.config.Remote = remote.Name
+			}
 		}
-
-		remote, ok := reposList.Remotes[p.config.RegistryName]
-		if !ok {
-			return nil, false, false, fmt.Errorf("could not find configuration for registry '%s'", p.config.RegistryName)
+	} else {
+		_, err := url.ParseRequestURI(p.config.Remote)
+		if err != nil { // not a url, so we should treat it as a string/name for the local registry
+			foundRemoteName := false
+			for _, repoRemote := range reposList {
+				if repoRemote.Name == p.config.Remote {
+					foundRemoteName = true
+				}
+			}
+			if !foundRemoteName {
+				return nil, false, false, fmt.Errorf("could not find configuration for registry remote name '%s'", p.config.Remote)
+			}
 		}
-
-		p.config.RegistryURL = fmt.Sprintf("%s://%s:%s", remote.Scheme, remote.Host, remote.Port)
 	}
 
 	registryParams := client.RegistryParams{
-		RegistryName: p.config.RegistryName,
-		RegistryURL:  p.config.RegistryURL,
+		Remote:       p.config.Remote,
 		NodeCertPath: p.config.NodeCertPath,
 		NodeKeyPath:  p.config.NodeKeyPath,
 		CaRootPath:   p.config.CaRootPath,
@@ -181,7 +184,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 
 		if p.config.PackerForce { // differs from processor's force: true
 			if id != "" && latestTag == remoteTag {
-				err = p.client.RegistryRevert(registryParams.RegistryURL, id)
+				err = p.client.RegistryRevert(registryParams.Remote, id)
 				if err != nil {
 					return nil, false, false, err
 				}

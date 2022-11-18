@@ -32,10 +32,11 @@ type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 	Comm                communicator.Config `mapstructure:",squash"`
 
+	AnkaLogLevel string `mapstructure:"log_level"`
 	AnkaUser     string `mapstructure:"anka_user"`
 	AnkaPassword string `mapstructure:"anka_password"`
 
-	Installer string `mapstructure:"installer"`
+	Installer    string `mapstructure:"installer"`
 	SourceVMName string `mapstructure:"source_vm_name"`
 	SourceVMTag  string `mapstructure:"source_vm_tag"`
 
@@ -48,8 +49,7 @@ type Config struct {
 
 	UpdateAddons bool `mapstructure:"update_addons"`
 
-	RegistryName string `mapstructure:"registry_name"`
-	RegistryURL  string `mapstructure:"registry_path"`
+	Remote       string `mapstructure:"remote"`
 	NodeCertPath string `mapstructure:"cert"`
 	NodeKeyPath  string `mapstructure:"key"`
 	CaRootPath   string `mapstructure:"cacert"`
@@ -94,6 +94,10 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 
 	if c.AnkaUser != "" {
 		os.Setenv("ANKA_DEFAULT_USER", c.AnkaUser)
+	}
+
+	if c.AnkaLogLevel == "debug" { // allow debug logging for anka; useful for 3.1 click script troubleshooting
+		os.Setenv("ANKA_LOG_LEVEL", "debug")
 	}
 
 	var errs *packer.MultiError

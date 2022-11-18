@@ -25,7 +25,7 @@ Packer Version | Veertu Anka Plugin Version
     packer {
       required_plugins {
         veertu-anka = {
-          version = ">= v3.0.0"
+          version = "= v3.1.0"
           source = "github.com/veertuinc/veertu-anka"
         }
       }
@@ -178,7 +178,7 @@ PACKER_CI_PROJECT_API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_vers
 When testing with an example HCL:
 
 ```bash
-export PACKER_LOG=1; packer build examples/create-from-installer.pkr.hcl
+export ANKA_LOG_LEVEL=debug; export ANKA_DELETE_LOGS=0; PACKER_LOG=1 packer build examples/create-from-installer.pkr.hcl
 ```
 
 To test the post processor you will need an active vpn connection that can reach an anka registry. You can setup an anka registry by either adding the registry locally with:

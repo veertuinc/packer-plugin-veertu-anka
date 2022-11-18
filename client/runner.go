@@ -49,6 +49,7 @@ func NewRunner(params RunParams) *Runner {
 
 	args = append(args, params.VMName)
 	args = append(args, "sh")
+	args = append(args, "-s")
 
 	cmd := exec.Command("anka", args...)
 	cmd.Stdout = params.Stdout

@@ -17,18 +17,11 @@ import (
 )
 
 var templateList []client.RegistryListResponse
-var registryRemote client.RegistryRemote
-var registryRemoteArm64 client.RegistryRemoteArm64
-var reposList client.RegistryListReposResponse
+var reposList []client.RegistryRemote
 
 func TestAnkaRegistryPostProcessor(t *testing.T) {
 
-	err := json.Unmarshal(json.RawMessage(`{"default": true, "host": "localhost", "scheme": "http", "port": "8080"}`), &registryRemote)
-	if err != nil {
-		t.Fail()
-	}
-
-	err = json.Unmarshal(json.RawMessage(`{"default": true, "url": "http://localhost:8080", "name": "go-mock"}`), &registryRemoteArm64)
+	err := json.Unmarshal(json.RawMessage(`[{"default": true, "url": "http://localhost:8080", "name": "go-mock"}]`), &reposList)
 	if err != nil {
 		t.Fail()
 	}
@@ -41,10 +34,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 	artifact := &anka.Artifact{}
 
-	reposList = client.RegistryListReposResponse{
-		Default: "go-mock",
-		Remotes: map[string]client.RegistryRemote{"go-mock": registryRemote},
-	}
+	reposList = []client.RegistryRemote{{Default: true, Name: "go-mock", Url: "http://localhost:8080"}}
 
 	t.Run("push to registry with defaults", func(t *testing.T) {
 		config := Config{
@@ -60,9 +50,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "go-mock",
-			RegistryURL:  "http://localhost:8080",
-			HostArch:     config.HostArch,
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
 		}
 
 		pushParams := client.RegistryPushParams{
@@ -73,11 +62,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Force:       false,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
@@ -96,11 +82,11 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 	t.Run("push to registry with registry name", func(t *testing.T) {
 		config := Config{
-			RegistryName: "go-mock",
-			RemoteVM:     "foo",
-			Tag:          "registry-push",
-			Description:  "mock for testing anka registry push",
-			HostArch:     runtime.GOARCH,
+			Remote:      "go-mock",
+			RemoteVM:    "foo",
+			Tag:         "registry-push",
+			Description: "mock for testing anka registry push",
+			HostArch:    runtime.GOARCH,
 		}
 
 		pp := PostProcessor{
@@ -109,9 +95,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "go-mock",
-			RegistryURL:  "http://localhost:8080",
-			HostArch:     config.HostArch,
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
 		}
 
 		pushParams := client.RegistryPushParams{
@@ -122,11 +107,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Force:       false,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
@@ -143,7 +125,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 	t.Run("push to registry with registry URL", func(t *testing.T) {
 		config := Config{
-			RegistryURL: "http://anka.example.test:8080",
+			Remote:      "http://anka.example.test:8080",
 			RemoteVM:    "foo",
 			Tag:         "registry-push",
 			Description: "mock for testing anka registry push",
@@ -156,9 +138,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "",
-			RegistryURL:  "http://anka.example.test:8080",
-			HostArch:     config.HostArch,
+			Remote:   "http://anka.example.test:8080",
+			HostArch: config.HostArch,
 		}
 
 		pushParams := client.RegistryPushParams{
@@ -169,11 +150,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Force:       false,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
@@ -207,9 +185,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "go-mock",
-			RegistryURL:  "http://localhost:8080",
-			HostArch:     config.HostArch,
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
 		}
 
 		pushParams := client.RegistryPushParams{
@@ -220,11 +197,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Force:       false,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
@@ -263,16 +237,12 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "go-mock",
-			RegistryURL:  "http://localhost:8080",
-			HostArch:     config.HostArch,
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -312,9 +282,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "go-mock",
-			RegistryURL:  "http://localhost:8080",
-			HostArch:     config.HostArch,
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
 		}
 
 		pushParams := client.RegistryPushParams{
@@ -325,13 +294,10 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Force:       false,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
-		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(0)
+		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(0)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -371,9 +337,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "go-mock",
-			RegistryURL:  "http://localhost:8080",
-			HostArch:     config.HostArch,
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
 		}
 
 		pushParams := client.RegistryPushParams{
@@ -384,13 +349,10 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Force:       false,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
-		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
@@ -428,9 +390,8 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		registryParams := client.RegistryParams{
-			RegistryName: "go-mock",
-			RegistryURL:  "http://localhost:8080",
-			HostArch:     config.HostArch,
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
 		}
 
 		pushParams := client.RegistryPushParams{
@@ -441,13 +402,10 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			Force:       true,
 		}
 
-		if runtime.GOARCH == "amd64" {
-			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-		} else {
-			ankaClient.EXPECT().RegistryListReposArm64().Return(reposList, nil).Times(1)
-		}
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
-		ankaClient.EXPECT().RegistryRevert(registryParams.RegistryURL, templateList[0].ID).Return(nil).Times(0)
+		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(0)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}

@@ -26,7 +26,7 @@ your hcl template:
 packer {
   required_plugins {
     veertu-anka = {
-      version = ">= 3.0.0"
+      version = "= 3.1.0"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }
@@ -67,6 +67,8 @@ segmented below into two categories: required and optional parameters.
 * `anka_user` (String) Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. Defaults to `anka`.
 
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
+
+* `log_level` (String) The log level for Anka. This currently only supports `debug` and is only useful for VM creation failures.
 
 ## Example
 
