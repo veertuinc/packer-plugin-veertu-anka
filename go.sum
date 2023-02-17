@@ -273,8 +273,9 @@ github.com/hashicorp/go-getter/gcs/v2 v2.1.0 h1:1S1hvWgHrhUihP/Y4FVbjCWwE7Ewxpks
 github.com/hashicorp/go-getter/gcs/v2 v2.1.0/go.mod h1:dVyTnX1BynHAjbumB4Pk14GoJ+v3VbDUJtbI7G0oOlU=
 github.com/hashicorp/go-getter/s3/v2 v2.1.0 h1:8uwuP97zEQ7y7H4bLzRqiN4T8vmpXeJthigqSEjX+08=
 github.com/hashicorp/go-getter/s3/v2 v2.1.0/go.mod h1:rwzJPQaBuc5riYOucPx84DOE74xIhKENOWgBjK3XVEs=
-github.com/hashicorp/go-getter/v2 v2.1.0 h1:MsLbi7yFKGFPVmpK+un4/k5HFry0tqvo9JppsCmIutU=
 github.com/hashicorp/go-getter/v2 v2.1.0/go.mod h1:w65fE5glbccYjndAuj1kA5lnVBGZYEaH0e5qA1kpIks=
+github.com/hashicorp/go-getter/v2 v2.2.0 h1:vLenCsJqB5oNE141xKtT6cajhwAE8dneiNgzZA3oOqs=
+github.com/hashicorp/go-getter/v2 v2.2.0/go.mod h1:EcJx6oZE8hmGuRR1l38QrfnyiujQbwsEAn11eHv6l2M=
 github.com/hashicorp/go-hclog v0.9.2/go.mod h1:5CU+agLiy3J7N7QjHK5d05KxGsuXiQLrjA0H7acj2lQ=
 github.com/hashicorp/go-hclog v0.12.0/go.mod h1:whpDNt7SSdeAju8AWKIWsul05p54N/39EeqMAyrmvFQ=
 github.com/hashicorp/go-hclog v0.14.1/go.mod h1:whpDNt7SSdeAju8AWKIWsul05p54N/39EeqMAyrmvFQ=
@@ -381,6 +382,8 @@ github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
+github.com/klauspost/compress v1.11.2 h1:MiK62aErc3gIiVEtyzKfeOHgW7atJb5g/KNX5m3c2nQ=
+github.com/klauspost/compress v1.11.2/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/fs v0.1.0 h1:Jskdu9ieNAYnjxsi0LbQp1ulIKZV1LAFgK1tWhpZgl8=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
