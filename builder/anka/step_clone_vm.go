@@ -286,8 +286,8 @@ func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, confi
 		}
 		for _, wantedPortForwardingRule := range config.PortForwardingRules {
 			ui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", showResponse.Name, strconv.Itoa(wantedPortForwardingRule.PortForwardingGuestPort), strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort), wantedPortForwardingRule.PortForwardingRuleName))
-			if wantedPortForwardingRule.PortForwardingHostPort != 0 {
-				if _, ok := existingForwardedPorts[wantedPortForwardingRule.PortForwardingGuestPort]; ok {
+			if _, ok := existingForwardedPorts[wantedPortForwardingRule.PortForwardingHostPort]; ok {
+				if wantedPortForwardingRule.PortForwardingHostPort > 0 {
 					ui.Error(fmt.Sprintf("Found an existing host port rule (%s)! Skipping without setting...", strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort)))
 					continue
 				}
