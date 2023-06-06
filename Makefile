@@ -41,7 +41,7 @@ go.test:
 #go.build:		@ Run `go build` to generate the binary
 go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
-	chmod +x $(BIN)*
+	chmod +x dist/$(BIN)*
 
 #go.releaser 	@ Run goreleaser release --rm-dist for current version
 go.releaser:
