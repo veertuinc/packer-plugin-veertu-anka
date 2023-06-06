@@ -43,12 +43,12 @@ go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
 	chmod +x dist/$(BIN)*
 
-#go.releaser 	@ Run goreleaser release --rm-dist for current version
+#go.releaser 	@ Run goreleaser release --clean for current version
 go.releaser:
 	git tag -d "$(VERSION)" 2>/dev/null || true
 	git tag -a "$(VERSION)" -m "Version $(VERSION)"
 	echo "LATEST TAG: $$(git describe --tags --abbrev=0)"
-	PACKER_CI_PROJECT_API_VERSION=$(PACKER_CI_PROJECT_API_VERSION) goreleaser release --rm-dist
+	PACKER_CI_PROJECT_API_VERSION=$(PACKER_CI_PROJECT_API_VERSION) goreleaser release --clean
 
 #validate-examples:  @ Run `packer validate` against example packer definitions using the built package
 validate-examples:

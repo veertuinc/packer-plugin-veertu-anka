@@ -26,6 +26,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
-          args: build --single-target --snapshot --rm-dist
+          args: build --single-target --snapshot --clean
         env:
           PACKER_CI_PROJECT_API_VERSION: ${{ steps.plugin_describe.outputs.api_version }}

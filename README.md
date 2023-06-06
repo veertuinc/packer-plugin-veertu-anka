@@ -172,7 +172,7 @@ make all && make install
 <!-- We recommend using goreleaser to perform all of the building, linting, and testing:
 
 ```bash
-PACKER_CI_PROJECT_API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser build --single-target --snapshot --rm-dist
+PACKER_CI_PROJECT_API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_version') goreleaser build --single-target --snapshot --clean
 ``` -->
 
 When testing with an example HCL:
