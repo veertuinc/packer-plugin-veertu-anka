@@ -1,13 +1,3 @@
----
-description: |
-  The veertu-anka-vm-create Packer builder is able to create new VM templates for use with
-  Anka. The builder takes the path to macOS installer .app, installs macOS using that installer inside of an Anka VM Template, and then runs any provisioning necessary on the instance.
-page_title: Anka VM Create - Builders
-nav_title: VM Create
----
-
-# Veertu's Anka VM Create Builder
-
 Type: `veertu-anka-vm-create`
 
 **Packer 3.x will no longer support Anka 2.x. You can still however use the Packer 2.x release for support.**
@@ -26,7 +16,7 @@ your hcl template:
 packer {
   required_plugins {
     veertu-anka = {
-      version = "= 3.2.0"
+      version = "= 3.1.1"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }
@@ -41,7 +31,6 @@ segmented below into two categories: required and optional parameters.
 ### Required Configuration
 
 * `installer` (String) The path to a macOS installer. This process takes about 20 minutes.
-  - Starting in 3.1.2: This can also be set to 'latest' or a specific macOS version in order to have Anka attempt downloading the installer for you (`vm_name` will be set to `anka-packer-base-${installer}`).
 
 * `type` (String) Must be `veertu-anka-vm-create`.
 
@@ -70,18 +59,6 @@ segmented below into two categories: required and optional parameters.
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
 
 * `log_level` (String) The log level for Anka. This currently only supports `debug` and is only useful for VM creation failures.
-
-* `hw_uuid` (String) (Anka 2 only) The Hardware UUID you wish to set (usually generated with `uuidgen`).
-
-* `port_forwarding_rules` (Struct) 
-
-  > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`.
-  
-  * `port_forwarding_guest_port` (Int)
-  * `port_forwarding_host_port` (Int)
-  * `port_forwarding_rule_name` (String)
-
-* `display_controller` (string) The display controller to set (run `anka modify VMNAME set display --help` to see available options).
 
 ## Example
 

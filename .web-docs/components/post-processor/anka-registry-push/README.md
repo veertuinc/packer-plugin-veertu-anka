@@ -1,12 +1,3 @@
----
-description: |
-  The veertu-anka-registry-push Packer Post Processor is able to push your created VM template to the Anka Build Cloud Registry.
-page_title: Anka Build Cloud Registry Push - Post Processors
-nav_title: Anka Registry Push
----
-
-# Anka Build Cloud Registry Push Post-Processor
-
 Type: `veertu-anka-registry-push`
 
 The `veertu-anka-registry-push` Packer Post Processor is able to push your created Anka VM templates to the [Anka Build Cloud Registry](https://veertu.com/anka-build/) through the [Anka Virtualization](https://veertu.com/technology/) package.
@@ -17,7 +8,7 @@ This post-processor is part of the [Veertu Anka plugin](https://github.com/veert
 packer {
   required_plugins {
     veertu-anka = {
-      version = "= 3.2.0"
+      version = "= 3.1.1"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }

@@ -1,12 +1,3 @@
----
-description: |
-  The veertu-anka-vm-clone Packer builder is able to clone existing Anka VM Templates for use with Anka Virtualization and the Anka Build Cloud. The builder takes a source VM name, clones it, and then runs any provisioning necessary on the new VM Template before stopping or suspending it.
-page_title: Anka VM Clone - Builders
-nav_title: VM Clone
----
-
-# Anka VM Clone Builder
-
 Type: `veertu-anka-vm-clone`
 
 The `veertu-anka-vm-clone` Packer builder is able to clone existing Anka VM Templates for use with the [Anka Virtualization](https://veertu.com/technology/) package and the [Anka Build Cloud](https://veertu.com/anka-build/). The builder takes a source VM name, clones it, and then runs any provisioning necessary on the new VM Template before stopping or suspending it.
@@ -20,7 +11,7 @@ This builder is part of the [Veertu Anka plugin](https://github.com/veertuinc/pa
 packer {
   required_plugins {
     veertu-anka = {
-      version = "= 3.2.0"
+      version = "= 3.1.1"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }
@@ -87,7 +78,7 @@ There are many configuration options available for the builder. They are segment
   
   > This takes priority in Anka 3 and `registry-path` will be ignored.
 
-* `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default. Also the tag to target when pulling from the registry (defaults to latest tag).
+* `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default.
 
 * `update_addons` (Boolean) (Anka 2 only) Update the vm addons. Defaults to false.
 
