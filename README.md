@@ -10,7 +10,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 ## Compatibility
 
-Packer Version | Veertu Anka Plugin Version
+Anka Version | Veertu Anka Plugin Version
 | --- | --- |
 | 1.7.0 and above | >= 2.0.0 |
 | below 1.7.0 | < 2.0.0 |
