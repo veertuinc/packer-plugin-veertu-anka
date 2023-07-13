@@ -6,16 +6,17 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 ## v3.0.0 Breaking Changes
 
-- In order to minimize code complexity, Anka 2.x returns json which is not supported by Packer Plugin for Anka 3.x. However, Packer Plugin for Anka 2.x will continue to function with Anka 2.x.
-
 ## Compatibility
 
-Anka Version | Veertu Anka Plugin Version
+| Packer Version | Anka Packer Plugin Version |
 | --- | --- |
+| below 1.7.0 | < 1.8.0 |
 | 1.7.0 and above | >= 2.0.0 |
-| below 1.7.0 | < 2.0.0 |
-| 2.x | < 3.1.0 |
-| 3.x | >= 3.1.0 |
+
+| Packer Plugin Version | Anka CLI Version |
+| --- | --- |
+| 2.x | 2.x |
+| 3.x | >= 3.0.0 |
 
 ## Installing with `packer init`
 
