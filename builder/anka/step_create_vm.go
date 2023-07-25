@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
@@ -32,7 +33,7 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	s.vmName = config.VMName
 
 	if s.vmName == "" {
-		matchInstaller, err := regexp.Match(".[a-z]+(/?)$", []byte(config.Installer))
+		matchInstaller, err := regexp.Match(".app(/?)$|.ipsw(/?)$", []byte(config.Installer))
 		if err != nil {
 			return onError(err)
 		}
@@ -79,6 +80,16 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		return onError(err)
 	}
 
+	createdShow, err := s.client.Show(s.vmName)
+	if err != nil {
+		return onError(err)
+	}
+
+	err = s.modifyVMProperties(createdShow, config, ui)
+	if err != nil {
+		return onError(err)
+	}
+
 	return multistep.ActionContinue
 }
 
@@ -109,6 +120,70 @@ func (s *StepCreateVM) createFromInstaller(ui packer.Ui, config *Config) error {
 	ui.Say(fmt.Sprintf("VM %s was created (%s)", s.vmName, createdVMUUID))
 
 	close(outputStream)
+
+	return nil
+}
+
+func (s *StepCreateVM) modifyVMProperties(showResponse client.ShowResponse, config *Config, ui packer.Ui) error {
+	stopParams := client.StopParams{
+		VMName: showResponse.Name,
+	}
+
+	if len(config.PortForwardingRules) > 0 {
+		describeResponse, err := s.client.Describe(showResponse.Name)
+		if err != nil {
+			return err
+		}
+		existingForwardedPorts := make(map[int]struct{})
+		for _, existingNetworkCard := range describeResponse.NetworkCards {
+			for _, existingPortForwardingRule := range existingNetworkCard.PortForwardingRules {
+				existingForwardedPorts[existingPortForwardingRule.HostPort] = struct{}{}
+			}
+		}
+		for _, wantedPortForwardingRule := range config.PortForwardingRules {
+			ui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", showResponse.Name, strconv.Itoa(wantedPortForwardingRule.PortForwardingGuestPort), strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort), wantedPortForwardingRule.PortForwardingRuleName))
+			if _, ok := existingForwardedPorts[wantedPortForwardingRule.PortForwardingHostPort]; ok {
+				if wantedPortForwardingRule.PortForwardingHostPort > 0 {
+					ui.Error(fmt.Sprintf("Found an existing host port rule (%s)! Skipping without setting...", strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort)))
+					continue
+				}
+			}
+			err := s.client.Stop(stopParams)
+			if err != nil {
+				return err
+			}
+			err = s.client.Modify(showResponse.Name, "add", "port-forwarding", "--host-port", strconv.Itoa(wantedPortForwardingRule.PortForwardingHostPort), "--guest-port", strconv.Itoa(wantedPortForwardingRule.PortForwardingGuestPort), wantedPortForwardingRule.PortForwardingRuleName)
+			if !config.PackerConfig.PackerForce {
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	if config.HWUUID != "" {
+		err := s.client.Stop(stopParams)
+		if err != nil {
+			return err
+		}
+		ui.Say(fmt.Sprintf("Modifying VM custom-variable hw.uuid to %s", config.HWUUID))
+		err = s.client.Modify(showResponse.Name, "set", "custom-variable", "hw.uuid", config.HWUUID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if config.DisplayController != "" {
+		err := s.client.Stop(stopParams)
+		if err != nil {
+			return err
+		}
+		ui.Say(fmt.Sprintf("Modifying VM display controller to %s", config.DisplayController))
+		err = s.client.Modify(showResponse.Name, "set", "display", "-c", config.DisplayController)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
