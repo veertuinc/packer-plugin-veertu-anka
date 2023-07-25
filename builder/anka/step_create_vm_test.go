@@ -16,7 +16,7 @@ import (
 )
 
 func TestCreateVMRun(t *testing.T) {
-	
+
 	createdVMUUID := "abcd-efgh-1234-5678"
 
 	mockCtrl := gomock.NewController(t)
@@ -39,11 +39,11 @@ func TestCreateVMRun(t *testing.T) {
 
 	t.Run("create vm", func(t *testing.T) {
 		config := &Config{
-			DiskSize:     "500G",
-			VCPUCount:    "32G",
-			RAMSize:      "16G",
+			DiskSize:  "500G",
+			VCPUCount: "32G",
+			RAMSize:   "16G",
 			Installer: "/fake/InstallApp.app/",
-			VMName:       "foo",
+			VMName:    "foo",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
 			},
@@ -56,10 +56,10 @@ func TestCreateVMRun(t *testing.T) {
 
 		createParams := client.CreateParams{
 			Installer: config.Installer,
-			Name:         step.vmName,
-			DiskSize:     config.DiskSize,
-			VCPUCount:    config.VCPUCount,
-			RAMSize:      config.RAMSize,
+			Name:      step.vmName,
+			DiskSize:  config.DiskSize,
+			VCPUCount: config.VCPUCount,
+			RAMSize:   config.RAMSize,
 		}
 
 		ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1)
@@ -74,13 +74,49 @@ func TestCreateVMRun(t *testing.T) {
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
+	t.Run("create vm without .app or ipsw", func(t *testing.T) {
+		config := &Config{
+			DiskSize:  "500G",
+			VCPUCount: "32G",
+			RAMSize:   "16G",
+			Installer: "13.5",
+			PackerConfig: common.PackerConfig{
+				PackerBuilderType: "veertu-anka-vm-create",
+			},
+		}
+
+		state.Put("config", config)
+
+		step.vmName = "anka-packer-base-13.5"
+		state.Put("vm_name", step.vmName)
+
+		createParams := client.CreateParams{
+			Installer: config.Installer,
+			Name:      step.vmName,
+			DiskSize:  config.DiskSize,
+			VCPUCount: config.VCPUCount,
+			RAMSize:   config.RAMSize,
+		}
+
+		ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1)
+
+		mockui := packer.MockUi{}
+		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
+		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
+
+		stepAction := step.Run(ctx, state)
+		assert.Equal(t, mockui.SayMessages[0].Message, fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
+		assert.Equal(t, mockui.SayMessages[1].Message, fmt.Sprintf("VM %s was created (abcd-efgh-1234-5678)", step.vmName))
+		assert.Equal(t, multistep.ActionContinue, stepAction)
+	})
+
 	t.Run("create vm with packer force", func(t *testing.T) {
 		config := &Config{
-			DiskSize:     "500G",
-			VCPUCount:    "32G",
-			RAMSize:      "16G",
+			DiskSize:  "500G",
+			VCPUCount: "32G",
+			RAMSize:   "16G",
 			Installer: "/fake/InstallApp.app/",
-			VMName:       "foo",
+			VMName:    "foo",
 			PackerConfig: common.PackerConfig{
 				PackerForce:       true,
 				PackerBuilderType: "veertu-anka-vm-create",
@@ -94,10 +130,10 @@ func TestCreateVMRun(t *testing.T) {
 
 		createParams := client.CreateParams{
 			Installer: config.Installer,
-			Name:         step.vmName,
-			DiskSize:     config.DiskSize,
-			VCPUCount:    config.VCPUCount,
-			RAMSize:      config.RAMSize,
+			Name:      step.vmName,
+			DiskSize:  config.DiskSize,
+			VCPUCount: config.VCPUCount,
+			RAMSize:   config.RAMSize,
 		}
 
 		gomock.InOrder(
@@ -120,11 +156,11 @@ func TestCreateVMRun(t *testing.T) {
 
 	t.Run("create vm and installer app does not exist", func(t *testing.T) {
 		config := &Config{
-			DiskSize:     "500G",
-			VCPUCount:    "32G",
-			RAMSize:      "16G",
+			DiskSize:  "500G",
+			VCPUCount: "32G",
+			RAMSize:   "16G",
 			Installer: "/does/not/exist/InstallApp.app/",
-			VMName:       "foo",
+			VMName:    "foo",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
 			},
@@ -137,10 +173,10 @@ func TestCreateVMRun(t *testing.T) {
 
 		createParams := client.CreateParams{
 			Installer: config.Installer,
-			Name:         step.vmName,
-			DiskSize:     config.DiskSize,
-			VCPUCount:    config.VCPUCount,
-			RAMSize:      config.RAMSize,
+			Name:      step.vmName,
+			DiskSize:  config.DiskSize,
+			VCPUCount: config.VCPUCount,
+			RAMSize:   config.RAMSize,
 		}
 
 		gomock.InOrder(
@@ -160,9 +196,9 @@ func TestCreateVMRun(t *testing.T) {
 
 	t.Run("create vm when no vm_name is provided in config", func(t *testing.T) {
 		config := &Config{
-			DiskSize:     "500G",
-			VCPUCount:    "32G",
-			RAMSize:      "16G",
+			DiskSize:  "500G",
+			VCPUCount: "32G",
+			RAMSize:   "16G",
 			Installer: "/fake/InstallApp.app/",
 			PackerConfig: common.PackerConfig{
 				PackerBuilderType: "veertu-anka-vm-create",
@@ -176,10 +212,10 @@ func TestCreateVMRun(t *testing.T) {
 
 		createParams := client.CreateParams{
 			Installer: config.Installer,
-			Name:         step.vmName,
-			DiskSize:     config.DiskSize,
-			VCPUCount:    config.VCPUCount,
-			RAMSize:      config.RAMSize,
+			Name:      step.vmName,
+			DiskSize:  config.DiskSize,
+			VCPUCount: config.VCPUCount,
+			RAMSize:   config.RAMSize,
 		}
 
 		gomock.InOrder(

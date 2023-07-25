@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
@@ -31,20 +32,28 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	s.vmName = config.VMName
 
 	if s.vmName == "" {
-		if config.HostArch == "arm64" {
-			installerData := util.InstallerIPSWPlist{}
-			installerData, err = ankaUtil.ObtainMacOSVersionFromInstallerIPSW(config.Installer)
-			if err != nil {
-				return onError(err)
+		matchInstaller, err := regexp.Match(".[a-z]+(/?)$", []byte(config.Installer))
+		if err != nil {
+			return onError(err)
+		}
+		if matchInstaller {
+			if config.HostArch == "arm64" {
+				installerData := util.InstallerIPSWPlist{}
+				installerData, err = ankaUtil.ObtainMacOSVersionFromInstallerIPSW(config.Installer)
+				if err != nil {
+					return onError(err)
+				}
+				s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerData.ProductVersion, installerData.ProductBuildVersion)
+			} else {
+				installerData := util.InstallerAppPlist{}
+				installerData, err = ankaUtil.ObtainMacOSVersionFromInstallerApp(config.Installer)
+				if err != nil {
+					return onError(err)
+				}
+				s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerData.OSVersion, installerData.BundlerVersion)
 			}
-			s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerData.ProductVersion, installerData.ProductBuildVersion)
 		} else {
-			installerData := util.InstallerAppPlist{}
-			installerData, err = ankaUtil.ObtainMacOSVersionFromInstallerApp(config.Installer)
-			if err != nil {
-				return onError(err)
-			}
-			s.vmName = fmt.Sprintf("anka-packer-base-%s-%s", installerData.OSVersion, installerData.BundlerVersion)
+			s.vmName = fmt.Sprintf("anka-packer-base-%s", config.Installer)
 		}
 	}
 

@@ -41,6 +41,7 @@ segmented below into two categories: required and optional parameters.
 #### Required Configuration
 
 * `installer` (String) The path to a macOS installer. This process takes about 20 minutes.
+  - Starting in 3.1.2: This can also be set to 'latest' or a specific macOS version in order to have Anka attempt downloading the installer for you (`vm_name` will be set to `anka-packer-base-${installer}`).
 
 * `type` (String) Must be `veertu-anka-vm-create`.
 
