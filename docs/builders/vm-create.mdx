@@ -71,6 +71,18 @@ segmented below into two categories: required and optional parameters.
 
 * `log_level` (String) The log level for Anka. This currently only supports `debug` and is only useful for VM creation failures.
 
+* `hw_uuid` (String) (Anka 2 only) The Hardware UUID you wish to set (usually generated with `uuidgen`).
+
+* `port_forwarding_rules` (Struct) 
+
+  > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`.
+  
+  * `port_forwarding_guest_port` (Int)
+  * `port_forwarding_host_port` (Int)
+  * `port_forwarding_rule_name` (String)
+
+* `display_controller` (string) The display controller to set (run `anka modify VMNAME set display --help` to see available options).
+
 ## Example
 
 Here is an example:
