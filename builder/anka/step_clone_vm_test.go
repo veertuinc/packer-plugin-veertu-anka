@@ -154,7 +154,7 @@ func TestCloneVMRun(t *testing.T) {
 				PackerBuilderType: "veertu-anka-vm-clone",
 			},
 		}
-		sourceVMTag := "latest"
+		sourceVMTag := ""
 		registryParams := client.RegistryParams{}
 		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
@@ -193,7 +193,7 @@ func TestCloneVMRun(t *testing.T) {
 				PackerBuilderType: "veertu-anka-vm-clone",
 			},
 		}
-		sourceVMTag := "latest"
+		sourceVMTag := ""
 		registryParams := client.RegistryParams{}
 		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
@@ -211,10 +211,10 @@ func TestCloneVMRun(t *testing.T) {
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
 			ankaClient.EXPECT().
 				RegistryPull(registryParams, registryPullParams).
-				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				Return(fmt.Errorf("failed to pull vm %v with latest tag from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName)).
 				Times(1),
 			ankaUtil.EXPECT().
-				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				StepError(ui, state, fmt.Errorf("failed to pull vm %v with latest tag from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName)).
 				Return(multistep.ActionHalt).
 				Times(1),
 		)
@@ -233,7 +233,7 @@ func TestCloneVMRun(t *testing.T) {
 				PackerBuilderType: "veertu-anka-vm-clone",
 			},
 		}
-		sourceVMTag := "latest"
+		sourceVMTag := ""
 		registryParams := client.RegistryParams{}
 		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
@@ -255,12 +255,12 @@ func TestCloneVMRun(t *testing.T) {
 		)
 
 		mockui := packer.MockUi{}
-		mockui.Say(fmt.Sprintf("Pulling source VM %s with tag %s from Anka Registry", config.SourceVMName, sourceVMTag))
+		mockui.Say(fmt.Sprintf("Pulling source VM %s with latest tag from Anka Registry", config.SourceVMName))
 		mockui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShowResponse.Name, step.vmName))
 
 		stepAction := step.Run(ctx, state)
 
-		assert.Equal(t, mockui.SayMessages[0].Message, "Pulling source VM source_foo with tag latest from Anka Registry")
+		assert.Equal(t, mockui.SayMessages[0].Message, "Pulling source VM source_foo with latest tag from Anka Registry")
 		assert.Equal(t, mockui.SayMessages[1].Message, "Cloning source VM source_foo into a new virtual machine: foo")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
@@ -274,7 +274,7 @@ func TestCloneVMRun(t *testing.T) {
 				PackerBuilderType: "veertu-anka-vm-clone",
 			},
 		}
-		sourceVMTag := "latest"
+		sourceVMTag := ""
 		registryParams := client.RegistryParams{}
 		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
@@ -291,10 +291,10 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().
 				RegistryPull(registryParams, registryPullParams).
-				Return(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				Return(fmt.Errorf("failed to pull vm %v with latest from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName)).
 				Times(1),
 			ankaUtil.EXPECT().
-				StepError(ui, state, fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag)).
+				StepError(ui, state, fmt.Errorf("failed to pull vm %v with latest tag from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName)).
 				Return(multistep.ActionHalt).
 				Times(1),
 		)
