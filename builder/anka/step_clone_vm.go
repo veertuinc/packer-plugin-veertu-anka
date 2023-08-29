@@ -27,11 +27,12 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	onError := func(err error) multistep.StepAction {
 		return ankaUtil.StepError(ui, state, err)
 	}
-	sourceVMTag := "latest"
+
 	doPull := config.AlwaysFetch
 
-	if config.SourceVMTag != "" {
-		sourceVMTag = config.SourceVMTag
+	sourceVMTag := fmt.Sprintf("%s tag", config.SourceVMTag)
+	if config.SourceVMTag == "" {
+		sourceVMTag = "latest tag"
 	}
 
 	s.client = state.Get("client").(client.Client)
@@ -73,7 +74,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	}
 
 	if doPull {
-		ui.Say(fmt.Sprintf("Pulling source VM %s with tag %s from Anka Registry", config.SourceVMName, sourceVMTag))
+		ui.Say(fmt.Sprintf("Pulling source VM %s with %s from Anka Registry", config.SourceVMName, sourceVMTag))
 
 		registryParams := client.RegistryParams{
 			Remote:       config.Remote,
@@ -86,14 +87,14 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 
 		registryPullParams := client.RegistryPullParams{
 			VMID:   config.SourceVMName,
-			Tag:    sourceVMTag,
+			Tag:    config.SourceVMTag,
 			Local:  false,
 			Shrink: false,
 		}
 
 		err := s.client.RegistryPull(registryParams, registryPullParams)
 		if err != nil {
-			return onError(fmt.Errorf("failed to pull vm %v with tag %v from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag))
+			return onError(fmt.Errorf("failed to pull vm %s with %s from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag))
 		}
 	}
 

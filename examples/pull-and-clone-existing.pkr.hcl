@@ -12,6 +12,11 @@ variable "source_vm_name" {
   default = "anka-packer-base-macos"
 }
 
+variable "source_vm_tag" {
+  type = string
+  default = ""
+}
+
 variable "vm_name" {
   type = string
   default = "anka-packer-from-source"
@@ -20,6 +25,7 @@ variable "vm_name" {
 source "veertu-anka-vm-clone" "anka-packer-from-source" {
   vm_name = "${var.vm_name}"
   source_vm_name = "${var.source_vm_name}"
+  source_vm_tag = "${var.source_vm_tag}"
 }
 
 build {
