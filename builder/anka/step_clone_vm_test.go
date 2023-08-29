@@ -265,6 +265,48 @@ func TestCloneVMRun(t *testing.T) {
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
+	t.Run("pull from anka registry with specific tag", func(t *testing.T) {
+		sourceVMTag := "vanilla"
+		config := &Config{
+			AlwaysFetch:  true,
+			VMName:       "foo",
+			SourceVMName: "source_foo",
+			SourceVMTag:  sourceVMTag,
+			PackerConfig: common.PackerConfig{
+				PackerBuilderType: "veertu-anka-vm-clone",
+			},
+		}
+		registryParams := client.RegistryParams{}
+		registryPullParams := client.RegistryPullParams{
+			VMID:   config.SourceVMName,
+			Tag:    sourceVMTag,
+			Local:  false,
+			Shrink: false,
+		}
+
+		step.vmName = config.VMName
+
+		state.Put("vm_name", step.vmName)
+		state.Put("config", config)
+
+		gomock.InOrder(
+			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+		)
+
+		mockui := packer.MockUi{}
+		mockui.Say(fmt.Sprintf("Pulling source VM %s with vanilla tag from Anka Registry", config.SourceVMName))
+		mockui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShowResponse.Name, step.vmName))
+
+		stepAction := step.Run(ctx, state)
+
+		assert.Equal(t, mockui.SayMessages[0].Message, "Pulling source VM source_foo with vanilla tag from Anka Registry")
+		assert.Equal(t, mockui.SayMessages[1].Message, "Cloning source VM source_foo into a new virtual machine: foo")
+		assert.Equal(t, multistep.ActionContinue, stepAction)
+	})
+
 	t.Run("clone vm with always fetch flag when source vm does not exist in anka registry should throw error", func(t *testing.T) {
 		config := &Config{
 			AlwaysFetch:  true,
