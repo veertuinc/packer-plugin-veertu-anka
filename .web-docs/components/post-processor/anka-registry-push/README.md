@@ -8,7 +8,7 @@ This post-processor is part of the [Veertu Anka plugin](https://github.com/veert
 packer {
   required_plugins {
     veertu-anka = {
-      version = "= 3.1.1"
+      version = "= 3.2.0"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }

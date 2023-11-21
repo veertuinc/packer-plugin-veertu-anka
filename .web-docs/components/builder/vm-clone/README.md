@@ -5,19 +5,6 @@ The `veertu-anka-vm-clone` Packer builder is able to clone existing Anka VM Temp
 The builder does _not_ manage templates. Once a template is created, it is up
 to you to use it or delete it.
 
-This builder is part of the [Veertu Anka plugin](https://github.com/veertuinc/packer-plugin-veertu-anka). To install this plugin using `packer init`, add the following Packer block to your hcl template:
-
-```hcl
-packer {
-  required_plugins {
-    veertu-anka = {
-      version = "= 3.1.1"
-      source  = "github.com/veertuinc/veertu-anka"
-    }
-  }
-}
-```
-
 ## Important Notes
 
 **In Anka 3.0** we now require a tagged source VM before cloning in order to share the underlying .ank image and optimize disk space. If your source VM is not tagged yet, we will assign one . **We highly recommend pushing this VM Template/Tag to your registry so [disk usage is optimized](https://docs.veertu.com/anka/apple/getting-started/creating-your-first-vm/#disk-optimization).**
@@ -78,7 +65,7 @@ There are many configuration options available for the builder. They are segment
   
   > This takes priority in Anka 3 and `registry-path` will be ignored.
 
-* `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default.
+* `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default. Also the tag to target when pulling from the registry (defaults to latest tag).
 
 * `update_addons` (Boolean) (Anka 2 only) Update the vm addons. Defaults to false.
 
