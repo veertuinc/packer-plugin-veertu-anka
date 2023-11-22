@@ -3,7 +3,7 @@
 integration {
   name = "Anka"
   description = "TODO"
-  identifier = "packer/BrandonRomano/veertu-anka"
+  identifier = "packer/veertuinc/veertu-anka"
   component {
     type = "builder"
     name = "Anka VM Create"
