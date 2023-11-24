@@ -114,9 +114,6 @@ go.hcl2spec: install-packer-sdc
 
 #generate-docs:		@ Generate packer docs
 generate-docs: install-packer-sdc
-	@pushd dist/; packer-sdc renderdocs -src ../docs -partials docs-partials/ -dst docs/ && /bin/sh -c "[ -d docs ] && zip -r docs.zip docs/"
-
-build-docs: install-packer-sdc
 	@if [ -d ".docs" ]; then rm -r ".docs"; fi
 	@packer-sdc renderdocs -src "docs" -partials docs-partials/ -dst ".docs/"
 	@./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "veertuinc"
