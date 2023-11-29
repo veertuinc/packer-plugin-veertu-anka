@@ -2,7 +2,7 @@
 # https://github.com/hashicorp/integration-template#metadata-configuration
 integration {
   name = "Anka"
-  description = "TODO"
+  description = "A plugin for building images that work with Veertu's Anka macOS Virtualization tool."
   identifier = "packer/veertuinc/veertu-anka"
   component {
     type = "builder"
