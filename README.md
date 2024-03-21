@@ -4,7 +4,6 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 - For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/apple/command-line-reference/#registry-add).
 
-## v3.0.0 Breaking Changes
 
 ## Compatibility
 
@@ -12,11 +11,12 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 | --- | --- |
 | below 1.7.0 | < 1.8.0 |
 | 1.7.0 and above | >= 2.0.0 |
+| >= 1.11.0 | >= v4.0.0 |
 
 | Packer Plugin Version | Anka CLI Version |
 | --- | --- |
 | 2.x | 2.x |
-| 3.x | >= 3.0.0 |
+| >= 3.x | >= 3.0.0 |
 
 ## Installing with `packer init`
 
@@ -26,7 +26,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
     packer {
       required_plugins {
         veertu-anka = {
-          version = "= v3.2.0"
+          version = "= v4.0.0"
           source = "github.com/veertuinc/veertu-anka"
         }
       }
