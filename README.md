@@ -43,7 +43,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 3. Download the [latest release](https://github.com/veertuinc/packer-plugin-veertu-anka/releases) for your host environment.
 4. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
     * The directory where the packer binary is.
-    * The `~/.packer.d/plugins` directory.
+    * The `~/.config/packer/plugins` directory.
     * The current working directory.
 5. Rename the binary file to `packer-plugin-veertu-anka`.
 6. Run your `packer build` command with your hcl template.

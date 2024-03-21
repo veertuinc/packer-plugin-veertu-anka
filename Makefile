@@ -1,7 +1,7 @@
 WORKDIR := $(shell pwd)
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
 VERSION := $(shell cat VERSION)
-FLAGS := -X main.commit=$(LATEST-GIT-SHA) -X main.version=$(VERSION)
+FLAGS := -X main.version=$(VERSION)
 BIN := packer-plugin-veertu-anka
 ARCH := $(shell arch)
 ifeq ($(ARCH), i386)
@@ -55,15 +55,13 @@ validate-examples:
 	cp -rfp $(WORKDIR)/examples /tmp/
 	for file in $$(ls $(WORKDIR)/examples/ | grep hcl); do echo $$file; packer validate $(WORKDIR)/examples/$$file; done
 
-#install:		@ Copy the binary to the packer plugins folder
+#install:		@ run packer plugin install
 install:
-	mkdir -p ~/.packer.d/plugins/
-	cp -f $(BIN_FULL) ~/.packer.d/plugins/$(BIN)
+	packer plugins install --path $(BIN_FULL) "github.com/veertuinc/veertu-anka"
 
-#uninstall:		@ Delete the binary from the packer plugins folder
+#uninstall:		@ run packer plugin uninstaller
 uninstall:
 	packer plugins remove github.com/veertuinc/veertu-anka || true
-	rm -f ~/.packer.d/plugins/$(BIN)*
 
 #build-and-install:		@ Run make targets to setup the initialize the binary
 build-and-install:
