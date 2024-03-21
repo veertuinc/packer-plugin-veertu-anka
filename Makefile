@@ -62,7 +62,7 @@ install:
 
 #uninstall:		@ Delete the binary from the packer plugins folder
 uninstall:
-	packer plugins remove github.com/veertuinc/veertu-anka
+	packer plugins remove github.com/veertuinc/veertu-anka || true
 	rm -f ~/.packer.d/plugins/$(BIN)*
 
 #build-and-install:		@ Run make targets to setup the initialize the binary
