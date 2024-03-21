@@ -57,7 +57,10 @@ validate-examples:
 
 #install:		@ run packer plugin install
 install:
-	packer plugins install --path ./$(BIN_FULL) "github.com/veertuinc/veertu-anka"
+	pwd;
+	ls -laht ./
+	ls -alht $(WORKDIR)/$(BIN_FULL)
+	packer plugins install --path $(WORKDIR)/$(BIN_FULL) "github.com/veertuinc/veertu-anka"
 
 #uninstall:		@ run packer plugin uninstaller
 uninstall:

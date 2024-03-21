@@ -19,7 +19,7 @@ builds:
         - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
           dir: "{{ dir .Path }}"
         - cmd: bash -c "make install && packer plugins installed"
-        # - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }}"
+        - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }}"
         - cmd: bash -c "make validate-examples"
         - cmd: bash -c "packer-sdc plugin-check {{ .ProjectName }}"
         - cmd: bash -c "rm -f ./{{ .ProjectName }}"
@@ -30,7 +30,7 @@ builds:
     goos:
       - darwin
     goarch:
-      - amd64
+      - arm64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true
   -
@@ -56,7 +56,7 @@ builds:
     goos:
       - darwin
     goarch:
-      - arm64
+      - amd64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true
 archives:
@@ -89,4 +89,4 @@ release:
   disable: true
 
 changelog:
-  skip: true
+  disable: true
