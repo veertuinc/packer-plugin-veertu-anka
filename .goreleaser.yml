@@ -18,14 +18,15 @@ builds:
       post:
         - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
           dir: "{{ dir .Path }}"
-        - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }}"
+        - cmd: bash -c "make install && packer plugins installed"
+        # - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }}"
         - cmd: bash -c "make validate-examples"
         - cmd: bash -c "packer-sdc plugin-check {{ .ProjectName }}"
         - cmd: bash -c "rm -f ./{{ .ProjectName }}"
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
-      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+      - '-s -w -X main.version={{ .Version }}'
     goos:
       - darwin
     goarch:
@@ -38,7 +39,7 @@ builds:
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
-      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+      - '-s -w -X main.version={{ .Version }}'
     goos:
       - linux
     goarch:
@@ -51,7 +52,7 @@ builds:
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
-      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+      - '-s -w -X main.version={{ .Version }}'
     goos:
       - darwin
     goarch:

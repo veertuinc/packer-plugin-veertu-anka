@@ -48,7 +48,7 @@ go.releaser:
 	git tag -d "$(VERSION)" 2>/dev/null || true
 	git tag -a "$(VERSION)" -m "Version $(VERSION)"
 	echo "LATEST TAG: $$(git describe --tags --abbrev=0)"
-	PACKER_CI_PROJECT_API_VERSION=$(PACKER_CI_PROJECT_API_VERSION) goreleaser release --clean
+	PACKER_CI_PROJECT_API_VERSION=$(PACKER_CI_PROJECT_API_VERSION) goreleaser release --verbose --clean
 
 #validate-examples:  @ Run `packer validate` against example packer definitions using the built package
 validate-examples:
@@ -57,7 +57,7 @@ validate-examples:
 
 #install:		@ run packer plugin install
 install:
-	packer plugins install --path $(BIN_FULL) "github.com/veertuinc/veertu-anka"
+	packer plugins install --path ./$(BIN_FULL) "github.com/veertuinc/veertu-anka"
 
 #uninstall:		@ run packer plugin uninstaller
 uninstall:
