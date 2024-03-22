@@ -1,13 +1,3 @@
----
-description: |
-  The veertu-anka-vm-create Packer builder is able to create new VM templates for use with
-  Anka. The builder takes the path to macOS installer .app, installs macOS using that installer inside of an Anka VM Template, and then runs any provisioning necessary on the instance.
-page_title: Anka VM Create - Builders
-nav_title: VM Create
----
-
-# Veertu's Anka VM Create Builder
-
 Type: `veertu-anka-vm-create`
 
 **Packer 3.x will no longer support Anka 2.x. You can still however use the Packer 2.x release for support.**
