@@ -1,7 +1,7 @@
 WORKDIR := $(shell pwd)
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
 VERSION := $(shell cat VERSION)
-FLAGS := -X main.version=$(VERSION)
+FLAGS := -X main.version=$(VERSION) -X main.commit=$(LATEST-GIT-SHA)
 BIN := packer-plugin-veertu-anka
 ARCH := $(shell arch)
 ifeq ($(ARCH), i386)

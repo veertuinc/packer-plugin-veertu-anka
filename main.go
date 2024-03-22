@@ -13,6 +13,7 @@ import (
 
 var (
 	version = ""
+	commit  = ""
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	pps.RegisterBuilder("vm-create", new(anka.Builder))
 	pps.RegisterBuilder("vm-clone", new(anka.Builder))
 	pps.RegisterPostProcessor("registry-push", new(ankaregistry.PostProcessor))
-	pps.SetVersion(packerSDK.InitializePluginVersion(version, ""))
+	pps.SetVersion(packerSDK.NewPluginVersion(version, "", commit))
 	log.Printf("plugin version: %s", version)
 	err := pps.Run()
 	if err != nil {
