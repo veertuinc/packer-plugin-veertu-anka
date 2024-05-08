@@ -164,6 +164,12 @@ We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our
 
 - You must install `packer-sdc` to generate docs and HCL2spec.
 
+### Run the plugin locally
+
+```bash
+go run -ldflags="-X main.version=$(cat VERSION) -X main.commit=$(git rev-parse HEAD)" main.go
+```
+
 ### Building, Linting, and Testing
 
 ```bash

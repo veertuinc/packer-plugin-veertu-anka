@@ -21,8 +21,9 @@ func main() {
 	pps.RegisterBuilder("vm-create", new(anka.Builder))
 	pps.RegisterBuilder("vm-clone", new(anka.Builder))
 	pps.RegisterPostProcessor("registry-push", new(ankaregistry.PostProcessor))
-	pps.SetVersion(packerSDK.NewPluginVersion(version, "", commit))
-	log.Printf("plugin version: %s", version)
+	var pluginVersion = packerSDK.NewPluginVersion(version, "", commit)
+	pps.SetVersion(pluginVersion)
+	log.Printf("plugin version: %s", pluginVersion.String())
 	err := pps.Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
