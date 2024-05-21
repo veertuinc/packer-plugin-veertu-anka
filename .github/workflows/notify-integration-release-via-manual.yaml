@@ -10,7 +10,7 @@ on:
         required: false
       branch:
         description: "A branch or SHA"
-        default: 'main'
+        default: 'master'
         required: false
 jobs:
   notify-release:
