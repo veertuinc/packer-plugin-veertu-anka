@@ -8,7 +8,7 @@ To install this plugin, copy and paste this code into your Packer configuration,
 packer {
   required_plugins {
     veertu-anka = {
-      version = "= 3.2.0"
+      version = "= v4.0.0"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }
