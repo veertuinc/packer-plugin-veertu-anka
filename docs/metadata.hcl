@@ -7,7 +7,7 @@
 integration {
   name = "Anka"
   description = "This is a packer plugin for building macOS VM templates and tags using the Anka Virtualization CLI"
-  identifier = "packer/veertuinc/anka"
+  identifier = "packer/veertuinc/veertu-anka"
   flags = [
     # Remove if the plugin does not conform to the HCP Packer requirements.
     #
