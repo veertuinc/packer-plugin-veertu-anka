@@ -17,7 +17,7 @@ export PATH := $(shell go env GOPATH)/bin:$(PATH)
 
 .DEFAULT_GOAL := help
 
-all: clean go.releaser anka.clean-images anka.clean-clones generate-docs install
+all: clean go.releaser anka.clean-images anka.clean-clones generate install
 
 #help:	@ List available tasks on this project
 help:
