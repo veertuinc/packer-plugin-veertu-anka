@@ -23,7 +23,7 @@ jobs:
         uses: hashicorp/setup-packer@main
         id: setup
         with:
-          version: 1.9.1
+          version: 1.11.0-beta
       - name: Describe plugin
         id: plugin_describe
         run: echo "::set-output name=api_version::$(go run . describe | jq -r '.api_version')"

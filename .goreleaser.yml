@@ -11,13 +11,13 @@ before:
 
 builds:
   # A separated build to run the packer-plugins-check only once for a linux_amd64 binary
-  -
-    id: build1
+  - id: build1
     mod_timestamp: '{{ .CommitTimestamp }}'
     hooks:
       post:
         - cmd: bash -c "chmod +x {{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}"
           dir: "{{ dir .Path }}"
+        - cmd: bash -c "make install && packer plugins installed"
         - cmd: bash -c "cp -rfp {{ dir .Path }}/{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }} ./{{ .ProjectName }}"
         - cmd: bash -c "make validate-examples"
         - cmd: bash -c "packer-sdc plugin-check {{ .ProjectName }}"
@@ -25,37 +25,35 @@ builds:
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
-      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+      - '-s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }}'
     goos:
       - darwin
     goarch:
-      - amd64
+      - arm64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true
-  -
-    id: build2
+  - id: build2
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
-      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+      - '-s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }}'
     goos:
       - linux
     goarch:
       - amd64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true
-  -
-    id: build3
+  - id: build3
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath #removes all file system paths from the compiled executable
     ldflags:
-      - '-s -w -X main.commit={{ .Commit }} -X main.version={{ .Version }}'
+      - '-s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }}'
     goos:
       - darwin
     goarch:
-      - arm64
+      - amd64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.PACKER_CI_PROJECT_API_VERSION }}_{{ .Os }}_{{ .Arch }}'
     no_unique_dist_dir: true
 archives:
@@ -88,4 +86,4 @@ release:
   disable: true
 
 changelog:
-  skip: true
+  disable: true

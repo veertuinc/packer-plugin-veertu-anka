@@ -4,7 +4,6 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 - For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/apple/command-line-reference/#registry-add).
 
-## v3.0.0 Breaking Changes
 
 ## Compatibility
 
@@ -12,11 +11,12 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 | --- | --- |
 | below 1.7.0 | < 1.8.0 |
 | 1.7.0 and above | >= 2.0.0 |
+| >= 1.11.0 | >= v4.0.0 |
 
 | Packer Plugin Version | Anka CLI Version |
 | --- | --- |
 | 2.x | 2.x |
-| 3.x | >= 3.0.0 |
+| >= 3.x | >= 3.0.0 |
 
 ## Installing with `packer init`
 
@@ -26,7 +26,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
     packer {
       required_plugins {
         veertu-anka = {
-          version = "= v3.2.0"
+          version = "= v4.0.0"
           source = "github.com/veertuinc/veertu-anka"
         }
       }
@@ -43,7 +43,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 3. Download the [latest release](https://github.com/veertuinc/packer-plugin-veertu-anka/releases) for your host environment.
 4. Unzip the plugin binaries to a location where Packer will detect them at run-time, such as any of the following:
     * The directory where the packer binary is.
-    * The `~/.packer.d/plugins` directory.
+    * The `~/.config/packer/plugins` directory.
     * The current working directory.
 5. Rename the binary file to `packer-plugin-veertu-anka`.
 6. Run your `packer build` command with your hcl template.
@@ -164,6 +164,12 @@ We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our
 
 - You must install `packer-sdc` to generate docs and HCL2spec.
 
+### Run the plugin locally
+
+```bash
+go run -ldflags="-X main.version=$(cat VERSION) -X main.commit=$(git rev-parse HEAD)" main.go
+```
+
 ### Building, Linting, and Testing
 
 ```bash
@@ -179,7 +185,7 @@ PACKER_CI_PROJECT_API_VERSION=$(go run . describe 2>/dev/null | jq -r '.api_vers
 When testing with an example HCL:
 
 ```bash
-export ANKA_LOG_LEVEL=debug; export ANKA_DELETE_LOGS=0; PACKER_LOG=1 packer build examples/create-from-installer.pkr.hcl
+ANKA_LOG_LEVEL=debug ANKA_DELETE_LOGS=0 PACKER_LOG=1 packer build examples/create-from-installer.pkr.hcl
 ```
 
 To test the post processor you will need an active vpn connection that can reach an anka registry. You can setup an anka registry by either adding the registry locally with:
