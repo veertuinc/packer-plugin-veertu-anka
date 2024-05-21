@@ -114,9 +114,9 @@ go.hcl2spec: install-packer-sdc
 	GOOS=$(OS_TYPE) go generate post-processor/ankaregistry/post-processor.go
 
 #generate:		@ Generate
-generate: install-packer-sdc
-    @go generate ./...
-    @rm -rf .docs
-    @packer-sdc renderdocs -src docs -partials docs-partials/ -dst .docs/
-    @./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "<orgname>"
-    @rm -r ".docs"
+generate: install-packer-sdc go.hcl2spec
+	@rm -rf .docs
+	@packer-sdc renderdocs -src docs -partials docs-partials/ -dst .docs/
+	@./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "veertuinc"
+	@rm -r ".docs"
+

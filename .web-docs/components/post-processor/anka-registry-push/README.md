@@ -1,0 +1,95 @@
+Type: `veertu-anka-registry-push`
+
+The `veertu-anka-registry-push` Packer Post Processor is able to push your created Anka VM templates to the [Anka Build Cloud Registry](https://veertu.com/anka-build/) through the [Anka Virtualization](https://veertu.com/technology/) package.
+
+This post-processor is part of the [Veertu Anka plugin](https://github.com/veertuinc/packer-plugin-veertu-anka). To install this plugin using `packer init`, add the following Packer block to your hcl template:
+
+```hcl
+packer {
+  required_plugins {
+    veertu-anka = {
+      version = "= 3.2.0"
+      source  = "github.com/veertuinc/veertu-anka"
+    }
+  }
+}
+```
+
+## Configuration Reference
+
+There are many configuration options available for the post-processor. They are
+segmented below into two categories: required and optional parameters.
+
+### _**Required Configuration**_
+
+* `type` (String) **Must be `veertu-anka-registry-push`; no other types**
+
+### _**Optional Configuration**_
+
+* `cacert` (String) Path to a CA Root certificate.
+
+* `cert` (String) Path to your node certificate (if certificate authority is enabled).
+
+* `description` (String) The description of the tag.
+
+* `insecure` (Boolean) Skip TLS verification.
+
+* `key` (String) Path to your node certificate key if the client/node certificate doesn't contain one.
+
+* `local` (Boolean) Assign a tag to your local template and avoid pushing to the Registry.
+
+* `remote` (String) The registry URL or name to target for registry operation (will use your default configuration if not set).
+
+* `remote_vm` (String) The name of a registry template you want to push the local template onto.
+
+* `tag` (String) The name of the tag to push (will default as 'latest' if not set).
+
+* `force` (Boolean) Whether or not to forcefully push, regardless of a tag already existing
+
+## Other 
+
+When using `packer build -force`, the post-processor will issue a [revert API call](https://docs.veertu.com/anka/anka-build-cloud/working-with-registry-and-api/#revert) to remove the existing tag before pushing the new.
+
+## Example
+
+Here is an example that uses the file and shell provisioners.
+
+```hcl
+
+variable "source_vm_name" {
+  type = string
+  default = "anka-packer-base-macos"
+}
+
+variable "vm_name" {
+  type = string
+  default = "anka-packer-from-source"
+}
+
+source "veertu-anka-vm-clone" "clone" {
+  vm_name = "${var.vm_name}"
+  source_vm_name = "${var.source_vm_name}"
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.clone",
+  ]
+  
+  provisioner "file" {
+    destination = "/private/tmp/"
+    source      = "./examples/ansible"
+  }
+  provisioner "shell" {
+    inline = [
+      "[[ ! -d /tmp/ansible ]] && exit 100",
+      "touch /tmp/ansible/test1"
+    ]
+  }
+
+  post-processor "veertu-anka-registry-push" {
+    tag = "v2"
+  }
+}
+
+```
