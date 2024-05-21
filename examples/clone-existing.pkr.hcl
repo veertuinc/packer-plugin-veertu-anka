@@ -1,12 +1,3 @@
-// packer {
-//   required_plugins {
-//     veertu-anka = {
-//       version = "= v3.2.1"
-//       source = "github.com/veertuinc/veertu-anka"
-//     }
-//   }
-// }
-
 variable "source_vm_name" {
   type = string
   default = "anka-packer-base-macos"
