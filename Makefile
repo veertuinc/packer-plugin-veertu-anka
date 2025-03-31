@@ -11,7 +11,7 @@ PACKER_CI_PROJECT_API_VERSION?=$(shell go run . describe 2>/dev/null | jq -r '.a
 OS_TYPE ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 BIN_FULL ?= dist/$(BIN)_v$(VERSION)_$(PACKER_CI_PROJECT_API_VERSION)_$(OS_TYPE)_$(ARCH)
 HASHICORP_PACKER_PLUGIN_SDK_VERSION?=$(shell go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2)
-export PATH := $(shell go env GOPATH)/bin:$(PATH)
+export PATH := $(shell go env GOPATH)/bin:$(PATH):/usr/local/bin:/opt/homebrew/bin
 
 .PHONY: go.lint validate-examples go.test test clean anka.clean-images
 

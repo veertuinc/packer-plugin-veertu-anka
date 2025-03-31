@@ -196,7 +196,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 	}
 
 	if found {
-		err = fmt.Errorf(foundMessage)
+		err = fmt.Errorf("%s", foundMessage)
 	} else {
 		err = p.client.RegistryPush(registryParams, pushParams)
 		if err == nil {
