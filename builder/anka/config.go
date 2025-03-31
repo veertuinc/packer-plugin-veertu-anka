@@ -1,4 +1,4 @@
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config,PortForwardingRule -output-file hcl2spec.go
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,PortForwardingRule -output config.hcl2spec.go
 
 package anka
 
