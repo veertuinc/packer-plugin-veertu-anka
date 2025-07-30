@@ -185,6 +185,18 @@ func (s *StepCreateVM) modifyVMProperties(showResponse client.ShowResponse, conf
 		}
 	}
 
+	if config.DisplayResolution != "" {
+		err := s.client.Stop(stopParams)
+		if err != nil {
+			return err
+		}
+		ui.Say(fmt.Sprintf("Modifying VM display resolution to %s", config.DisplayResolution))
+		err = s.client.Modify(showResponse.Name, "set", "display", "-r", config.DisplayResolution)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
