@@ -1,6 +1,6 @@
 module github.com/veertuinc/packer-plugin-veertu-anka
 
-go 1.24.0
+go 1.24.1
 
 require (
 	github.com/golang/mock v1.6.0
