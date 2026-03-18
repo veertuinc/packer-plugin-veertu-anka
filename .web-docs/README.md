@@ -22,11 +22,12 @@ $ packer plugins install github.com/veertuinc/veertu-anka
 ```
 
 ### Components
-~> For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/apple/command-line-reference/#registry-add).
+~> For use with the post-processor, it's important to use `anka registry add` to [set your default registry on the machine building your templates/tags](https://docs.veertu.com/anka/anka-build-cloud/working-with-registry-and-api/#TableOfContents).
 
 #### Builders
+
 - [veertu-anka-vm-clone](/packer/integrations/veertuinc/veertu-anka/latest/components/builder/clone) - Packer builder is able to clone existing Anka VM Templates for use with the [Anka Virtualization](https://veertu.com/technology/) package and the [Anka Build Cloud](https://veertu.com/anka-build/). The builder takes a source VM name, clones it, and then runs any provisioning necessary on the new VM Template before stopping or suspending it.
-- [veertu-anka-vm-create- ](/packer/integrations/veertuinc/veertu-anka/latest/components/builder/create) Packer builder is able to create new Anka VM Templates for use with the
+- [veertu-anka-vm-create](/packer/integrations/veertuinc/veertu-anka/latest/components/builder/create) Packer builder is able to create new Anka VM Templates for use with the
 [Anka Virtualization](https://veertu.com/technology/) package and the [Anka Build Cloud](https://veertu.com/anka-build/). The builder takes the path to macOS installer .app 
 and installs that macOS version inside of an Anka VM Template.
 
