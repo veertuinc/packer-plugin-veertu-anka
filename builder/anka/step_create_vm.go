@@ -85,6 +85,8 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		return onError(err)
 	}
 
+	ui.Say(fmt.Sprintf("VM TEMPLATE_NAME: %s, TEMPLATE_ID: %s", createdShow.Name, createdShow.UUID))
+
 	err = s.modifyVMProperties(createdShow, config, ui)
 	if err != nil {
 		return onError(err)

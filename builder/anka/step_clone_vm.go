@@ -103,6 +103,12 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 		return onError(err)
 	}
 
+	sourceVMTagLog := config.SourceVMTag
+	if sourceVMTagLog == "" {
+		sourceVMTagLog = "(latest)"
+	}
+	ui.Say(fmt.Sprintf("Source TEMPLATE_NAME: %s, TEMPLATE_ID: %s, TAG_NAME: %s", sourceShow.Name, sourceShow.UUID, sourceVMTagLog))
+
 	// Check arch of host
 	// // If arm64, ensure the source has a local tag
 	if !doPull {
@@ -132,6 +138,8 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	if err != nil {
 		return onError(err)
 	}
+
+	ui.Say(fmt.Sprintf("Cloned VM TEMPLATE_NAME: %s, TEMPLATE_ID: %s", clonedShow.Name, clonedShow.UUID))
 
 	err = s.modifyVMResources(clonedShow, config, ui, ankaUtil)
 	if err != nil {
