@@ -105,7 +105,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 
 	sourceVMTagLog := config.SourceVMTag
 	if sourceVMTagLog == "" {
-		sourceVMTagLog = "(latest)"
+		sourceVMTagLog = "latest"
 	}
 	ui.Say(fmt.Sprintf("Source TEMPLATE_NAME: %s, TEMPLATE_ID: %s, TAG_NAME: %s", sourceShow.Name, sourceShow.UUID, sourceVMTagLog))
 
