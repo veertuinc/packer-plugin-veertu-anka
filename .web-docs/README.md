@@ -26,8 +26,8 @@ $ packer plugins install github.com/veertuinc/veertu-anka
 
 #### Builders
 
-- [veertu-anka-vm-clone](/packer/integrations/veertuinc/veertu-anka/latest/components/builder/clone) - Packer builder is able to clone existing Anka VM Templates for use with the [Anka Virtualization](https://veertu.com/technology/) package and the [Anka Build Cloud](https://veertu.com/anka-build/). The builder takes a source VM name, clones it, and then runs any provisioning necessary on the new VM Template before stopping or suspending it.
-- [veertu-anka-vm-create](/packer/integrations/veertuinc/veertu-anka/latest/components/builder/create) Packer builder is able to create new Anka VM Templates for use with the
+- [veertu-anka-vm-clone](/packer/integrations/veertuinc/veertu-anka/latest/components/builder/vm-clone) - Packer builder is able to clone existing Anka VM Templates for use with the [Anka Virtualization](https://veertu.com/technology/) package and the [Anka Build Cloud](https://veertu.com/anka-build/). The builder takes a source VM name, clones it, and then runs any provisioning necessary on the new VM Template before stopping or suspending it.
+- [veertu-anka-vm-create](/packer/integrations/veertuinc/veertu-anka/latest/components/builder/vm-create) Packer builder is able to create new Anka VM Templates for use with the
 [Anka Virtualization](https://veertu.com/technology/) package and the [Anka Build Cloud](https://veertu.com/anka-build/). The builder takes the path to macOS installer .app 
 and installs that macOS version inside of an Anka VM Template.
 
