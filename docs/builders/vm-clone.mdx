@@ -41,6 +41,7 @@ There are many configuration options available for the builder. They are segment
 * `disk_size` (String) The size in "[0-9]+G" format, defaults to `25G`.
 
   > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk0s2 0` inside of the VM.
+  > IMPORTANT: Changing the clone's disk size will break the layer sharing with the root and double disk space usage. Change the disk size of the source template, then clone from it instead.
 
 * `stop_vm` (Boolean) Whether or not to stop the vm after it has been created, defaults to false.
 

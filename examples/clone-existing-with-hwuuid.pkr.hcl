@@ -17,7 +17,8 @@ source "veertu-anka-vm-clone" "anka-packer-from-source-with-hwuuid" {
   vm_name = "${var.vm_name}"
   source_vm_name = "${var.source_vm_name}"
   hw_uuid = "${var.hw_uuid}"
-  vcpu_count = 10
+  vcpu_count = 8
+  boot_delay = "20s"
 }
 
 build {

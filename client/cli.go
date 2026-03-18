@@ -3,6 +3,7 @@ package client
 import (
 	"bufio"
 	"errors"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -12,6 +13,19 @@ import (
 func runAnkaCommand(args ...string) (MachineReadableOutput, error) {
 	return runCommandStreamer(nil, args...)
 }
+
+// streamStderrToChannel reads stderr line-by-line and sends each line to the channel.
+// Used to stream anka create progress (e.g. "Installing macOS...") to the Packer UI.
+func streamStderrToChannel(stderr io.Reader, outputStreamer chan string) {
+	scanner := bufio.NewScanner(stderr)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			outputStreamer <- line
+		}
+	}
+}
+
 
 func runCommandStreamer(outputStreamer chan string, args ...string) (MachineReadableOutput, error) {
 
@@ -37,6 +51,12 @@ func runCommandStreamer(outputStreamer chan string, args ...string) (MachineRead
 
 	if outputStreamer == nil {
 		cmd.Stderr = cmd.Stdout
+	} else {
+		stderrPipe, err := cmd.StderrPipe()
+		if err != nil {
+			return MachineReadableOutput{}, err
+		}
+		go streamStderrToChannel(stderrPipe, outputStreamer)
 	}
 
 	err = cmd.Start()
@@ -48,11 +68,8 @@ func runCommandStreamer(outputStreamer chan string, args ...string) (MachineRead
 	outScanner.Split(customSplit)
 
 	for outScanner.Scan() {
-		out := outScanner.Text()
-
-		if outputStreamer != nil {
-			outputStreamer <- out
-		}
+		// Stdout is JSON (machine-readable); only stderr has human-readable progress
+		// Don't send stdout to outputStreamer
 	}
 
 	scannerErr := outScanner.Err()
