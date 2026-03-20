@@ -20,6 +20,19 @@ import (
 var (
 	createdShowResponse     client.ShowResponse
 	createdDescribeResponse client.DescribeResponse
+	availableInstallers     = []client.CreateInstallerListResponse{
+		{
+			Version: "13.5",
+			Build:   "22G74",
+			URL:     "/tmp/UniversalMac_13.5_22G74_Restore.ipsw",
+		},
+		{
+			Version: "26.4",
+			Build:   "25E243",
+			URL:     "/tmp/UniversalMac_26.4_25E243_Restore.ipsw",
+			Latest:  true,
+		},
+	}
 )
 
 func TestCreateVMRun(t *testing.T) {
@@ -119,17 +132,20 @@ func TestCreateVMRun(t *testing.T) {
 		}
 
 		gomock.InOrder(
+			ankaClient.EXPECT().CreateInstallerList().Return(availableInstallers, nil).Times(1),
 			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(createdShowResponse, nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
+		mockui.Say("Resolved installer \"13.5\" to macOS 13.5 (22G74)")
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
 		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, mockui.SayMessages[0].Message, fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		assert.Equal(t, mockui.SayMessages[1].Message, fmt.Sprintf("VM %s was created (abcd-efgh-1234-5678)", step.vmName))
+		assert.Equal(t, mockui.SayMessages[0].Message, "Resolved installer \"13.5\" to macOS 13.5 (22G74)")
+		assert.Equal(t, mockui.SayMessages[1].Message, fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
+		assert.Equal(t, mockui.SayMessages[2].Message, fmt.Sprintf("VM %s was created (abcd-efgh-1234-5678)", step.vmName))
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
@@ -311,6 +327,7 @@ func TestCreateVMRun(t *testing.T) {
 		state.Put("config", &config)
 
 		gomock.InOrder(
+			ankaClient.EXPECT().CreateInstallerList().Return(availableInstallers, nil).Times(1),
 			ankaClient.EXPECT().Create(createParams, gomock.Any()).Return(createdVMUUID, nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(createdShowResponse, nil).Times(1),
 			ankaClient.EXPECT().Describe(step.vmName).Return(client.DescribeResponse{}, nil).Times(1),
@@ -326,6 +343,7 @@ func TestCreateVMRun(t *testing.T) {
 		)
 
 		mockui := packer.MockUi{}
+		mockui.Say("Resolved installer \"latest\" to macOS 26.4 (25E243)")
 		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
 		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
 		mockui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", createdShowResponse.Name, strconv.Itoa(config.PortForwardingRules[0].PortForwardingGuestPort), strconv.Itoa(config.PortForwardingRules[0].PortForwardingHostPort), config.PortForwardingRules[0].PortForwardingRuleName))
@@ -333,8 +351,9 @@ func TestCreateVMRun(t *testing.T) {
 		mockui.Say(fmt.Sprintf("Modifying VM display controller to %s", config.DisplayController))
 
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, mockui.SayMessages[0].Message, "Creating a new VM Template (anka-packer-base-latest) from installer, this will take a while")
-		assert.Equal(t, mockui.SayMessages[1].Message, "VM anka-packer-base-latest was created (abcd-efgh-1234-5678)")
+		assert.Equal(t, mockui.SayMessages[0].Message, "Resolved installer \"latest\" to macOS 26.4 (25E243)")
+		assert.Equal(t, mockui.SayMessages[1].Message, "Creating a new VM Template (anka-packer-base-latest) from installer, this will take a while")
+		assert.Equal(t, mockui.SayMessages[2].Message, "VM anka-packer-base-latest was created (abcd-efgh-1234-5678)")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 
 	})
