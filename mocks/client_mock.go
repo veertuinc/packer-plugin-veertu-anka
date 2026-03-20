@@ -77,6 +77,21 @@ func (mr *MockClientMockRecorder) Create(params, outputStreamer interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockClient)(nil).Create), params, outputStreamer)
 }
 
+// CreateInstallerList mocks base method.
+func (m *MockClient) CreateInstallerList() ([]client.CreateInstallerListResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateInstallerList")
+	ret0, _ := ret[0].([]client.CreateInstallerListResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateInstallerList indicates an expected call of CreateInstallerList.
+func (mr *MockClientMockRecorder) CreateInstallerList() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstallerList", reflect.TypeOf((*MockClient)(nil).CreateInstallerList))
+}
+
 // Delete mocks base method.
 func (m *MockClient) Delete(params client.DeleteParams) error {
 	m.ctrl.T.Helper()

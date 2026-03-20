@@ -11,6 +11,7 @@ const (
 
 type Client interface {
 	Create(params CreateParams, outputStreamer chan string) (string, error)
+	CreateInstallerList() ([]CreateInstallerListResponse, error)
 	Clone(params CloneParams) error
 	Copy(params CopyParams) error
 	Delete(params DeleteParams) error

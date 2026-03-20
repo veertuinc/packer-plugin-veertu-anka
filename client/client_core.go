@@ -57,6 +57,13 @@ type CreateParams struct {
 	VCPUCount    string
 }
 
+type CreateInstallerListResponse struct {
+	Version string `json:"version"`
+	Build   string `json:"build"`
+	URL     string `json:"url"`
+	Latest  bool   `json:"latest,omitempty"`
+}
+
 func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (string, error) {
 
 	args := []string{
@@ -83,6 +90,25 @@ func (c *AnkaClient) Create(params CreateParams, outputStreamer chan string) (st
 	}
 
 	return createdVMUUID, nil
+}
+
+func (c *AnkaClient) CreateInstallerList() ([]CreateInstallerListResponse, error) {
+	response := []CreateInstallerListResponse{}
+
+	output, err := runAnkaCommand("create", "--list")
+	if err != nil {
+		return response, err
+	}
+	if output.Status != statusOK {
+		return response, fmt.Errorf("%s", output.Message)
+	}
+
+	err = json.Unmarshal(output.Body, &response)
+	if err != nil {
+		return response, err
+	}
+
+	return response, nil
 }
 
 // https://docs.veertu.com/anka/intel/command-line-reference/#delete

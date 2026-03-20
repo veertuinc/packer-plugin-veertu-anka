@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
@@ -96,6 +97,16 @@ func (s *StepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 }
 
 func (s *StepCreateVM) createFromInstaller(ui packer.Ui, config *Config) error {
+	installerPathPattern := regexp.MustCompile(".app(/?)$|.ipsw(/?)$")
+	if !installerPathPattern.MatchString(config.Installer) {
+		resolvedInstallerVersion, resolvedInstallerBuild, foundResolvedInstaller, err := s.resolveInstaller(config.Installer)
+		if err != nil {
+			ui.Error(fmt.Sprintf("Failed to resolve installer %q to a concrete macOS version: %s", config.Installer, err))
+		} else if foundResolvedInstaller {
+			ui.Say(fmt.Sprintf("Resolved installer %q to macOS %s (%s)", config.Installer, resolvedInstallerVersion, resolvedInstallerBuild))
+		}
+	}
+
 	ui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", s.vmName))
 
 	outputStream := make(chan string)
@@ -124,6 +135,26 @@ func (s *StepCreateVM) createFromInstaller(ui packer.Ui, config *Config) error {
 	close(outputStream)
 
 	return nil
+}
+
+func (s *StepCreateVM) resolveInstaller(installer string) (string, string, bool, error) {
+	availableInstallers, err := s.client.CreateInstallerList()
+	if err != nil {
+		return "", "", false, err
+	}
+
+	resolvedInstallerSelection := strings.TrimSpace(strings.ToLower(installer))
+	for _, availableInstaller := range availableInstallers {
+		if resolvedInstallerSelection == "latest" && availableInstaller.Latest {
+			return availableInstaller.Version, availableInstaller.Build, true, nil
+		}
+
+		if strings.ToLower(strings.TrimSpace(availableInstaller.Version)) == resolvedInstallerSelection {
+			return availableInstaller.Version, availableInstaller.Build, true, nil
+		}
+	}
+
+	return "", "", false, nil
 }
 
 func (s *StepCreateVM) modifyVMProperties(showResponse client.ShowResponse, config *Config, ui packer.Ui) error {
