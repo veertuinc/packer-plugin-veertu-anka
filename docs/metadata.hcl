@@ -37,16 +37,16 @@ integration {
   component {
     type = "builder"
     name = "Anka VM Create"
-    slug = "veertu-anka-vm-create"
+    slug = "vm-create"
   }
   component {
     type = "builder"
     name = "Anka VM Clone"
-    slug = "veertu-anka-vm-clone"
+    slug = "vm-clone"
   }
   component {
-    type = "provisioner"
+    type = "post-processor"
     name = "Anka Build Cloud Registry Push"
-    slug = "veertu-anka-registry-push"
+    slug = "anka-registry-push"
   }
 }

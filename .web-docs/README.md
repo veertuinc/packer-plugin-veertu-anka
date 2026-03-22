@@ -32,5 +32,5 @@ $ packer plugins install github.com/veertuinc/veertu-anka
 and installs that macOS version inside of an Anka VM Template.
 
 #### Post-Processors
-- [veertu-anka-registry-push](/packer/integrations/veertuinc/veertu-anka/latest/components/post-processor/veertu-anka-registry-push) Packer Post Processor is able to push your created Anka VM templates to 
+- [veertu-anka-registry-push](/packer/integrations/veertuinc/veertu-anka/latest/components/post-processor/anka-registry-push) Packer Post Processor is able to push your created Anka VM templates to 
 the [Anka Build Cloud Registry](https://veertu.com/anka-build/) through the [Anka Virtualization](https://veertu.com/technology/) package.
