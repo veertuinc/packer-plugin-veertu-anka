@@ -42,6 +42,17 @@ func (s *StepStartVM) Run(ctx context.Context, state multistep.StateBag) multist
 		time.Sleep(d)
 	}
 
+	if config.shouldWaitForGuestNetworking() {
+		ui.Say("Waiting for guest network (ping reachability check)...")
+		_, err = cmdClient.Run(client.RunParams{
+			VMName:  vmName,
+			Command: guestNetworkReadinessShCommand(),
+		})
+		if err != nil {
+			return onError(err)
+		}
+	}
+
 	return multistep.ActionContinue
 }
 

@@ -59,6 +59,8 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 > Currently file provisioners do not support ~ or \$HOME in the destination paths. Please use absolute or relative paths.
 
+**Guest networking:** By default, **veertu-anka-vm-clone** and **veertu-anka-vm-create** run a guest `ping` loop against `8.8.8.8` after start (and after `boot_delay`) before provisioners. Set `wait_for_networking = false` on the source to skip that step. See the builder docs for details.
+
 The most basic pkr.hcl file you can build from is:
 
 ```hcl

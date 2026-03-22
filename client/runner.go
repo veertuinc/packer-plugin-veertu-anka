@@ -39,10 +39,6 @@ func NewRunner(params RunParams) *Runner {
 		args = append(args, "-n")
 	}
 
-	if params.WaitForNetworking {
-		args = append(args, "--wait-network")
-	}
-
 	if params.WaitForTimeSync {
 		args = append(args, "--wait-time")
 	}

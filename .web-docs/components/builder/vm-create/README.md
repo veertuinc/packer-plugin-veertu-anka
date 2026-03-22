@@ -45,6 +45,8 @@ segmented below into two categories: required and optional parameters.
 
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
 
+* `wait_for_networking` (Boolean) When enabled (the default), after `boot_delay` the builder runs `anka run` with a short shell loop that `ping`s `8.8.8.8` until one reply succeeds (up to 120 attempts, one second apart) so basic guest connectivity is up before Packer continues—for example before shell provisioners that `curl` the internet. Set to `false` to skip that step. The check runs **after** `boot_delay` and does not change `boot_delay` itself. If your environment blocks ICMP to `8.8.8.8`, set this to `false` and use another strategy (such as a longer `boot_delay` or a provisioner that retries).
+
 * `log_level` (String) The log level for Anka. This currently only supports `debug` and is only useful for VM creation failures.
 
 * `hw_uuid` (String) (Anka 2 only) The Hardware UUID you wish to set (usually generated with `uuidgen`).
