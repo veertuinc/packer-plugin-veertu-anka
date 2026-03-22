@@ -421,4 +421,142 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 	})
 
+	t.Run("delete_template_post_push runs anka delete after successful push", func(t *testing.T) {
+		config := Config{
+			RemoteVM:            "foo",
+			Tag:                   "registry-push",
+			Description:           "mock for delete_template_post_push",
+			HostArch:              runtime.GOARCH,
+			DeleteTemplatePostPush:   true,
+		}
+		localArtifact := anka.NewVMTemplateArtifact("my-local-vm", "uuid-1")
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+		registryParams := client.RegistryParams{
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
+		}
+		pushParams := client.RegistryPushParams{
+			Tag:         config.Tag,
+			Description: config.Description,
+			RemoteVM:    config.RemoteVM,
+			Local:       false,
+			Force:       false,
+			VMID:        "my-local-vm",
+		}
+		gomock.InOrder(
+			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: "my-local-vm"}).Return(nil).Times(1),
+		)
+		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
+		assert.NilError(t, err)
+	})
+
+	t.Run("delete_template_post_push errors when artifact VM name is empty after successful push", func(t *testing.T) {
+		config := Config{
+			RemoteVM:            "foo",
+			Tag:                   "registry-push",
+			Description:           "mock",
+			HostArch:              runtime.GOARCH,
+			DeleteTemplatePostPush:   true,
+		}
+		emptyNameArtifact := anka.NewVMTemplateArtifact("", "uuid-1")
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+		registryParams := client.RegistryParams{
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
+		}
+		pushParams := client.RegistryPushParams{
+			Tag:         config.Tag,
+			Description: config.Description,
+			RemoteVM:    config.RemoteVM,
+			Local:       false,
+			Force:       false,
+			VMID:        "",
+		}
+		gomock.InOrder(
+			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+		)
+		_, _, _, err := pp.PostProcess(context.Background(), ui, emptyNameArtifact)
+		assert.Assert(t, err != nil)
+	})
+
+	t.Run("delete_template_post_push does not delete when local tag only", func(t *testing.T) {
+		config := Config{
+			RemoteVM:            "foo",
+			Tag:                   "registry-push",
+			Description:           "mock local tag",
+			HostArch:              runtime.GOARCH,
+			Local:                 true,
+			DeleteTemplatePostPush:   true,
+		}
+		localArtifact := anka.NewVMTemplateArtifact("my-local-vm", "uuid-1")
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+		registryParams := client.RegistryParams{
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
+		}
+		pushParams := client.RegistryPushParams{
+			Tag:         config.Tag,
+			Description: config.Description,
+			RemoteVM:    config.RemoteVM,
+			Local:       true,
+			Force:       false,
+			VMID:        "my-local-vm",
+		}
+		gomock.InOrder(
+			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+		)
+		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
+		assert.NilError(t, err)
+	})
+
+	t.Run("delete_template_post_push returns delete client error after successful push", func(t *testing.T) {
+		config := Config{
+			RemoteVM:            "foo",
+			Tag:                   "registry-push",
+			Description:           "mock",
+			HostArch:              runtime.GOARCH,
+			DeleteTemplatePostPush:   true,
+		}
+		localArtifact := anka.NewVMTemplateArtifact("my-local-vm", "uuid-1")
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+		registryParams := client.RegistryParams{
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
+		}
+		pushParams := client.RegistryPushParams{
+			Tag:         config.Tag,
+			Description: config.Description,
+			RemoteVM:    config.RemoteVM,
+			Local:       false,
+			Force:       false,
+			VMID:        "my-local-vm",
+		}
+		gomock.InOrder(
+			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: "my-local-vm"}).Return(fmt.Errorf("anka delete failed")).Times(1),
+		)
+		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
+		assert.ErrorContains(t, err, "anka delete failed")
+	})
+
 }

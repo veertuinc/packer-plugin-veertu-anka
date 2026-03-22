@@ -9,6 +9,8 @@ and installs that macOS version inside of an Anka VM Template.
 The builder does _not_ manage templates. Once a template is created, it is up
 to you to use it or delete it.
 
+**Interrupted or failed builds:** With Packer's `-on-error=ask`, choosing **[a] abort without cleanup** leaves the created VM on disk for inspection (no `anka delete`). Choosing **[c] clean up** still removes it. See [issue #94](https://github.com/veertuinc/packer-plugin-veertu-anka/issues/94).
+
 ## Configuration Reference
 
 There are many configuration options available for the builder. They are
@@ -44,6 +46,8 @@ segmented below into two categories: required and optional parameters.
 * `anka_user` (String) Sets the username for the vm. Can also be set with `ANKA_DEFAULT_USER` env var. Defaults to `anka`.
 
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
+
+* `wait_for_networking` (Boolean) When enabled (the default), after `boot_delay` the builder runs `anka run` with a short shell loop that `ping`s `8.8.8.8` until one reply succeeds (up to 120 attempts, one second apart) so basic guest connectivity is up before Packer continues—for example before shell provisioners that `curl` the internet. Set to `false` to skip that step. The check runs **after** `boot_delay` and does not change `boot_delay` itself. If your environment blocks ICMP to `8.8.8.8`, set this to `false` and use another strategy (such as a longer `boot_delay` or a provisioner that retries).
 
 * `log_level` (String) The log level for Anka. This currently only supports `debug` and is only useful for VM creation failures.
 

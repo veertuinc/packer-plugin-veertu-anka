@@ -34,7 +34,15 @@ func TestStartVMRun(t *testing.T) {
 
 		state.Put("config", config)
 
-		ankaClient.EXPECT().Start(client.StartParams{VMName: "foo"}).Return(nil).Times(1)
+		waitNetParams := client.RunParams{
+			VMName:  "foo",
+			Command: guestNetworkReadinessShCommand(),
+		}
+
+		gomock.InOrder(
+			ankaClient.EXPECT().Start(client.StartParams{VMName: "foo"}).Return(nil).Times(1),
+			ankaClient.EXPECT().Run(waitNetParams).Return(0, nil).Times(1),
+		)
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, multistep.ActionContinue, stepAction)
@@ -50,7 +58,15 @@ func TestStartVMRun(t *testing.T) {
 
 		state.Put("config", config)
 
-		ankaClient.EXPECT().Start(client.StartParams{VMName: "foo"}).Return(nil).Times(1)
+		waitNetParams := client.RunParams{
+			VMName:  "foo",
+			Command: guestNetworkReadinessShCommand(),
+		}
+
+		gomock.InOrder(
+			ankaClient.EXPECT().Start(client.StartParams{VMName: "foo"}).Return(nil).Times(1),
+			ankaClient.EXPECT().Run(waitNetParams).Return(0, nil).Times(1),
+		)
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Waiting for 1s for clone to boot")
@@ -69,5 +85,19 @@ func TestStartVMRun(t *testing.T) {
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, multistep.ActionHalt, stepAction)
+	})
+
+	t.Run("start vm with wait_for_networking false skips wait-network run", func(t *testing.T) {
+		waitNetDisabled := false
+		config := &Config{
+			WaitForNetworking: &waitNetDisabled,
+		}
+
+		state.Put("config", config)
+
+		ankaClient.EXPECT().Start(client.StartParams{VMName: "foo"}).Return(nil).Times(1)
+
+		stepAction := step.Run(ctx, state)
+		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 }

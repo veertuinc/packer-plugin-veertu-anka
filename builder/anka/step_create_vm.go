@@ -230,8 +230,6 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 		return
 	}
 
-	_, halted := state.GetOk(multistep.StateHalted)
-	_, canceled := state.GetOk(multistep.StateCancelled)
 	errorObj := state.Get("error")
 	switch errorObj.(type) {
 	case *common.VMAlreadyExistsError:
@@ -239,14 +237,14 @@ func (s *StepCreateVM) Cleanup(state multistep.StateBag) {
 	case *common.VMNotFoundException:
 		return
 	default:
-		if halted || canceled {
-			ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
-
-			err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
-			if err != nil {
-				ui.Error(fmt.Sprint(err))
-			}
+		if !shouldDeleteAnkaTemplateAfterFailedBuild(state) {
 			return
+		}
+		ui.Say(fmt.Sprintf("Deleting VM %s", s.vmName))
+
+		err := s.client.Delete(client.DeleteParams{VMName: s.vmName})
+		if err != nil {
+			ui.Error(fmt.Sprint(err))
 		}
 	}
 }

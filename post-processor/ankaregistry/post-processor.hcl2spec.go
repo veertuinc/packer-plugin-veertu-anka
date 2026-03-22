@@ -10,25 +10,26 @@ import (
 // FlatConfig is an auto-generated flat version of Config.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
 type FlatConfig struct {
-	PackerBuildName     *string           `mapstructure:"packer_build_name" cty:"packer_build_name" hcl:"packer_build_name"`
-	PackerBuilderType   *string           `mapstructure:"packer_builder_type" cty:"packer_builder_type" hcl:"packer_builder_type"`
-	PackerCoreVersion   *string           `mapstructure:"packer_core_version" cty:"packer_core_version" hcl:"packer_core_version"`
-	PackerDebug         *bool             `mapstructure:"packer_debug" cty:"packer_debug" hcl:"packer_debug"`
-	PackerForce         *bool             `mapstructure:"packer_force" cty:"packer_force" hcl:"packer_force"`
-	PackerOnError       *string           `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
-	PackerUserVars      map[string]string `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
-	PackerSensitiveVars []string          `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
-	Remote              *string           `mapstructure:"remote" cty:"remote" hcl:"remote"`
-	NodeCertPath        *string           `mapstructure:"cert" cty:"cert" hcl:"cert"`
-	NodeKeyPath         *string           `mapstructure:"key" cty:"key" hcl:"key"`
-	CaRootPath          *string           `mapstructure:"cacert" cty:"cacert" hcl:"cacert"`
-	IsInsecure          *bool             `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
-	Tag                 *string           `mapstructure:"tag" cty:"tag" hcl:"tag"`
-	Description         *string           `mapstructure:"description" cty:"description" hcl:"description"`
-	RemoteVM            *string           `mapstructure:"remote_vm" cty:"remote_vm" hcl:"remote_vm"`
-	Local               *bool             `mapstructure:"local" cty:"local" hcl:"local"`
-	Force               *bool             `mapstructure:"force" cty:"force" hcl:"force"`
-	HostArch            *string           `mapstructure:"host_arch,omitempty" cty:"host_arch" hcl:"host_arch"`
+	PackerBuildName        *string           `mapstructure:"packer_build_name" cty:"packer_build_name" hcl:"packer_build_name"`
+	PackerBuilderType      *string           `mapstructure:"packer_builder_type" cty:"packer_builder_type" hcl:"packer_builder_type"`
+	PackerCoreVersion      *string           `mapstructure:"packer_core_version" cty:"packer_core_version" hcl:"packer_core_version"`
+	PackerDebug            *bool             `mapstructure:"packer_debug" cty:"packer_debug" hcl:"packer_debug"`
+	PackerForce            *bool             `mapstructure:"packer_force" cty:"packer_force" hcl:"packer_force"`
+	PackerOnError          *string           `mapstructure:"packer_on_error" cty:"packer_on_error" hcl:"packer_on_error"`
+	PackerUserVars         map[string]string `mapstructure:"packer_user_variables" cty:"packer_user_variables" hcl:"packer_user_variables"`
+	PackerSensitiveVars    []string          `mapstructure:"packer_sensitive_variables" cty:"packer_sensitive_variables" hcl:"packer_sensitive_variables"`
+	Remote                 *string           `mapstructure:"remote" cty:"remote" hcl:"remote"`
+	NodeCertPath           *string           `mapstructure:"cert" cty:"cert" hcl:"cert"`
+	NodeKeyPath            *string           `mapstructure:"key" cty:"key" hcl:"key"`
+	CaRootPath             *string           `mapstructure:"cacert" cty:"cacert" hcl:"cacert"`
+	IsInsecure             *bool             `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
+	Tag                    *string           `mapstructure:"tag" cty:"tag" hcl:"tag"`
+	Description            *string           `mapstructure:"description" cty:"description" hcl:"description"`
+	RemoteVM               *string           `mapstructure:"remote_vm" cty:"remote_vm" hcl:"remote_vm"`
+	Local                  *bool             `mapstructure:"local" cty:"local" hcl:"local"`
+	Force                  *bool             `mapstructure:"force" cty:"force" hcl:"force"`
+	DeleteTemplatePostPush *bool             `mapstructure:"delete_template_post_push" cty:"delete_template_post_push" hcl:"delete_template_post_push"`
+	HostArch               *string           `mapstructure:"host_arch,omitempty" cty:"host_arch" hcl:"host_arch"`
 }
 
 // FlatMapstructure returns a new FlatConfig.
@@ -61,6 +62,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"remote_vm":                  &hcldec.AttrSpec{Name: "remote_vm", Type: cty.String, Required: false},
 		"local":                      &hcldec.AttrSpec{Name: "local", Type: cty.Bool, Required: false},
 		"force":                      &hcldec.AttrSpec{Name: "force", Type: cty.Bool, Required: false},
+		"delete_template_post_push":  &hcldec.AttrSpec{Name: "delete_template_post_push", Type: cty.Bool, Required: false},
 		"host_arch":                  &hcldec.AttrSpec{Name: "host_arch", Type: cty.String, Required: false},
 	}
 	return s

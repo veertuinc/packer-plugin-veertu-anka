@@ -9,6 +9,8 @@ to you to use it or delete it.
 
 **In Anka 3.0** we now require a tagged source VM before cloning in order to share the underlying .ank image and optimize disk space. If your source VM is not tagged yet, we will assign one . **We highly recommend pushing this VM Template/Tag to your registry so [disk usage is optimized](https://docs.veertu.com/anka/apple/getting-started/creating-your-first-vm/#disk-optimization).**
 
+**Interrupted or failed builds:** With Packer's `-on-error=ask`, choosing **[a] abort without cleanup** leaves the cloned VM on disk for inspection (no `anka delete`). Choosing **[c] clean up** still removes it. See [issue #94](https://github.com/veertuinc/packer-plugin-veertu-anka/issues/94).
+
 ## Configuration Reference
 
 There are many configuration options available for the builder. They are segmented below into two categories: required and optional parameters.
@@ -41,6 +43,8 @@ There are many configuration options available for the builder. They are segment
 * `always_fetch` (Boolean) Always pull the source VM from the registry. Defaults to false.
 
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
+
+* `wait_for_networking` (Boolean) When enabled (the default), after `boot_delay` the builder runs `anka run` with a short shell loop that `ping`s `8.8.8.8` until one reply succeeds (up to 120 attempts, one second apart) so basic guest connectivity is up before Packer continues—for example before shell provisioners that `curl` the internet. Set to `false` to skip that step. The check runs **after** `boot_delay` and does not change `boot_delay` itself. If your environment blocks ICMP to `8.8.8.8`, set this to `false` and use another strategy (such as a longer `boot_delay` or a provisioner that retries).
 
 * `cacert` (String) Path to a CA Root certificate.
 

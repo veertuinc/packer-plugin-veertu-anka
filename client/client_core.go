@@ -262,11 +262,10 @@ func (c *AnkaClient) Modify(vmName string, command string, property string, flag
 
 // https://docs.veertu.com/anka/intel/command-line-reference/#run
 type RunParams struct {
-	VMName            string
-	Volume            string
-	WaitForNetworking bool
-	WaitForTimeSync   bool
-	Command           []string
+	VMName          string
+	Volume          string
+	WaitForTimeSync bool
+	Command         []string
 	Stdin             io.Reader
 	Stdout, Stderr    io.Writer
 	Debug             bool
@@ -366,10 +365,9 @@ func (c *AnkaClient) Stop(params StopParams) error {
 	}
 	if showResponse.IsSuspended() {
 		_, err = c.Run(RunParams{
-			VMName:            params.VMName,
-			WaitForNetworking: true,
-			WaitForTimeSync:   true,
-			Command:           []string{"true"},
+			VMName:          params.VMName,
+			WaitForTimeSync: true,
+			Command:         []string{"true"},
 		})
 	}
 	if err != nil {

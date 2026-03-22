@@ -38,6 +38,9 @@ type Config struct {
 	Local       bool   `mapstructure:"local"`
 	Force       bool   `mapstructure:"force"`
 
+	// DeleteTemplatePostPush runs `anka delete --yes` on the builder's local VM only after a successful remote registry push (not when local = true). See issue #142.
+	DeleteTemplatePostPush bool `mapstructure:"delete_template_post_push"`
+
 	HostArch string `mapstructure:"host_arch,omitempty"`
 
 	ctx interpolate.Context
@@ -196,13 +199,32 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 	}
 
 	if found {
-		err = errors.New(foundMessage)
-	} else {
-		err = p.client.RegistryPush(registryParams, pushParams)
-		if err == nil {
-			ui.Say("Registry push successful")
+		return artifact, true, false, errors.New(foundMessage)
+	}
+
+	pushErr := p.client.RegistryPush(registryParams, pushParams)
+	if pushErr != nil {
+		return artifact, true, false, pushErr
+	}
+
+	ui.Say("Registry push successful")
+
+	// delete_template_post_push only after a successful remote registry push (not local-only tagging).
+	if p.config.DeleteTemplatePostPush && !p.config.Local {
+		deleteErr := p.deleteTemplatePostPushAfterSuccessfulRemotePush(ui, artifact)
+		if deleteErr != nil {
+			return artifact, true, false, deleteErr
 		}
 	}
 
-	return artifact, true, false, err
+	return artifact, true, false, nil
+}
+
+func (p *PostProcessor) deleteTemplatePostPushAfterSuccessfulRemotePush(ui packer.Ui, artifact packer.Artifact) error {
+	localTemplateVMName := artifact.String()
+	if localTemplateVMName == "" {
+		return errors.New("delete_template_post_push is true but the Anka builder artifact has no VM name; refusing to run anka delete")
+	}
+	ui.Say(fmt.Sprintf("Deleting local VM template %q after successful remote registry push (delete_template_post_push)", localTemplateVMName))
+	return p.client.Delete(client.DeleteParams{VMName: localTemplateVMName})
 }

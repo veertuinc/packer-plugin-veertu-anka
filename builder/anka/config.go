@@ -59,7 +59,10 @@ type Config struct {
 
 	HWUUID            string `mapstructure:"hw_uuid,omitempty"`
 	BootDelay         string `mapstructure:"boot_delay"`
-	UseAnkaCP         bool   `mapstructure:"use_anka_cp"`
+	// WaitForNetworking runs a ping-based reachability check in the guest after start (and after boot_delay).
+	// Nil/unset defaults to true; set to false to skip.
+	WaitForNetworking *bool `mapstructure:"wait_for_networking"`
+	UseAnkaCP         bool `mapstructure:"use_anka_cp"`
 	DisplayController string `mapstructure:"display_controller,omitempty"`
 
 	StopVM bool `mapstructure:"stop_vm"`
@@ -136,4 +139,11 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 	}
 
 	return &c, nil
+}
+
+func (c *Config) shouldWaitForGuestNetworking() bool {
+	if c.WaitForNetworking == nil {
+		return true
+	}
+	return *c.WaitForNetworking
 }

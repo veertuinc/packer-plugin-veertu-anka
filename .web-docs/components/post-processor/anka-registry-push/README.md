@@ -8,7 +8,7 @@ This post-processor is part of the [Veertu Anka plugin](https://github.com/veert
 packer {
   required_plugins {
     veertu-anka = {
-      version = "= 3.2.0"
+      version = "= 4.x.x"
       source  = "github.com/veertuinc/veertu-anka"
     }
   }
@@ -45,6 +45,8 @@ segmented below into two categories: required and optional parameters.
 * `tag` (String) The name of the tag to push (will default as 'latest' if not set).
 
 * `force` (Boolean) Whether or not to forcefully push, regardless of a tag already existing
+
+* `delete_template_post_push` (Boolean) When `true`, after a **successful remote registry push** (`local` must be `false`) the post-processor runs `anka delete --yes` on the **local** VM template from the Anka builder (`artifact` name). It does **not** run for `local = true` (local tagging only). Defaults to `false`. Use this to avoid leaving duplicate local templates when reusing the same `vm_name` across builds. If deletion fails, the post-processor returns an error even though the push already succeeded.
 
 ## Other 
 
@@ -88,7 +90,8 @@ build {
   }
 
   post-processor "veertu-anka-registry-push" {
-    tag = "v2"
+    tag                    = "v2"
+    delete_template_post_push = true
   }
 }
 
