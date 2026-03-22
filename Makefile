@@ -118,5 +118,6 @@ generate: install-packer-sdc go.hcl2spec
 	@rm -rf .docs
 	@packer-sdc renderdocs -src docs -partials docs-partials/ -dst .docs/
 	@./.web-docs/scripts/compile-to-webdocs.sh "." ".docs" ".web-docs" "veertuinc"
+	@cp docs/metadata.hcl .web-docs/metadata.hcl
 	@rm -r ".docs"
 

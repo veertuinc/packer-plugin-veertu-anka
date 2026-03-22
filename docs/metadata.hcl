@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: MPL-2.0
 
 # Details on using this Integration template can be found at https://github.com/hashicorp/integration-template
-# Alternatively this metadata.hcl file can be placed under the docs/ subdirectory or any other config subdirectory that
-# makes senses for the plugin.
+#
+# Canonical copy for editing (integration layout expects the file next to `.web-docs/components/`; see packer-plugin-scaffolding).
+# `make generate` copies this file to `.web-docs/metadata.hcl`. `readme_location` is written for that path (`./README.md` → `.web-docs/README.md`).
 integration {
   name = "Anka"
   description = "This is a packer plugin for building macOS VM templates and tags using the Anka Virtualization CLI"
@@ -22,11 +23,6 @@ integration {
   ]
   docs {
     process_docs = true
-    # We recommend using the default readme_location of just `./README.md` here
-    # This projects README needs to document the interface of an integration.
-    #
-    # If you need a separate README from what you will display on GitHub vs
-    # what is shown on HashiCorp Developer, this is totally valid, though!
     readme_location = "./README.md"
     external_url = "https://github.com/veertuinc/packer-plugin-veertu-anka"
   }
