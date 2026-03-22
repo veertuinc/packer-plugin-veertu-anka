@@ -11,6 +11,15 @@ type Artifact struct {
 	StateData map[string]interface{}
 }
 
+// NewVMTemplateArtifact returns an artifact for the named VM template (used by tests and post-processors that need a concrete builder artifact).
+func NewVMTemplateArtifact(vmName, vmID string) *Artifact {
+	return &Artifact{
+		vmName:    vmName,
+		vmId:      vmID,
+		StateData: map[string]any{},
+	}
+}
+
 // BuilderId returns the unique builder id.
 func (*Artifact) BuilderId() string {
 	return BuilderId
