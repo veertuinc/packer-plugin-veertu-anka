@@ -46,7 +46,7 @@ segmented below into two categories: required and optional parameters.
 
 * `force` (Boolean) Whether or not to forcefully push, regardless of a tag already existing
 
-* `delete_template_post_push` (Boolean) When `true`, after a **successful remote registry push** (`local` must be `false`) the post-processor runs `anka delete --yes` on the **local** VM template from the Anka builder (`artifact` name). It does **not** run for `local = true` (local tagging only). Defaults to `false`. Use this to avoid leaving duplicate local templates when reusing the same `vm_name` across builds ([related request](https://github.com/veertuinc/packer-plugin-veertu-anka/issues/142)). If deletion fails, the post-processor returns an error even though the push already succeeded.
+* `delete_template_post_push` (Boolean) When `true`, after a **successful remote registry push** (`local` must be `false`) the post-processor runs `anka delete --yes` on the **local** VM template from the Anka builder (`artifact` name). It does **not** run for `local = true` (local tagging only). Defaults to `false`. Use this to avoid leaving duplicate local templates when reusing the same `vm_name` across builds. If deletion fails, the post-processor returns an error even though the push already succeeded.
 
 ## Other 
 

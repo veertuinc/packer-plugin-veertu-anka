@@ -19,6 +19,8 @@ and installs that macOS version inside of an Anka VM Template.
 The builder does _not_ manage templates. Once a template is created, it is up
 to you to use it or delete it.
 
+**Interrupted or failed builds:** With Packer's `-on-error=ask`, choosing **[a] abort without cleanup** leaves the created VM on disk for inspection (no `anka delete`). Choosing **[c] clean up** still removes it. See [issue #94](https://github.com/veertuinc/packer-plugin-veertu-anka/issues/94).
+
 ## Configuration Reference
 
 There are many configuration options available for the builder. They are
