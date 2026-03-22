@@ -26,7 +26,7 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
     packer {
       required_plugins {
         veertu-anka = {
-          version = "= v4.0.0"
+          version = "= v4.x.x"
           source = "github.com/veertuinc/veertu-anka"
         }
       }
