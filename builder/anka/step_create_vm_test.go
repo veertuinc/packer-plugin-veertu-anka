@@ -296,7 +296,8 @@ func TestCreateVMRun(t *testing.T) {
 				"RAMSize":   "16G",
 				"Installer": "latest",
 				"HWUUID": "abcdefgh",
-				"DisplayController": "pg"
+				"DisplayController": "pg",
+				"DisplayResolution": "1920x1080"
 			}
 		`), &config)
 		if err != nil {
@@ -340,6 +341,8 @@ func TestCreateVMRun(t *testing.T) {
 			ankaClient.EXPECT().Modify(createdShowResponse.Name, "set", "custom-variable", "hw.uuid", config.HWUUID).Return(nil).Times(1),
 			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
 			ankaClient.EXPECT().Modify(createdShowResponse.Name, "set", "display", "-c", config.DisplayController).Return(nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(createdShowResponse.Name, "set", "display", "-r", config.DisplayResolution).Return(nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -349,6 +352,7 @@ func TestCreateVMRun(t *testing.T) {
 		mockui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", createdShowResponse.Name, strconv.Itoa(config.PortForwardingRules[0].PortForwardingGuestPort), strconv.Itoa(config.PortForwardingRules[0].PortForwardingHostPort), config.PortForwardingRules[0].PortForwardingRuleName))
 		mockui.Say(fmt.Sprintf("Modifying VM custom-variable hw.uuid to %s", config.HWUUID))
 		mockui.Say(fmt.Sprintf("Modifying VM display controller to %s", config.DisplayController))
+		mockui.Say(fmt.Sprintf("Modifying VM display resolution to %s", config.DisplayResolution))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Resolved installer \"latest\" to macOS 26.4 (25E243)")

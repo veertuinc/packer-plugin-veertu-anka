@@ -64,6 +64,7 @@ type Config struct {
 	WaitForNetworking *bool `mapstructure:"wait_for_networking"`
 	UseAnkaCP         bool `mapstructure:"use_anka_cp"`
 	DisplayController string `mapstructure:"display_controller,omitempty"`
+	DisplayResolution string `mapstructure:"display_resolution,omitempty"`
 
 	StopVM bool `mapstructure:"stop_vm"`
 
