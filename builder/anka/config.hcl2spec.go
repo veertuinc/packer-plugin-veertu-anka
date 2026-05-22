@@ -85,6 +85,7 @@ type FlatConfig struct {
 	CaRootPath                *string                  `mapstructure:"cacert" cty:"cacert" hcl:"cacert"`
 	IsInsecure                *bool                    `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
 	PortForwardingRules       []FlatPortForwardingRule `mapstructure:"port_forwarding_rules" cty:"port_forwarding_rules" hcl:"port_forwarding_rules"`
+	HostDirectoryMounts       []FlatHostDirectoryMount `mapstructure:"host_directory_mounts" cty:"host_directory_mounts" hcl:"host_directory_mounts"`
 	HWUUID                    *string                  `mapstructure:"hw_uuid,omitempty" cty:"hw_uuid" hcl:"hw_uuid"`
 	BootDelay                 *string                  `mapstructure:"boot_delay" cty:"boot_delay" hcl:"boot_delay"`
 	WaitForNetworking         *bool                    `mapstructure:"wait_for_networking" cty:"wait_for_networking" hcl:"wait_for_networking"`
@@ -181,6 +182,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"cacert":                       &hcldec.AttrSpec{Name: "cacert", Type: cty.String, Required: false},
 		"insecure":                     &hcldec.AttrSpec{Name: "insecure", Type: cty.Bool, Required: false},
 		"port_forwarding_rules":        &hcldec.BlockListSpec{TypeName: "port_forwarding_rules", Nested: hcldec.ObjectSpec((*FlatPortForwardingRule)(nil).HCL2Spec())},
+		"host_directory_mounts":        &hcldec.BlockListSpec{TypeName: "host_directory_mounts", Nested: hcldec.ObjectSpec((*FlatHostDirectoryMount)(nil).HCL2Spec())},
 		"hw_uuid":                      &hcldec.AttrSpec{Name: "hw_uuid", Type: cty.String, Required: false},
 		"boot_delay":                   &hcldec.AttrSpec{Name: "boot_delay", Type: cty.String, Required: false},
 		"wait_for_networking":          &hcldec.AttrSpec{Name: "wait_for_networking", Type: cty.Bool, Required: false},
@@ -188,6 +190,31 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"display_controller":           &hcldec.AttrSpec{Name: "display_controller", Type: cty.String, Required: false},
 		"stop_vm":                      &hcldec.AttrSpec{Name: "stop_vm", Type: cty.Bool, Required: false},
 		"host_arch":                    &hcldec.AttrSpec{Name: "host_arch", Type: cty.String, Required: false},
+	}
+	return s
+}
+
+// FlatHostDirectoryMount is an auto-generated flat version of HostDirectoryMount.
+// Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
+type FlatHostDirectoryMount struct {
+	HostPath        *string `mapstructure:"host_path" cty:"host_path" hcl:"host_path"`
+	GuestFolderName *string `mapstructure:"guest_folder_name,omitempty" cty:"guest_folder_name" hcl:"guest_folder_name"`
+}
+
+// FlatMapstructure returns a new FlatHostDirectoryMount.
+// FlatHostDirectoryMount is an auto-generated flat version of HostDirectoryMount.
+// Where the contents a fields with a `mapstructure:,squash` tag are bubbled up.
+func (*HostDirectoryMount) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
+	return new(FlatHostDirectoryMount)
+}
+
+// HCL2Spec returns the hcl spec of a HostDirectoryMount.
+// This spec is used by HCL to read the fields of HostDirectoryMount.
+// The decoded values from this spec will then be applied to a FlatHostDirectoryMount.
+func (*FlatHostDirectoryMount) HCL2Spec() map[string]hcldec.Spec {
+	s := map[string]hcldec.Spec{
+		"host_path":         &hcldec.AttrSpec{Name: "host_path", Type: cty.String, Required: false},
+		"guest_folder_name": &hcldec.AttrSpec{Name: "guest_folder_name", Type: cty.String, Required: false},
 	}
 	return s
 }

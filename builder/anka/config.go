@@ -1,4 +1,4 @@
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config,PortForwardingRule
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,PortForwardingRule,HostDirectoryMount
 
 package anka
 
@@ -56,6 +56,7 @@ type Config struct {
 	IsInsecure   bool   `mapstructure:"insecure"`
 
 	PortForwardingRules []PortForwardingRule `mapstructure:"port_forwarding_rules"`
+	HostDirectoryMounts []HostDirectoryMount `mapstructure:"host_directory_mounts"`
 
 	HWUUID            string `mapstructure:"hw_uuid,omitempty"`
 	BootDelay         string `mapstructure:"boot_delay"`
@@ -130,6 +131,14 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 			}
 			if rule.PortForwardingRuleName == "" {
 				c.PortForwardingRules[index].PortForwardingRuleName = util.RandSeq(10)
+			}
+		}
+	}
+
+	if len(c.HostDirectoryMounts) > 0 {
+		for _, hostDirectoryMount := range c.HostDirectoryMounts {
+			if hostDirectoryMount.HostPath == "" {
+				errs = packer.MultiErrorAppend(errs, errors.New("host_path is required for host_directory_mounts"))
 			}
 		}
 	}

@@ -335,5 +335,19 @@ func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, confi
 		}
 	}
 
+	if len(config.HostDirectoryMounts) > 0 {
+		err := applyHostDirectoryMounts(
+			s.client,
+			stopParams,
+			showResponse.Name,
+			config.HostDirectoryMounts,
+			config.PackerConfig.PackerForce,
+			ui,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
