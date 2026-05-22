@@ -45,7 +45,7 @@ segmented below into two categories: required and optional parameters.
 
 * `disk_size` (String) The size in "[0-9]+G" format, defaults to `40G`.
 
-  > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk0s2 0` inside of the VM
+  > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer` inside of the VM. The plugin resolves the APFS container from `disk0s2`, `diskutil info /`, or `diskutil apfs list`.
 
 * `stop_vm` (Boolean) Whether or not to stop the vm after it has been created, defaults to false.
 
