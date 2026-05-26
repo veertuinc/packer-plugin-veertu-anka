@@ -218,7 +218,7 @@ func (s *StepCloneVM) modifyVMResources(showResponse client.ShowResponse, config
 			// Resize the inner VM disk too with diskutil
 			_, err = s.client.Run(client.RunParams{
 				VMName:  showResponse.Name,
-				Command: []string{"diskutil", "apfs", "resizeContainer", "disk0s2", "0"},
+				Command: []string{guestAPFSResizeContainerShellCommand},
 			})
 			if err != nil {
 				return err
@@ -330,6 +330,20 @@ func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, confi
 		}
 		ui.Say(fmt.Sprintf("Modifying VM display controller to %s", config.DisplayController))
 		err = s.client.Modify(showResponse.Name, "set", "display", "-c", config.DisplayController)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(config.HostDirectoryMounts) > 0 {
+		err := applyHostDirectoryMounts(
+			s.client,
+			stopParams,
+			showResponse.Name,
+			config.HostDirectoryMounts,
+			config.PackerConfig.PackerForce,
+			ui,
+		)
 		if err != nil {
 			return err
 		}

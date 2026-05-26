@@ -367,7 +367,7 @@ func TestCloneVMRun(t *testing.T) {
 		}
 		runParams := client.RunParams{
 			VMName:  clonedShowResponse.Name,
-			Command: []string{"diskutil", "apfs", "resizeContainer", "disk0s2", "0"},
+			Command: []string{guestAPFSResizeContainerShellCommand},
 		}
 
 		step.vmName = config.VMName
@@ -432,7 +432,13 @@ func TestCloneVMRun(t *testing.T) {
 				"SourceVMName": "source_foo",
 				"VMName": "foo",
 				"HWUUID": "abcdefgh",
-				"DisplayController": "pg"
+				"DisplayController": "pg",
+				"HostDirectoryMounts": [
+					{
+						"HostPath": "/tmp/packer-mount",
+						"GuestFolderName": "packer-mount"
+					}
+				]
 			}
 		`), &config)
 		if err != nil {
@@ -482,11 +488,18 @@ func TestCloneVMRun(t *testing.T) {
 			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "set", "display", "-c", config.DisplayController).Return(nil).Times(1),
 		)
 
+		// host_directory_mounts
+		gomock.InOrder(
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(clonedShowResponse.Name, "mount", "/tmp/packer-mount:packer-mount").Return(nil).Times(1),
+		)
+
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", config.SourceVMName, config.VMName))
 		mockui.Say(fmt.Sprintf("Ensuring %s port-forwarding (Guest Port: %s, Host Port: %s, Rule Name: %s)", clonedShowResponse.Name, strconv.Itoa(config.PortForwardingRules[0].PortForwardingGuestPort), strconv.Itoa(config.PortForwardingRules[0].PortForwardingHostPort), config.PortForwardingRules[0].PortForwardingRuleName))
 		mockui.Say(fmt.Sprintf("Modifying VM custom-variable hw.uuid to %s", config.HWUUID))
 		mockui.Say(fmt.Sprintf("Modifying VM display controller to %s", config.DisplayController))
+		mockui.Say(fmt.Sprintf("Ensuring %s host directory mount (Host Path: %s, Guest Folder: %s)", clonedShowResponse.Name, config.HostDirectoryMounts[0].HostPath, config.HostDirectoryMounts[0].GuestFolderName))
 
 		state.Put("vm_name", config.VMName)
 
@@ -495,6 +508,7 @@ func TestCloneVMRun(t *testing.T) {
 		assert.Equal(t, mockui.SayMessages[1].Message, "Ensuring foo port-forwarding (Guest Port: 8080, Host Port: 80, Rule Name: rule1)")
 		assert.Equal(t, mockui.SayMessages[2].Message, "Modifying VM custom-variable hw.uuid to abcdefgh")
 		assert.Equal(t, mockui.SayMessages[3].Message, "Modifying VM display controller to pg")
+		assert.Equal(t, mockui.SayMessages[4].Message, "Ensuring foo host directory mount (Host Path: /tmp/packer-mount, Guest Folder: packer-mount)")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
 
