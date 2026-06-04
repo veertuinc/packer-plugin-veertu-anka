@@ -24,6 +24,18 @@ jobs:
         id: setup
         with:
           version: 1.12.0
+      - name: Check generated docs
+        shell: bash
+        run: |
+          make generate
+          if [[ -z "$(git status -s)" ]]; then
+            echo "OK"
+          else
+            echo "Docs have been updated, but the compiled docs have not been committed."
+            echo "Run 'make generate', and commit the result to resolve this error."
+            git status --short
+            exit 1
+          fi
       - name: Describe plugin
         id: plugin_describe
         run: echo "::set-output name=api_version::$(go run . describe | jq -r '.api_version')"
