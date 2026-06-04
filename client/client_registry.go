@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -37,7 +38,7 @@ func (c *AnkaClient) RegistryList(registryParams RegistryParams) ([]RegistryList
 	}
 	if output.Status != "OK" {
 		log.Print("Error executing registry list command: ", output.ExceptionType, " ", output.Message)
-		return nil, fmt.Errorf(output.Message)
+		return nil, errors.New(output.Message)
 	}
 
 	err = json.Unmarshal(output.Body, &response)
@@ -63,7 +64,7 @@ func (c *AnkaClient) RegistryListRepos() ([]RegistryRemote, error) {
 	}
 	if output.Status != "OK" {
 		log.Print("Error executing 'registry list-repos' command: ", output.ExceptionType, " ", output.Message)
-		return response, fmt.Errorf(output.Message)
+		return response, errors.New(output.Message)
 	}
 	err = json.Unmarshal(output.Body, &response)
 	if err != nil {
@@ -102,7 +103,7 @@ func (c *AnkaClient) RegistryPull(registryParams RegistryParams, pullParams Regi
 		return err
 	}
 	if output.Status != "OK" {
-		return fmt.Errorf(output.Message)
+		return errors.New(output.Message)
 	}
 
 	return nil
@@ -148,7 +149,7 @@ func (c *AnkaClient) RegistryPush(registryParams RegistryParams, pushParams Regi
 		return err
 	}
 	if output.Status != "OK" {
-		return fmt.Errorf(output.Message)
+		return errors.New(output.Message)
 	}
 
 	return nil

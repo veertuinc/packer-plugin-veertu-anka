@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -254,7 +255,7 @@ func (c *AnkaClient) Modify(vmName string, command string, property string, flag
 	}
 	if output.Status != "OK" {
 		log.Print("Error executing modify command: ", output.ExceptionType, " ", output.Message)
-		return fmt.Errorf(output.Message)
+		return errors.New(output.Message)
 	}
 
 	return nil
