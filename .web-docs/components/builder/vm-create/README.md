@@ -35,7 +35,7 @@ segmented below into two categories: required and optional parameters.
 
 * `disk_size` (String) The size in "[0-9]+G" format, defaults to `40G`.
 
-  > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer disk0s2 0` inside of the VM
+  > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer` inside of the VM. The plugin resolves the APFS container from `diskutil info /` or `diskutil apfs list`.
 
 * `stop_vm` (Boolean) Whether or not to stop the vm after it has been created, defaults to false.
 
@@ -60,6 +60,13 @@ segmented below into two categories: required and optional parameters.
   * `port_forwarding_guest_port` (Int)
   * `port_forwarding_host_port` (Int)
   * `port_forwarding_rule_name` (String)
+
+* `host_directory_mounts` (Struct) (Anka 3.9.0+, Apple Silicon only)
+
+  > Persists host directory mounts in the VM template using `anka modify mount`. Mounted folders appear under `/Volumes/My Shared Files/` in the guest.
+
+  * `host_path` (String) Absolute path to the host directory to mount.
+  * `guest_folder_name` (String) Optional guest folder name under `/Volumes/My Shared Files/`. Defaults to the host path's folder name.
 
 * `display_controller` (string) The display controller to set (run `anka modify VMNAME set display --help` to see available options).
 
