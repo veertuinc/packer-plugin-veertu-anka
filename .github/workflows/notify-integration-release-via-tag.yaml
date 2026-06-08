@@ -41,7 +41,7 @@ jobs:
       - name: Checkout integration-release-action
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
         with:
-          repository: hashicorp/integration-release-action
+          repository: NorseGaud/integration-release-action
           path: ./integration-release-action
       - name: Notify Release
         uses: ./integration-release-action
