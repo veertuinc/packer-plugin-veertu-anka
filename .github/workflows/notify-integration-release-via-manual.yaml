@@ -50,4 +50,4 @@ jobs:
           integration_identifier: "packer/veertuinc/veertu-anka"
           release_version: ${{ github.event.inputs.version }}
           release_sha: ${{ github.event.inputs.branch }}
-          github_token: ${{ secrets.SERVICE_USER_GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
