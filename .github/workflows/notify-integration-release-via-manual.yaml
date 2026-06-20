@@ -12,6 +12,8 @@ on:
         description: "A branch or SHA"
         default: 'master'
         required: false
+permissions:
+  contents: read
 jobs:
   notify-release:
     runs-on: ubuntu-latest
