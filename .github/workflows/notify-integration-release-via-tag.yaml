@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref }}
       # Ensure that Docs are Compiled
@@ -41,7 +41,7 @@ jobs:
           fi
       # Perform the Release
       - name: Checkout integration-release-action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: hashicorp/integration-release-action
           path: ./integration-release-action
