@@ -39,7 +39,11 @@ segmented below into two categories: required and optional parameters.
 
 * `stop_vm` (Boolean) Whether or not to stop the vm after it has been created, defaults to false.
 
+  > Example: [create-stopped-from-installer.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/create-stopped-from-installer.pkr.hcl)
+
 * `use_anka_cp` (Boolean) Use built in anka cp command. You shouldn't need this option. Defaults to false.
+
+  > Example: [clone-existing-with-use-anka-cp.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-use-anka-cp.pkr.hcl)
 
 * `anka_password` (String) Sets the password for the vm. Can also be set with `ANKA_DEFAULT_PASSWD` env var. Defaults to `admin`.
 
@@ -53,9 +57,13 @@ segmented below into two categories: required and optional parameters.
 
 * `hw_uuid` (String) (Anka 2 only) The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
+  > Example: [clone-existing-with-hwuuid.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-hwuuid.pkr.hcl)
+
 * `port_forwarding_rules` (Struct) 
 
   > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`.
+  >
+  > Example: [create-from-installer-with-port-forwarding-rules.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/create-from-installer-with-port-forwarding-rules.pkr.hcl)
   
   * `port_forwarding_guest_port` (Int)
   * `port_forwarding_host_port` (Int)
@@ -64,15 +72,31 @@ segmented below into two categories: required and optional parameters.
 * `host_directory_mounts` (Struct) (Anka 3.9.0+, Apple Silicon only)
 
   > Persists host directory mounts in the VM template using `anka modify mount`. Mounted folders appear under `/Volumes/My Shared Files/` in the guest.
+  >
+  > Example: [clone-existing-with-host-directory-mounts.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-host-directory-mounts.pkr.hcl)
 
   * `host_path` (String) Absolute path to the host directory to mount.
   * `guest_folder_name` (String) Optional guest folder name under `/Volumes/My Shared Files/`. Defaults to the host path's folder name.
 
+* `vm_label` (Struct) Assign, rename, or delete Anka VM labels (`anka modify … label`). Repeat the block for each label operation.
+
+  > Example: [clone-existing-with-labels.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-labels.pkr.hcl)
+
+  * `name` (String) Label key (required except for `delete_all`).
+  * `value` (String) Label value (set only).
+  * `delete` (Boolean) Delete the label named by `name`.
+  * `set_name` (String) Rename: current name is `name`, new name is `set_name`.
+  * `delete_all` (Boolean) Delete all labels on the VM.
+
 * `display_controller` (string) The display controller to set (run `anka modify VMNAME set display --help` to see available options).
+
+  > Example: [clone-existing-with-pg-display_controller.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-pg-display_controller.pkr.hcl)
 
 ## Example
 
-Here is an example:
+Here is an example.
+
+Also see [create-from-installer.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/create-from-installer.pkr.hcl).
 
 ```hcl
 
