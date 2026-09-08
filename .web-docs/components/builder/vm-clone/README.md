@@ -35,12 +35,18 @@ There are many configuration options available for the builder. They are segment
 
   > We will automatically resize the internal disk for you by executing `diskutil apfs resizeContainer` inside of the VM. The plugin resolves the APFS container from `diskutil info /` or `diskutil apfs list`.
   > IMPORTANT: Changing the clone's disk size will break the layer sharing with the root and double disk space usage. Change the disk size of the source template, then clone from it instead.
+  >
+  > Example: [clone-existing-with-new-disk-size.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-new-disk-size.pkr.hcl)
 
 * `stop_vm` (Boolean) Whether or not to stop the vm after it has been created, defaults to false.
 
 * `display_controller` (string) The display controller to set (run `anka modify VMNAME set display --help` to see available options).
 
+  > Example: [clone-existing-with-pg-display_controller.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-pg-display_controller.pkr.hcl)
+
 * `always_fetch` (Boolean) Always pull the source VM from the registry. Defaults to false.
+
+  > Example: [pull-and-clone-existing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/pull-and-clone-existing.pkr.hcl)
 
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
 
@@ -56,9 +62,13 @@ There are many configuration options available for the builder. They are segment
 
 * `hw_uuid` (String) (Anka 2 only) The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
+  > Example: [clone-existing-with-hwuuid.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-hwuuid.pkr.hcl)
+
 * `port_forwarding_rules` (Struct) 
 
   > If port forwarding rules are already set and you want to not have them fail the packer build, use `packer build --force`.
+  >
+  > Example: [clone-existing-with-port-forwarding-rules.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-port-forwarding-rules.pkr.hcl)
   
   * `port_forwarding_guest_port` (Int)
   * `port_forwarding_host_port` (Int)
@@ -67,9 +77,21 @@ There are many configuration options available for the builder. They are segment
 * `host_directory_mounts` (Struct) (Anka 3.9.0+, Apple Silicon only)
 
   > Persists host directory mounts in the VM template using `anka modify mount`. Mounted folders appear under `/Volumes/My Shared Files/` in the guest.
+  >
+  > Example: [clone-existing-with-host-directory-mounts.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-host-directory-mounts.pkr.hcl)
 
   * `host_path` (String) Absolute path to the host directory to mount.
   * `guest_folder_name` (String) Optional guest folder name under `/Volumes/My Shared Files/`. Defaults to the host path's folder name.
+
+* `vm_label` (Struct) Assign, rename, or delete Anka VM labels (`anka modify … label`). Repeat the block for each label operation.
+
+  > Example: [clone-existing-with-labels.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-labels.pkr.hcl)
+
+  * `name` (String) Label key (required except for `delete_all`).
+  * `value` (String) Label value (set only).
+  * `delete` (Boolean) Delete the label named by `name`.
+  * `set_name` (String) Rename: current name is `name`, new name is `set_name`.
+  * `delete_all` (Boolean) Delete all labels on the VM.
 
 * `registry-path` (String) The registry URL (will use your default configuration if not set).
 
@@ -79,13 +101,21 @@ There are many configuration options available for the builder. They are segment
 
 * `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default. Also the tag to target when pulling from the registry (defaults to latest tag).
 
+  > Example: [pull-and-clone-existing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/pull-and-clone-existing.pkr.hcl)
+
 * `update_addons` (Boolean) (Anka 2 only) Update the vm addons. Defaults to false.
 
+  > Example: [clone-existing-with-update_addons.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-update_addons.pkr.hcl)
+
 * `use_anka_cp` (Boolean) Use built in anka cp command. Defaults to false.
+
+  > Example: [clone-existing-with-use-anka-cp.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-use-anka-cp.pkr.hcl)
 
 ## Example
 
 Here is an example that uses the file and shell provisioners.
+
+Also see [clone-existing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing.pkr.hcl) and [clone-existing-with-file-provisioner.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-file-provisioner.pkr.hcl).
 
 ```hcl
 

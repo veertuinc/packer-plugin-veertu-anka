@@ -302,6 +302,12 @@ func TestCreateVMRun(t *testing.T) {
 						"HostPath": "/tmp/packer-mount",
 						"GuestFolderName": "packer-mount"
 					}
+				],
+				"VMLabels": [
+					{
+						"Name": "env",
+						"Value": "ci"
+					}
 				]
 			}
 		`), &config)
@@ -348,6 +354,8 @@ func TestCreateVMRun(t *testing.T) {
 			ankaClient.EXPECT().Modify(createdShowResponse.Name, "set", "display", "-c", config.DisplayController).Return(nil).Times(1),
 			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
 			ankaClient.EXPECT().Modify(createdShowResponse.Name, "mount", "/tmp/packer-mount:packer-mount").Return(nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(createdShowResponse.Name, "label", "env", "ci").Return(nil).Times(1),
 		)
 
 		mockui := packer.MockUi{}
@@ -358,6 +366,7 @@ func TestCreateVMRun(t *testing.T) {
 		mockui.Say(fmt.Sprintf("Modifying VM custom-variable hw.uuid to %s", config.HWUUID))
 		mockui.Say(fmt.Sprintf("Modifying VM display controller to %s", config.DisplayController))
 		mockui.Say(fmt.Sprintf("Ensuring %s host directory mount (Host Path: %s, Guest Folder: %s)", createdShowResponse.Name, config.HostDirectoryMounts[0].HostPath, config.HostDirectoryMounts[0].GuestFolderName))
+		mockui.Say(fmt.Sprintf("Setting label env=ci on VM %s", createdShowResponse.Name))
 
 		stepAction := step.Run(ctx, state)
 		assert.Equal(t, mockui.SayMessages[0].Message, "Resolved installer \"latest\" to macOS 26.4 (25E243)")

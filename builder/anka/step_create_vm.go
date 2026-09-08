@@ -232,6 +232,19 @@ func (s *StepCreateVM) modifyVMProperties(showResponse client.ShowResponse, conf
 		}
 	}
 
+	if len(config.VMLabels) > 0 {
+		err := applyVMLabels(
+			s.client,
+			stopParams,
+			showResponse.Name,
+			config.VMLabels,
+			ui,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
