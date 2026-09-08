@@ -17,12 +17,8 @@ source "veertu-anka-vm-clone" "anka-packer-from-source-with-labels" {
     value = "ci"
   }
   vm_label {
-    name     = "legacy"
-    set_name = "team"
-  }
-  vm_label {
-    name   = "old"
-    delete = true
+    name  = "team"
+    value = "veertu"
   }
 }
 
