@@ -86,6 +86,7 @@ type FlatConfig struct {
 	IsInsecure                *bool                    `mapstructure:"insecure" cty:"insecure" hcl:"insecure"`
 	PortForwardingRules       []FlatPortForwardingRule `mapstructure:"port_forwarding_rules" cty:"port_forwarding_rules" hcl:"port_forwarding_rules"`
 	HostDirectoryMounts       []FlatHostDirectoryMount `mapstructure:"host_directory_mounts" cty:"host_directory_mounts" hcl:"host_directory_mounts"`
+	VMLabels                  []FlatVMLabel            `mapstructure:"vm_label" cty:"vm_label" hcl:"vm_label"`
 	HWUUID                    *string                  `mapstructure:"hw_uuid,omitempty" cty:"hw_uuid" hcl:"hw_uuid"`
 	BootDelay                 *string                  `mapstructure:"boot_delay" cty:"boot_delay" hcl:"boot_delay"`
 	WaitForNetworking         *bool                    `mapstructure:"wait_for_networking" cty:"wait_for_networking" hcl:"wait_for_networking"`
@@ -183,6 +184,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"insecure":                     &hcldec.AttrSpec{Name: "insecure", Type: cty.Bool, Required: false},
 		"port_forwarding_rules":        &hcldec.BlockListSpec{TypeName: "port_forwarding_rules", Nested: hcldec.ObjectSpec((*FlatPortForwardingRule)(nil).HCL2Spec())},
 		"host_directory_mounts":        &hcldec.BlockListSpec{TypeName: "host_directory_mounts", Nested: hcldec.ObjectSpec((*FlatHostDirectoryMount)(nil).HCL2Spec())},
+		"vm_label":                     &hcldec.BlockListSpec{TypeName: "vm_label", Nested: hcldec.ObjectSpec((*FlatVMLabel)(nil).HCL2Spec())},
 		"hw_uuid":                      &hcldec.AttrSpec{Name: "hw_uuid", Type: cty.String, Required: false},
 		"boot_delay":                   &hcldec.AttrSpec{Name: "boot_delay", Type: cty.String, Required: false},
 		"wait_for_networking":          &hcldec.AttrSpec{Name: "wait_for_networking", Type: cty.Bool, Required: false},
@@ -242,6 +244,37 @@ func (*FlatPortForwardingRule) HCL2Spec() map[string]hcldec.Spec {
 		"port_forwarding_guest_port": &hcldec.AttrSpec{Name: "port_forwarding_guest_port", Type: cty.Number, Required: false},
 		"port_forwarding_host_port":  &hcldec.AttrSpec{Name: "port_forwarding_host_port", Type: cty.Number, Required: false},
 		"port_forwarding_rule_name":  &hcldec.AttrSpec{Name: "port_forwarding_rule_name", Type: cty.String, Required: false},
+	}
+	return s
+}
+
+// FlatVMLabel is an auto-generated flat version of VMLabel.
+// Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
+type FlatVMLabel struct {
+	Name      *string `mapstructure:"name,omitempty" cty:"name" hcl:"name"`
+	Value     *string `mapstructure:"value,omitempty" cty:"value" hcl:"value"`
+	Delete    *bool   `mapstructure:"delete,omitempty" cty:"delete" hcl:"delete"`
+	SetName   *string `mapstructure:"set_name,omitempty" cty:"set_name" hcl:"set_name"`
+	DeleteAll *bool   `mapstructure:"delete_all,omitempty" cty:"delete_all" hcl:"delete_all"`
+}
+
+// FlatMapstructure returns a new FlatVMLabel.
+// FlatVMLabel is an auto-generated flat version of VMLabel.
+// Where the contents a fields with a `mapstructure:,squash` tag are bubbled up.
+func (*VMLabel) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
+	return new(FlatVMLabel)
+}
+
+// HCL2Spec returns the hcl spec of a VMLabel.
+// This spec is used by HCL to read the fields of VMLabel.
+// The decoded values from this spec will then be applied to a FlatVMLabel.
+func (*FlatVMLabel) HCL2Spec() map[string]hcldec.Spec {
+	s := map[string]hcldec.Spec{
+		"name":       &hcldec.AttrSpec{Name: "name", Type: cty.String, Required: false},
+		"value":      &hcldec.AttrSpec{Name: "value", Type: cty.String, Required: false},
+		"delete":     &hcldec.AttrSpec{Name: "delete", Type: cty.Bool, Required: false},
+		"set_name":   &hcldec.AttrSpec{Name: "set_name", Type: cty.String, Required: false},
+		"delete_all": &hcldec.AttrSpec{Name: "delete_all", Type: cty.Bool, Required: false},
 	}
 	return s
 }

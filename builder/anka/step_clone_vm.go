@@ -349,5 +349,18 @@ func (s *StepCloneVM) modifyVMProperties(showResponse client.ShowResponse, confi
 		}
 	}
 
+	if len(config.VMLabels) > 0 {
+		err := applyVMLabels(
+			s.client,
+			stopParams,
+			showResponse.Name,
+			config.VMLabels,
+			ui,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
