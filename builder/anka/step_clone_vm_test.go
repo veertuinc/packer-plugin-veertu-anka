@@ -170,7 +170,7 @@ func TestCloneVMRun(t *testing.T) {
 
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
-			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams, gomock.Any()).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
@@ -210,7 +210,7 @@ func TestCloneVMRun(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(false, nil).Times(1),
 			ankaClient.EXPECT().
-				RegistryPull(registryParams, registryPullParams).
+				RegistryPull(registryParams, registryPullParams, gomock.Any()).
 				Return(fmt.Errorf("failed to pull vm %v with latest tag from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName)).
 				Times(1),
 			ankaUtil.EXPECT().
@@ -248,7 +248,7 @@ func TestCloneVMRun(t *testing.T) {
 		state.Put("config", config)
 
 		gomock.InOrder(
-			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams, gomock.Any()).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
@@ -290,7 +290,7 @@ func TestCloneVMRun(t *testing.T) {
 		state.Put("config", config)
 
 		gomock.InOrder(
-			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams, gomock.Any()).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
@@ -305,6 +305,53 @@ func TestCloneVMRun(t *testing.T) {
 		assert.Equal(t, mockui.SayMessages[0].Message, "Pulling source VM source_foo with vanilla tag from Anka Registry")
 		assert.Equal(t, mockui.SayMessages[1].Message, "Cloning source VM source_foo into a new virtual machine: foo")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
+	})
+
+	t.Run("pull streams progress percent to ui", func(t *testing.T) {
+		config := &Config{
+			AlwaysFetch:  true,
+			VMName:       "foo",
+			SourceVMName: "source_foo",
+			PackerConfig: common.PackerConfig{
+				PackerBuilderType: "veertu-anka-vm-clone",
+			},
+		}
+		registryParams := client.RegistryParams{}
+		registryPullParams := client.RegistryPullParams{
+			VMID:   config.SourceVMName,
+			Tag:    "",
+			Local:  false,
+			Shrink: false,
+		}
+
+		step.vmName = config.VMName
+		progressUI := &packer.MockUi{}
+		state.Put("ui", progressUI)
+		state.Put("vm_name", step.vmName)
+		state.Put("config", config)
+
+		gomock.InOrder(
+			ankaClient.EXPECT().RegistryPull(registryParams, registryPullParams, gomock.Any()).
+				DoAndReturn(func(registryParams client.RegistryParams, pullParams client.RegistryPullParams, outputStreamer chan string) error {
+					outputStreamer <- "62%"
+					outputStreamer <- "64%"
+					return nil
+				}).Times(1),
+			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
+		)
+
+		stepAction := step.Run(ctx, state)
+		state.Put("ui", ui)
+
+		var sayMessages []string
+		for _, message := range progressUI.SayMessages {
+			sayMessages = append(sayMessages, message.Message)
+		}
+		assert.Equal(t, multistep.ActionContinue, stepAction)
+		assert.Assert(t, sliceContains(sayMessages, "62%"))
+		assert.Assert(t, sliceContains(sayMessages, "64%"))
 	})
 
 	t.Run("clone vm with always fetch flag when source vm does not exist in anka registry should throw error", func(t *testing.T) {
@@ -332,7 +379,7 @@ func TestCloneVMRun(t *testing.T) {
 
 		gomock.InOrder(
 			ankaClient.EXPECT().
-				RegistryPull(registryParams, registryPullParams).
+				RegistryPull(registryParams, registryPullParams, gomock.Any()).
 				Return(fmt.Errorf("failed to pull vm %v with latest from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName)).
 				Times(1),
 			ankaUtil.EXPECT().
@@ -622,7 +669,7 @@ func TestCloneVMRun(t *testing.T) {
 			ankaClient.EXPECT().Exists(config.SourceVMName).Return(true, nil).Times(1),
 			ankaClient.EXPECT().Show(config.SourceVMName).Return(sourceShowResponse, nil).Times(1),
 			ankaUtil.EXPECT().RandSeq(10).Return("123").Times(1),
-			ankaClient.EXPECT().RegistryPush(registryParams, registryPushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, registryPushParams, nil).Return(nil).Times(1),
 			ankaClient.EXPECT().Clone(client.CloneParams{VMName: step.vmName, SourceUUID: sourceShowResponse.UUID}).Return(nil).Times(1),
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
@@ -637,4 +684,13 @@ func TestCloneVMRun(t *testing.T) {
 		assert.Equal(t, mockui.SayMessages[1].Message, "Cloning source VM source_foo into a new virtual machine: foo")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
 	})
+}
+
+func sliceContains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }

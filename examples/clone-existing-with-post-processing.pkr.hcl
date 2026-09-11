@@ -8,6 +8,21 @@ variable "vm_name" {
   default = "anka-packer-from-source-with-post-processing"
 }
 
+variable "tag" {
+  type    = string
+  default = ""
+}
+
+variable "force" {
+  type    = bool
+  default = false
+}
+
+variable "remote" {
+  type    = string
+  default = ""
+}
+
 variables {
   OSVersion = ""
   DarwinVersion = ""
@@ -24,7 +39,9 @@ build {
   ]
 
   post-processor "veertu-anka-registry-push" {
-    tag = "${build.OSVersion}-${build.DarwinVersion}"
+    tag         = var.tag != "" ? var.tag : "${build.OSVersion}-${build.DarwinVersion}"
     description = "Xcode 14.1, Fastlane X.X, Go, Brew, Git"
+    force       = var.force
+    remote      = var.remote
   }
 }

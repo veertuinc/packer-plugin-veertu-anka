@@ -92,7 +92,9 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 			Shrink: false,
 		}
 
-		err := s.client.RegistryPull(registryParams, registryPullParams)
+		outputStream, finishOutputStream := client.StreamOutputToUI(ui)
+		err := s.client.RegistryPull(registryParams, registryPullParams, outputStream)
+		finishOutputStream()
 		if err != nil {
 			return onError(fmt.Errorf("failed to pull vm %s with %s from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag))
 		}
@@ -122,7 +124,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 					Force:    false,
 					VMID:     config.SourceVMName,
 				}
-				s.client.RegistryPush(client.RegistryParams{HostArch: config.HostArch}, pushParams)
+				s.client.RegistryPush(client.RegistryParams{HostArch: config.HostArch}, pushParams, nil)
 			}
 		}
 	}

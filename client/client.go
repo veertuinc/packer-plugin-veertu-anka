@@ -21,8 +21,8 @@ type Client interface {
 	Modify(vmName string, command string, property string, flags ...string) error
 	RegistryList(registryParams RegistryParams) ([]RegistryListResponse, error)
 	RegistryListRepos() ([]RegistryRemote, error)
-	RegistryPull(registryParams RegistryParams, pullParams RegistryPullParams) error
-	RegistryPush(registryParams RegistryParams, pushParams RegistryPushParams) error
+	RegistryPull(registryParams RegistryParams, pullParams RegistryPullParams, outputStreamer chan string) error
+	RegistryPush(registryParams RegistryParams, pushParams RegistryPushParams, outputStreamer chan string) error
 	RegistryRevert(url string, id string) error
 	Run(params RunParams) (int, error)
 	Show(vmName string) (ShowResponse, error)

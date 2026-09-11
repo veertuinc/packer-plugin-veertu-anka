@@ -81,7 +81,7 @@ type RegistryPullParams struct {
 	Shrink bool
 }
 
-func (c *AnkaClient) RegistryPull(registryParams RegistryParams, pullParams RegistryPullParams) error {
+func (c *AnkaClient) RegistryPull(registryParams RegistryParams, pullParams RegistryPullParams, outputStreamer chan string) error {
 	cmdArgs := []string{"pull"}
 
 	if pullParams.Tag != "" {
@@ -98,7 +98,7 @@ func (c *AnkaClient) RegistryPull(registryParams RegistryParams, pullParams Regi
 
 	cmdArgs = append(cmdArgs, pullParams.VMID)
 
-	output, err := runRegistryCommand(registryParams, cmdArgs...)
+	output, err := runRegistryCommandWithProgress(registryParams, outputStreamer, cmdArgs...)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ type RegistryPushParams struct {
 	Force       bool
 }
 
-func (c *AnkaClient) RegistryPush(registryParams RegistryParams, pushParams RegistryPushParams) error {
+func (c *AnkaClient) RegistryPush(registryParams RegistryParams, pushParams RegistryPushParams, outputStreamer chan string) error {
 	cmdArgs := []string{"push"}
 
 	if pushParams.Tag != "" {
@@ -144,7 +144,7 @@ func (c *AnkaClient) RegistryPush(registryParams RegistryParams, pushParams Regi
 
 	cmdArgs = append(cmdArgs, pushParams.VMID)
 
-	output, err := runRegistryCommand(registryParams, cmdArgs...)
+	output, err := runRegistryCommandWithProgress(registryParams, outputStreamer, cmdArgs...)
 	if err != nil {
 		return err
 	}

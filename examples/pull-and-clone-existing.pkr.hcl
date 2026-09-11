@@ -22,10 +22,22 @@ variable "vm_name" {
   default = "anka-packer-from-source"
 }
 
+variable "always_fetch" {
+  type    = bool
+  default = false
+}
+
+variable "remote" {
+  type    = string
+  default = ""
+}
+
 source "veertu-anka-vm-clone" "anka-packer-from-source" {
-  vm_name = "${var.vm_name}"
+  vm_name        = "${var.vm_name}"
   source_vm_name = "${var.source_vm_name}"
-  source_vm_tag = "${var.source_vm_tag}"
+  source_vm_tag  = "${var.source_vm_tag}"
+  always_fetch   = var.always_fetch
+  remote         = var.remote
 }
 
 build {

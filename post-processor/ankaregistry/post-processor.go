@@ -202,7 +202,9 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		return artifact, true, false, errors.New(foundMessage)
 	}
 
-	pushErr := p.client.RegistryPush(registryParams, pushParams)
+	outputStream, finishOutputStream := client.StreamOutputToUI(ui)
+	pushErr := p.client.RegistryPush(registryParams, pushParams, outputStream)
+	finishOutputStream()
 	if pushErr != nil {
 		return artifact, true, false, pushErr
 	}

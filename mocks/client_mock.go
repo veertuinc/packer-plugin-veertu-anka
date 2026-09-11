@@ -215,31 +215,31 @@ func (mr *MockClientMockRecorder) RegistryListRepos() *gomock.Call {
 }
 
 // RegistryPull mocks base method.
-func (m *MockClient) RegistryPull(registryParams client.RegistryParams, pullParams client.RegistryPullParams) error {
+func (m *MockClient) RegistryPull(registryParams client.RegistryParams, pullParams client.RegistryPullParams, outputStreamer chan string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryPull", registryParams, pullParams)
+	ret := m.ctrl.Call(m, "RegistryPull", registryParams, pullParams, outputStreamer)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RegistryPull indicates an expected call of RegistryPull.
-func (mr *MockClientMockRecorder) RegistryPull(registryParams, pullParams interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) RegistryPull(registryParams, pullParams, outputStreamer interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryPull", reflect.TypeOf((*MockClient)(nil).RegistryPull), registryParams, pullParams)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryPull", reflect.TypeOf((*MockClient)(nil).RegistryPull), registryParams, pullParams, outputStreamer)
 }
 
 // RegistryPush mocks base method.
-func (m *MockClient) RegistryPush(registryParams client.RegistryParams, pushParams client.RegistryPushParams) error {
+func (m *MockClient) RegistryPush(registryParams client.RegistryParams, pushParams client.RegistryPushParams, outputStreamer chan string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegistryPush", registryParams, pushParams)
+	ret := m.ctrl.Call(m, "RegistryPush", registryParams, pushParams, outputStreamer)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RegistryPush indicates an expected call of RegistryPush.
-func (mr *MockClientMockRecorder) RegistryPush(registryParams, pushParams interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) RegistryPush(registryParams, pushParams, outputStreamer interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryPush", reflect.TypeOf((*MockClient)(nil).RegistryPush), registryParams, pushParams)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegistryPush", reflect.TypeOf((*MockClient)(nil).RegistryPush), registryParams, pushParams, outputStreamer)
 }
 
 // RegistryRevert mocks base method.

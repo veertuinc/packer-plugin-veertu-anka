@@ -37,6 +37,7 @@ go.test:
 	mockgen -source=client/client.go -destination=mocks/client_mock.go -package=mocks
 	go test -v builder/anka/*.go
 	go test -v post-processor/ankaregistry/*.go
+	go test -v ./client/
 
 #go.build:		@ Run `go build` to generate the binary
 go.build:
