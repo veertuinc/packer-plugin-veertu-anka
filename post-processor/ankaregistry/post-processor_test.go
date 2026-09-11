@@ -65,7 +65,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
-		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -78,6 +78,53 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		if err != nil {
 			t.Fail()
 		}
+	})
+
+	t.Run("push streams progress percent to ui", func(t *testing.T) {
+		config := Config{
+			RemoteVM:    "foo",
+			Tag:         "registry-push",
+			Description: "mock for testing anka registry push",
+			HostArch:    runtime.GOARCH,
+		}
+
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+
+		registryParams := client.RegistryParams{
+			Remote:   "go-mock",
+			HostArch: config.HostArch,
+		}
+
+		pushParams := client.RegistryPushParams{
+			Tag:         config.Tag,
+			Description: config.Description,
+			RemoteVM:    config.RemoteVM,
+			Local:       false,
+			Force:       false,
+		}
+
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).
+			DoAndReturn(func(registryParams client.RegistryParams, pushParams client.RegistryPushParams, outputStreamer chan string) error {
+				outputStreamer <- "62%"
+				outputStreamer <- "64%"
+				return nil
+			}).Times(1)
+
+		progressUI := &packer.MockUi{}
+		_, _, _, err := pp.PostProcess(context.Background(), progressUI, artifact)
+		assert.NilError(t, err)
+
+		var sayMessages []string
+		for _, message := range progressUI.SayMessages {
+			sayMessages = append(sayMessages, message.Message)
+		}
+		assert.Assert(t, sliceContains(sayMessages, "62%"))
+		assert.Assert(t, sliceContains(sayMessages, "64%"))
 	})
 
 	t.Run("push to registry with registry name", func(t *testing.T) {
@@ -110,7 +157,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
-		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -153,7 +200,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
-		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -200,7 +247,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
-		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -298,7 +345,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(0)
-		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -353,7 +400,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(1)
-		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -406,7 +453,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(0)
-		ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1)
+		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
 		mockui := packer.MockUi{}
 		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
@@ -449,7 +496,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
 			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
-			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: "my-local-vm"}).Return(nil).Times(1),
 		)
 		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
@@ -484,7 +531,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
 			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
-			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 		)
 		_, _, _, err := pp.PostProcess(context.Background(), ui, emptyNameArtifact)
 		assert.Assert(t, err != nil)
@@ -518,7 +565,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
-			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 		)
 		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
 		assert.NilError(t, err)
@@ -552,11 +599,20 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
 			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
-			ankaClient.EXPECT().RegistryPush(registryParams, pushParams).Return(nil).Times(1),
+			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: "my-local-vm"}).Return(fmt.Errorf("anka delete failed")).Times(1),
 		)
 		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
 		assert.ErrorContains(t, err, "anka delete failed")
 	})
 
+}
+
+func sliceContains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
