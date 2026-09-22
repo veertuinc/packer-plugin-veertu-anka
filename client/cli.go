@@ -129,7 +129,7 @@ func sendProgressSignalToProcess(process *os.Process) {
 	}
 	// Give Anka time to install its SIGUSR2 handler. The default action for
 	// SIGUSR2 is terminate, so a signal that is too early can kill the push.
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 	if err := process.Signal(syscall.SIGUSR2); err != nil {
 		log.Printf("failed to send SIGUSR2 for registry progress: %v", err)
 	}
