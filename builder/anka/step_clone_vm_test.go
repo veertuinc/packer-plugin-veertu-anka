@@ -58,6 +58,8 @@ func TestCloneVMRun(t *testing.T) {
 
 		step.vmName = config.VMName
 
+		mockui := &packer.MockUi{}
+		state.Put("ui", mockui)
 		state.Put("vm_name", step.vmName)
 		state.Put("config", config)
 
@@ -68,13 +70,21 @@ func TestCloneVMRun(t *testing.T) {
 			ankaClient.EXPECT().Show(step.vmName).Return(clonedShowResponse, nil).Times(1),
 		)
 
-		mockui := packer.MockUi{}
-		mockui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShowResponse.Name, step.vmName))
-
 		stepAction := step.Run(ctx, state)
 
-		assert.Equal(t, mockui.SayMessages[0].Message, "Cloning source VM source_foo into a new virtual machine: foo")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
+
+		expectedShowLog := "anka show (post-clone): name=foo uuid=1234-hijk-abcdef-5678"
+		foundShowLog := false
+		for _, msg := range mockui.SayMessages {
+			if msg.Message == expectedShowLog {
+				foundShowLog = true
+				break
+			}
+		}
+		assert.Assert(t, foundShowLog, "expected Packer UI to log %q, got %#v", expectedShowLog, mockui.SayMessages)
+
+		state.Put("ui", ui)
 	})
 
 	t.Run("clone vm when no vm_name was provided in config", func(t *testing.T) {
