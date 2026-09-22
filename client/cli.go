@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -32,6 +33,36 @@ func StreamOutputToUI(ui packer.Ui) (outputStream chan string, finish func()) {
 		<-outputStreamDone
 	}
 	return outputStream, finish
+}
+
+// FormatShowResponse builds a Packer log line from parsed ShowResponse fields.
+// Empty string fields and zero cpu_cores/hard_drive are omitted. Values are never truncated.
+func FormatShowResponse(contextLabel string, show ShowResponse) string {
+	parts := []string{fmt.Sprintf("anka show (%s):", contextLabel)}
+	appendKV := func(key, value string) {
+		if value == "" {
+			return
+		}
+		parts = append(parts, fmt.Sprintf("%s=%s", key, value))
+	}
+	appendKV("name", show.Name)
+	appendKV("uuid", show.UUID)
+	appendKV("status", show.Status)
+	if show.VCPUCores != 0 {
+		appendKV("cpu_cores", strconv.Itoa(show.VCPUCores))
+	}
+	appendKV("ram", show.RAM)
+	if show.HardDrive != 0 {
+		appendKV("hard_drive", strconv.FormatUint(show.HardDrive, 10))
+	}
+	appendKV("image_id", show.ImageID)
+	appendKV("version", show.Version)
+	return strings.Join(parts, " ")
+}
+
+// LogShowResponse writes FormatShowResponse to the Packer UI.
+func LogShowResponse(ui packer.Ui, contextLabel string, show ShowResponse) {
+	ui.Say(FormatShowResponse(contextLabel, show))
 }
 
 func runAnkaCommand(args ...string) (MachineReadableOutput, error) {
