@@ -79,6 +79,8 @@ func TestCreateVMRun(t *testing.T) {
 			},
 		}
 
+		mockui := &packer.MockUi{}
+		state.Put("ui", mockui)
 		state.Put("config", config)
 
 		step.vmName = config.VMName
@@ -97,14 +99,20 @@ func TestCreateVMRun(t *testing.T) {
 			ankaClient.EXPECT().Show(step.vmName).Return(createdShowResponse, nil).Times(1),
 		)
 
-		mockui := packer.MockUi{}
-		mockui.Say(fmt.Sprintf("Creating a new VM Template (%s) from installer, this will take a while", step.vmName))
-		mockui.Say(fmt.Sprintf("VM %s was created (%s)", step.vmName, createdVMUUID))
-
 		stepAction := step.Run(ctx, state)
-		assert.Equal(t, mockui.SayMessages[0].Message, "Creating a new VM Template (foo) from installer, this will take a while")
-		assert.Equal(t, mockui.SayMessages[1].Message, "VM foo was created (abcd-efgh-1234-5678)")
 		assert.Equal(t, multistep.ActionContinue, stepAction)
+
+		expectedShowLog := "anka show (post-create): name=anka-packer-base-11.2-16.4.06 uuid=1234-hijk-abcdef-5678"
+		foundShowLog := false
+		for _, msg := range mockui.SayMessages {
+			if msg.Message == expectedShowLog {
+				foundShowLog = true
+				break
+			}
+		}
+		assert.Assert(t, foundShowLog, "expected Packer UI to log %q, got %#v", expectedShowLog, mockui.SayMessages)
+
+		state.Put("ui", ui)
 	})
 
 	t.Run("create vm without .app or ipsw", func(t *testing.T) {

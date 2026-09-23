@@ -141,7 +141,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 		return onError(err)
 	}
 
-	ui.Say(fmt.Sprintf("Cloned VM TEMPLATE_NAME: %s, TEMPLATE_ID: %s", clonedShow.Name, clonedShow.UUID))
+	client.LogShowResponse(ui, "post-clone", clonedShow)
 
 	err = s.modifyVMResources(clonedShow, config, ui, ankaUtil)
 	if err != nil {

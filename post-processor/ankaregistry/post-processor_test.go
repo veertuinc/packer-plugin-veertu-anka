@@ -49,6 +49,17 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			client: ankaClient,
 		}
 
+		localArtifact := anka.NewVMTemplateArtifact("foo-local", "uuid-foo")
+		showResponse := client.ShowResponse{
+			Name:      "foo-local",
+			UUID:      "uuid-foo",
+			Status:    "stopped",
+			VCPUCores: 4,
+			RAM:       "8G",
+			HardDrive: 107374182400,
+			Version:   "tag-1",
+		}
+
 		registryParams := client.RegistryParams{
 			Remote:   "go-mock",
 			HostArch: config.HostArch,
@@ -60,24 +71,47 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 			RemoteVM:    config.RemoteVM,
 			Local:       false,
 			Force:       false,
+			VMID:        "foo-local",
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
-
+		ankaClient.EXPECT().Show("foo-local").Return(showResponse, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
 
-		mockui := packer.MockUi{}
-		mockui.Say(fmt.Sprintf("Pushing template to Anka Registry as %s with tag %s", config.RemoteVM, config.Tag))
-		mockui.Say("Registry push successful")
+		mockui := &packer.MockUi{}
+		_, _, _, err := pp.PostProcess(context.Background(), mockui, localArtifact)
+		assert.NilError(t, err)
 
-		assert.Equal(t, mockui.SayMessages[0].Message, "Pushing template to Anka Registry as foo with tag registry-push")
-		assert.Equal(t, mockui.SayMessages[1].Message, "Registry push successful")
-
-		_, _, _, err := pp.PostProcess(context.Background(), ui, artifact)
-		if err != nil {
-			t.Fail()
+		expectedShowLog := client.FormatShowResponse("pre-push", showResponse)
+		foundShowLog := false
+		for _, msg := range mockui.SayMessages {
+			if msg.Message == expectedShowLog {
+				foundShowLog = true
+				break
+			}
 		}
+		assert.Assert(t, foundShowLog, "expected Packer UI to log %q, got %#v", expectedShowLog, mockui.SayMessages)
+		assert.Equal(t, expectedShowLog, "anka show (pre-push): name=foo-local uuid=uuid-foo status=stopped cpu_cores=4 ram=8G hard_drive=107374182400 version=tag-1")
+	})
+
+	t.Run("pre-push show failure skips registry push", func(t *testing.T) {
+		config := Config{
+			RemoteVM: "foo",
+			Tag:      "registry-push",
+			HostArch: runtime.GOARCH,
+		}
+		pp := PostProcessor{
+			config: config,
+			client: ankaClient,
+		}
+		localArtifact := anka.NewVMTemplateArtifact("foo-local", "uuid-foo")
+
+		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show("foo-local").Return(client.ShowResponse{}, fmt.Errorf("show failed")).Times(1)
+
+		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
+		assert.Error(t, err, "show failed")
 	})
 
 	t.Run("push streams progress percent to ui", func(t *testing.T) {
@@ -107,6 +141,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).
 			DoAndReturn(func(registryParams client.RegistryParams, pushParams client.RegistryPushParams, outputStreamer chan string) error {
@@ -155,6 +190,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
@@ -198,6 +234,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
@@ -245,6 +282,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1)
 		ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1)
@@ -289,6 +327,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 
@@ -342,6 +381,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(0)
@@ -397,6 +437,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(1)
@@ -450,6 +491,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 
 		ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1)
+		ankaClient.EXPECT().Show(gomock.Any()).Return(client.ShowResponse{Name: "foo", UUID: "1234-hijk-abcdef-5678"}, nil).Times(1)
 
 		ankaClient.EXPECT().RegistryList(registryParams).Return(templateList, nil).Times(1)
 		ankaClient.EXPECT().RegistryRevert(registryParams.Remote, templateList[0].ID).Return(nil).Times(0)
@@ -495,6 +537,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().Show("my-local-vm").Return(client.ShowResponse{Name: "my-local-vm", UUID: "uuid-1"}, nil).Times(1),
 			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
 			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: "my-local-vm"}).Return(nil).Times(1),
@@ -530,6 +573,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().Show("").Return(client.ShowResponse{Name: "unnamed", UUID: "uuid-1"}, nil).Times(1),
 			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
 			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 		)
@@ -565,6 +609,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().Show("my-local-vm").Return(client.ShowResponse{Name: "my-local-vm", UUID: "uuid-1"}, nil).Times(1),
 			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 		)
 		_, _, _, err := pp.PostProcess(context.Background(), ui, localArtifact)
@@ -598,6 +643,7 @@ func TestAnkaRegistryPostProcessor(t *testing.T) {
 		}
 		gomock.InOrder(
 			ankaClient.EXPECT().RegistryListRepos().Return(reposList, nil).Times(1),
+			ankaClient.EXPECT().Show("my-local-vm").Return(client.ShowResponse{Name: "my-local-vm", UUID: "uuid-1"}, nil).Times(1),
 			ankaClient.EXPECT().RegistryList(registryParams).Return([]client.RegistryListResponse{}, nil).Times(1),
 			ankaClient.EXPECT().RegistryPush(registryParams, pushParams, gomock.Any()).Return(nil).Times(1),
 			ankaClient.EXPECT().Delete(client.DeleteParams{VMName: "my-local-vm"}).Return(fmt.Errorf("anka delete failed")).Times(1),

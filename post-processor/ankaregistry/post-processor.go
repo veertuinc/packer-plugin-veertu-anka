@@ -156,6 +156,12 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		VMID:        artifact.String(),
 	}
 
+	showResponse, showErr := p.client.Show(artifact.String())
+	if showErr != nil {
+		return artifact, true, false, showErr
+	}
+	client.LogShowResponse(ui, "pre-push", showResponse)
+
 	var id string
 	var latestTag string
 	var found bool
