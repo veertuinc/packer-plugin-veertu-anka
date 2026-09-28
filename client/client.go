@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 )
 
 const (
@@ -39,10 +40,14 @@ type AnkaClient struct {
 
 type MachineReadableError struct {
 	*MachineReadableOutput
+	DebugLines []string
 }
 
 func (ae MachineReadableError) Error() string {
-	return ae.Message
+	if len(ae.DebugLines) == 0 {
+		return ae.Message
+	}
+	return ae.Message + "\n" + strings.Join(ae.DebugLines, "\n")
 }
 
 type MachineReadableOutput struct {
@@ -55,7 +60,7 @@ type MachineReadableOutput struct {
 
 func (parsed *MachineReadableOutput) GetError() error {
 	if parsed.Status != statusOK {
-		return MachineReadableError{parsed}
+		return MachineReadableError{MachineReadableOutput: parsed}
 	}
 	return nil
 }

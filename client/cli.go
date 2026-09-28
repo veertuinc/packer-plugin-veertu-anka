@@ -17,6 +17,8 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 )
 
+var ankaExecutable = "anka"
+
 // StreamOutputToUI copies command progress lines to the Packer UI.
 // Call finish after the command returns so the last lines print.
 func StreamOutputToUI(ui packer.Ui) (outputStream chan string, finish func()) {
@@ -135,33 +137,167 @@ func sendProgressSignalToProcess(process *os.Process) {
 	}
 }
 
-func runAnkaProcess(outputStreamer chan string, sendProgressSignal bool, args ...string) (MachineReadableOutput, error) {
+func ankaProcessArgs(args ...string) []string {
+	return append([]string{"--machine-readable"}, args...)
+}
 
-	cmdArgs := append([]string{"--machine-readable"}, args...)
+func liveAnkaDebugEnabled() bool {
+	return strings.EqualFold(os.Getenv("ANKA_LOG_LEVEL"), "debug")
+}
+
+func ankaChildEnvironment(hostEnviron []string, logFIFOPath string) []string {
+	var env []string
+	for _, item := range hostEnviron {
+		pair := strings.SplitN(item, "=", 2)
+		key := pair[0]
+		if key == "ANKA_LOG_FILE" || key == "ANKA_LOG_LEVEL" {
+			continue
+		}
+		if strings.HasPrefix(key, "ANKA_") || strings.HasPrefix(key, "PATH") {
+			value := ""
+			if len(pair) > 1 {
+				value = pair[1]
+			}
+			env = append(env, key+"="+value)
+		}
+	}
+	return append(env, "ANKA_LOG_FILE="+logFIFOPath, "ANKA_LOG_LEVEL=debug")
+}
+
+type ankaDebugFIFO struct {
+	path   string
+	reader *os.File
+	keeper *os.File
+}
+
+func createAnkaDebugFIFO() (*ankaDebugFIFO, error) {
+	tempFile, err := os.CreateTemp(os.TempDir(), "packer-anka-debug-*.fifo")
+	if err != nil {
+		return nil, err
+	}
+	fifoPath := tempFile.Name()
+	_ = tempFile.Close()
+	if err := os.Remove(fifoPath); err != nil {
+		return nil, err
+	}
+	if err := syscall.Mkfifo(fifoPath, 0600); err != nil {
+		return nil, err
+	}
+	readFD, err := syscall.Open(fifoPath, syscall.O_RDONLY|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		_ = os.Remove(fifoPath)
+		return nil, err
+	}
+	writeFD, err := syscall.Open(fifoPath, syscall.O_WRONLY|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		_ = syscall.Close(readFD)
+		_ = os.Remove(fifoPath)
+		return nil, err
+	}
+	if err := syscall.SetNonblock(readFD, false); err != nil {
+		_ = syscall.Close(readFD)
+		_ = syscall.Close(writeFD)
+		_ = os.Remove(fifoPath)
+		return nil, err
+	}
+	return &ankaDebugFIFO{
+		path:   fifoPath,
+		reader: os.NewFile(uintptr(readFD), fifoPath),
+		keeper: os.NewFile(uintptr(writeFD), fifoPath),
+	}, nil
+}
+
+func readAnkaDebugFIFO(fifo *ankaDebugFIFO, live bool, outputStreamer chan string, debugLines *[]string, done chan struct{}) {
+	defer close(done)
+	if fifo == nil || fifo.reader == nil {
+		return
+	}
+	scanner := bufio.NewScanner(fifo.reader)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		*debugLines = append(*debugLines, line)
+		if !live {
+			continue
+		}
+		if outputStreamer != nil {
+			outputStreamer <- line
+		} else {
+			log.Printf("%s", line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("error reading anka debug fifo: %v", err)
+	}
+}
+
+func finishAnkaDebugFIFO(fifo *ankaDebugFIFO, readerDone <-chan struct{}) {
+	if fifo != nil {
+		if fifo.keeper != nil {
+			_ = fifo.keeper.Close()
+		}
+		if fifo.reader != nil {
+			_ = fifo.reader.Close()
+		}
+	}
+	if readerDone != nil {
+		<-readerDone
+	}
+}
+
+func attachDebugLines(err error, debugLines []string, outputStreamer chan string, live bool) error {
+	if err == nil || len(debugLines) == 0 {
+		return err
+	}
+	if live {
+		return err
+	}
+	if outputStreamer != nil {
+		for _, line := range debugLines {
+			outputStreamer <- line
+		}
+		return err
+	}
+	if machineReadableError, ok := err.(MachineReadableError); ok {
+		machineReadableError.DebugLines = append([]string(nil), debugLines...)
+		return machineReadableError
+	}
+	return fmt.Errorf("%w\n%s", err, strings.Join(debugLines, "\n"))
+}
+
+func runAnkaProcess(outputStreamer chan string, sendProgressSignal bool, args ...string) (MachineReadableOutput, error) {
+	cmdArgs := ankaProcessArgs(args...)
 
 	log.Printf("Executing anka %s", strings.Join(cmdArgs, " "))
 
-	cmd := exec.Command("anka", cmdArgs...)
-
-	for _, e := range os.Environ() { // Ensure that ANKA_ environment variables from the host are available when executing anka commands
-		pair := strings.SplitN(e, "=", 2)
-		key := pair[0]
-		val := pair[1]
-		if strings.HasPrefix(key, "ANKA_") || strings.HasPrefix(key, "PATH") {
-			cmd.Env = append([]string{key + "=" + val}, cmd.Env...)
-		}
+	fifo, err := createAnkaDebugFIFO()
+	if err != nil {
+		return MachineReadableOutput{}, err
 	}
+	defer os.Remove(fifo.path)
+
+	liveDebug := liveAnkaDebugEnabled()
+	var debugLines []string
+	readerDone := make(chan struct{})
+	go readAnkaDebugFIFO(fifo, liveDebug, outputStreamer, &debugLines, readerDone)
+
+	cmd := exec.Command(ankaExecutable, cmdArgs...)
+	cmd.Env = ankaChildEnvironment(os.Environ(), fifo.path)
 
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
+		finishAnkaDebugFIFO(fifo, readerDone)
 		return MachineReadableOutput{}, err
 	}
 
 	if outputStreamer == nil {
-		cmd.Stderr = cmd.Stdout
+		cmd.Stderr = io.Discard
 	} else {
 		stderrPipe, err := cmd.StderrPipe()
 		if err != nil {
+			finishAnkaDebugFIFO(fifo, readerDone)
 			return MachineReadableOutput{}, err
 		}
 		go streamLinesToChannel(stderrPipe, outputStreamer)
@@ -169,6 +305,7 @@ func runAnkaProcess(outputStreamer chan string, sendProgressSignal bool, args ..
 
 	err = cmd.Start()
 	if err != nil {
+		finishAnkaDebugFIFO(fifo, readerDone)
 		return MachineReadableOutput{}, err
 	}
 
@@ -198,27 +335,34 @@ func runAnkaProcess(outputStreamer chan string, sendProgressSignal bool, args ..
 	finalOutput := ""
 	if scannerErr == nil {
 		if lastNonProgressLine == "" {
-			return MachineReadableOutput{}, errors.New("missing machine readable output")
+			_ = cmd.Wait()
+			finishAnkaDebugFIFO(fifo, readerDone)
+			return MachineReadableOutput{}, attachDebugLines(errors.New("missing machine readable output"), debugLines, outputStreamer, liveDebug)
 		}
 		finalOutput = lastNonProgressLine
 	} else {
 		_, ok := scannerErr.(customErr)
 		if !ok {
-			return MachineReadableOutput{}, err
+			_ = cmd.Wait()
+			finishAnkaDebugFIFO(fifo, readerDone)
+			return MachineReadableOutput{}, attachDebugLines(scannerErr, debugLines, outputStreamer, liveDebug)
 		}
 		finalOutput = scannerErr.Error()
 	}
 
 	parsed, err := parseOutput([]byte(finalOutput))
+	waitErr := cmd.Wait()
+	finishAnkaDebugFIFO(fifo, readerDone)
 	if err != nil {
-		return MachineReadableOutput{}, err
+		return MachineReadableOutput{}, attachDebugLines(err, debugLines, outputStreamer, liveDebug)
 	}
-
-	cmd.Wait()
 
 	err = parsed.GetError()
 	if err != nil {
-		return MachineReadableOutput{}, err
+		return MachineReadableOutput{}, attachDebugLines(err, debugLines, outputStreamer, liveDebug)
+	}
+	if waitErr != nil {
+		return MachineReadableOutput{}, attachDebugLines(waitErr, debugLines, outputStreamer, liveDebug)
 	}
 
 	return parsed, nil

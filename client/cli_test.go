@@ -1,15 +1,213 @@
 package client
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
 
 	"gotest.tools/v3/assert"
 )
+
+func TestMain(m *testing.M) {
+	helper := os.Getenv("ANKA_PACKER_ANKA_HELPER")
+	if helper == "" {
+		for _, arg := range os.Args[1:] {
+			if arg == "--machine-readable" {
+				os.Exit(4)
+			}
+		}
+	}
+	switch helper {
+	case "success-with-debug":
+		writeHelperFIFO("debug-from-fifo")
+		fmt.Print(`{"status":"OK","body":"ok-body"}`)
+		os.Exit(0)
+	case "fail-with-debug":
+		writeHelperFIFO("boom-debug")
+		fmt.Print(`{"status":"FAIL","message":"nope","code":1}`)
+		os.Exit(0)
+	case "progress-stderr":
+		fmt.Fprintln(os.Stderr, `{"p":0.62}`)
+		fmt.Print(`{"status":"OK","body":"ok"}`)
+		os.Exit(0)
+	}
+	os.Exit(m.Run())
+}
+
+func writeHelperFIFO(line string) {
+	logPath := os.Getenv("ANKA_LOG_FILE")
+	fifo, err := os.OpenFile(logPath, os.O_WRONLY, 0)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "helper fifo open: %v\n", err)
+		os.Exit(3)
+	}
+	if _, err := fmt.Fprintln(fifo, line); err != nil {
+		fmt.Fprintf(os.Stderr, "helper fifo write: %v\n", err)
+		os.Exit(3)
+	}
+	_ = fifo.Close()
+}
+
+func TestAnkaProcessArgsNeverIncludeDebug(t *testing.T) {
+	args := ankaProcessArgs("show", "vm")
+	assert.Equal(t, "--machine-readable", args[0])
+	assert.DeepEqual(t, []string{"--machine-readable", "show", "vm"}, args)
+	for _, arg := range args {
+		assert.Assert(t, arg != "--debug")
+	}
+}
+
+func TestAnkaChildEnvironmentOverridesLogFileAndLevel(t *testing.T) {
+	env := ankaChildEnvironment([]string{
+		"ANKA_LOG_FILE=/old/anka.log",
+		"ANKA_LOG_LEVEL=info",
+		"ANKA_DEFAULT_USER=anka",
+		"PATH=/bin",
+		"HOME=/tmp",
+	}, "/tmp/anka-debug.fifo")
+
+	assert.Assert(t, hasEnv(env, "ANKA_LOG_FILE", "/tmp/anka-debug.fifo"))
+	assert.Assert(t, hasEnv(env, "ANKA_LOG_LEVEL", "debug"))
+	assert.Assert(t, hasEnv(env, "ANKA_DEFAULT_USER", "anka"))
+	assert.Assert(t, hasEnv(env, "PATH", "/bin"))
+	assert.Assert(t, !hasEnvKey(env, "HOME"))
+	assert.Assert(t, !hasEnv(env, "ANKA_LOG_FILE", "/old/anka.log"))
+}
+
+func TestLiveAnkaDebugEnabled(t *testing.T) {
+	t.Setenv("ANKA_LOG_LEVEL", "debug")
+	assert.Equal(t, true, liveAnkaDebugEnabled())
+
+	t.Setenv("ANKA_LOG_LEVEL", "DEBUG")
+	assert.Equal(t, true, liveAnkaDebugEnabled())
+
+	t.Setenv("ANKA_LOG_LEVEL", "info")
+	assert.Equal(t, false, liveAnkaDebugEnabled())
+
+	t.Setenv("ANKA_LOG_LEVEL", "")
+	assert.Equal(t, false, liveAnkaDebugEnabled())
+}
+
+func TestRunAnkaProcessSuccessDropsFIFODebug(t *testing.T) {
+	restore := useTestAnkaHelper(t, "success-with-debug")
+	defer restore()
+	t.Setenv("ANKA_LOG_LEVEL", "")
+
+	streamer := make(chan string, 8)
+	output, err := runAnkaProcess(streamer, false, "show", "vm")
+	assert.NilError(t, err)
+	assert.Equal(t, "OK", output.Status)
+	assert.Equal(t, `"ok-body"`, string(output.Body))
+	assert.Equal(t, 0, len(collectStreamer(streamer)))
+}
+
+func TestRunAnkaProcessFailureIncludesFIFODebug(t *testing.T) {
+	restore := useTestAnkaHelper(t, "fail-with-debug")
+	defer restore()
+	t.Setenv("ANKA_LOG_LEVEL", "")
+
+	_, err := runAnkaProcess(nil, false, "show", "vm")
+	assert.Assert(t, err != nil)
+	merr, ok := err.(MachineReadableError)
+	assert.Assert(t, ok)
+	assert.Equal(t, "nope", merr.Message)
+	assert.Assert(t, strings.Contains(err.Error(), "boom-debug"))
+}
+
+func TestRunAnkaProcessFailureStreamsFIFOWhenLiveOff(t *testing.T) {
+	restore := useTestAnkaHelper(t, "fail-with-debug")
+	defer restore()
+	t.Setenv("ANKA_LOG_LEVEL", "")
+
+	streamer := make(chan string, 8)
+	_, err := runAnkaProcess(streamer, false, "show", "vm")
+	assert.Assert(t, err != nil)
+	merr, ok := err.(MachineReadableError)
+	assert.Assert(t, ok)
+	assert.Equal(t, "nope", merr.Message)
+	assert.Equal(t, 0, len(merr.DebugLines))
+	lines := collectStreamer(streamer)
+	assert.Assert(t, hasLine(lines, "boom-debug"))
+}
+
+func TestRunAnkaProcessLiveDebugStreamsFIFO(t *testing.T) {
+	restore := useTestAnkaHelper(t, "success-with-debug")
+	defer restore()
+	t.Setenv("ANKA_LOG_LEVEL", "debug")
+
+	streamer := make(chan string, 8)
+	output, err := runAnkaProcess(streamer, false, "show", "vm")
+	assert.NilError(t, err)
+	assert.Equal(t, "OK", output.Status)
+	lines := collectStreamer(streamer)
+	assert.Assert(t, hasLine(lines, "debug-from-fifo"))
+}
+
+func TestRunAnkaProcessProgressStaysOnStderr(t *testing.T) {
+	restore := useTestAnkaHelper(t, "progress-stderr")
+	defer restore()
+	t.Setenv("ANKA_LOG_LEVEL", "")
+
+	streamer := make(chan string, 8)
+	output, err := runAnkaProcess(streamer, false, "registry", "pull", "vm")
+	assert.NilError(t, err)
+	assert.Equal(t, "OK", output.Status)
+	lines := collectStreamer(streamer)
+	assert.DeepEqual(t, []string{"62%"}, lines)
+}
+
+func useTestAnkaHelper(t *testing.T, helper string) func() {
+	t.Helper()
+	t.Setenv("ANKA_PACKER_ANKA_HELPER", helper)
+	previous := ankaExecutable
+	ankaExecutable = os.Args[0]
+	return func() {
+		ankaExecutable = previous
+	}
+}
+
+func collectStreamer(streamer chan string) []string {
+	close(streamer)
+	var lines []string
+	for line := range streamer {
+		lines = append(lines, line)
+	}
+	return lines
+}
+
+func hasLine(lines []string, want string) bool {
+	for _, line := range lines {
+		if line == want {
+			return true
+		}
+	}
+	return false
+}
+
+func hasEnv(env []string, key, value string) bool {
+	want := key + "=" + value
+	for _, item := range env {
+		if item == want {
+			return true
+		}
+	}
+	return false
+}
+
+func hasEnvKey(env []string, key string) bool {
+	prefix := key + "="
+	for _, item := range env {
+		if strings.HasPrefix(item, prefix) {
+			return true
+		}
+	}
+	return false
+}
 
 func TestFormatProgressJSONLine(t *testing.T) {
 	t.Run("converts fraction to percent", func(t *testing.T) {
