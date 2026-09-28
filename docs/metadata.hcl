@@ -28,7 +28,7 @@ integration {
   }
   license {
     type = "MIT License"
-    url = "https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/LICENSE"
+    url = "https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/LICENSE"
   }
   component {
     type = "builder"

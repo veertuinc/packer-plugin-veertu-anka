@@ -58,8 +58,8 @@ Here is an example that uses the file and shell provisioners.
 
 Also see:
 
-* [clone-existing-with-post-processing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/clone-existing-with-post-processing.pkr.hcl)
-* [create-from-installer-with-post-processing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/main/examples/create-from-installer-with-post-processing.pkr.hcl)
+* [clone-existing-with-post-processing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/clone-existing-with-post-processing.pkr.hcl)
+* [create-from-installer-with-post-processing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/create-from-installer-with-post-processing.pkr.hcl)
 
 ```hcl
 

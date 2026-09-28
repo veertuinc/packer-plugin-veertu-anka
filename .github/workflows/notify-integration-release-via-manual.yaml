@@ -10,7 +10,7 @@ on:
         required: false
       branch:
         description: "A branch or SHA"
-        default: 'master'
+        default: 'edge'
         required: false
 permissions:
   contents: read
