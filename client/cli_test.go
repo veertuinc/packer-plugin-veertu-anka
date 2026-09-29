@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -35,6 +37,10 @@ func TestMain(m *testing.M) {
 		fmt.Fprintln(os.Stderr, `{"p":0.62}`)
 		fmt.Print(`{"status":"OK","body":"ok"}`)
 		os.Exit(0)
+	case "success-with-lingering-fifo-writer":
+		startLingeringFIFOWriter()
+		fmt.Print(`{"status":"OK","body":"ok"}`)
+		os.Exit(0)
 	}
 	os.Exit(m.Run())
 }
@@ -51,6 +57,40 @@ func writeHelperFIFO(line string) {
 		os.Exit(3)
 	}
 	_ = fifo.Close()
+}
+
+// startLingeringFIFOWriter mimics a VM hypervisor that outlives `anka start`
+// and keeps ANKA_LOG_FILE open without writing to it.
+func startLingeringFIFOWriter() {
+	fifo, err := os.OpenFile(os.Getenv("ANKA_LOG_FILE"), os.O_WRONLY, 0)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "helper fifo open: %v\n", err)
+		os.Exit(3)
+	}
+	fmt.Fprintln(fifo, "debug-before-lingering")
+	lingeringWriter := exec.Command("/bin/sleep", "30")
+	lingeringWriter.ExtraFiles = []*os.File{fifo}
+	if err := lingeringWriter.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "helper lingering writer start: %v\n", err)
+		os.Exit(3)
+	}
+	lingeringWriterPID := strconv.Itoa(lingeringWriter.Process.Pid)
+	if err := os.WriteFile(os.Getenv("ANKA_PACKER_LINGERING_WRITER_PID_FILE"), []byte(lingeringWriterPID), 0600); err != nil {
+		fmt.Fprintf(os.Stderr, "helper lingering writer pid: %v\n", err)
+		os.Exit(3)
+	}
+}
+
+func killLingeringFIFOWriter(lingeringWriterPIDFile string) {
+	lingeringWriterPIDBytes, err := os.ReadFile(lingeringWriterPIDFile)
+	if err != nil {
+		return
+	}
+	lingeringWriterPID, err := strconv.Atoi(strings.TrimSpace(string(lingeringWriterPIDBytes)))
+	if err != nil {
+		return
+	}
+	_ = syscall.Kill(lingeringWriterPID, syscall.SIGKILL)
 }
 
 func TestAnkaProcessArgsNeverIncludeDebug(t *testing.T) {
@@ -159,6 +199,28 @@ func TestRunAnkaProcessProgressStaysOnStderr(t *testing.T) {
 	assert.Equal(t, "OK", output.Status)
 	lines := collectStreamer(streamer)
 	assert.DeepEqual(t, []string{"62%"}, lines)
+}
+
+func TestRunAnkaProcessReturnsWhenChildKeepsFIFOOpen(t *testing.T) {
+	restore := useTestAnkaHelper(t, "success-with-lingering-fifo-writer")
+	defer restore()
+	t.Setenv("ANKA_LOG_LEVEL", "")
+	lingeringWriterPIDFile := filepath.Join(t.TempDir(), "lingering-writer.pid")
+	t.Setenv("ANKA_PACKER_LINGERING_WRITER_PID_FILE", lingeringWriterPIDFile)
+	defer killLingeringFIFOWriter(lingeringWriterPIDFile)
+
+	runAnkaProcessErr := make(chan error, 1)
+	go func() {
+		_, err := runAnkaProcess(nil, false, "start", "vm")
+		runAnkaProcessErr <- err
+	}()
+
+	select {
+	case err := <-runAnkaProcessErr:
+		assert.NilError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("runAnkaProcess did not return while a child process kept the debug FIFO open")
+	}
 }
 
 func useTestAnkaHelper(t *testing.T, helper string) func() {

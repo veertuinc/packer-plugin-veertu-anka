@@ -19,6 +19,8 @@ import (
 
 var ankaExecutable = "anka"
 
+const ankaDebugFIFODrainTimeout = 1 * time.Second
+
 // StreamOutputToUI copies command progress lines to the Packer UI.
 // Call finish after the command returns so the last lines print.
 func StreamOutputToUI(ui packer.Ui) (outputStream chan string, finish func()) {
@@ -183,6 +185,8 @@ func createAnkaDebugFIFO() (*ankaDebugFIFO, error) {
 	if err := syscall.Mkfifo(fifoPath, 0600); err != nil {
 		return nil, err
 	}
+	// readFD must stay non-blocking: os.File then uses the runtime poller, so
+	// Close interrupts a Read that is waiting on a silent writer.
 	readFD, err := syscall.Open(fifoPath, syscall.O_RDONLY|syscall.O_NONBLOCK, 0)
 	if err != nil {
 		_ = os.Remove(fifoPath)
@@ -191,12 +195,6 @@ func createAnkaDebugFIFO() (*ankaDebugFIFO, error) {
 	writeFD, err := syscall.Open(fifoPath, syscall.O_WRONLY|syscall.O_NONBLOCK, 0)
 	if err != nil {
 		_ = syscall.Close(readFD)
-		_ = os.Remove(fifoPath)
-		return nil, err
-	}
-	if err := syscall.SetNonblock(readFD, false); err != nil {
-		_ = syscall.Close(readFD)
-		_ = syscall.Close(writeFD)
 		_ = os.Remove(fifoPath)
 		return nil, err
 	}
@@ -228,19 +226,26 @@ func readAnkaDebugFIFO(fifo *ankaDebugFIFO, live bool, outputStreamer chan strin
 			log.Printf("%s", line)
 		}
 	}
-	if err := scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil && !errors.Is(err, os.ErrClosed) {
 		log.Printf("error reading anka debug fifo: %v", err)
 	}
 }
 
+// finishAnkaDebugFIFO lets the reader drain lines Anka wrote before exit, then
+// force-closes it: processes Anka leaves running (e.g. the VM hypervisor after
+// `anka start`) keep the write end open, so EOF may never arrive.
 func finishAnkaDebugFIFO(fifo *ankaDebugFIFO, readerDone <-chan struct{}) {
-	if fifo != nil {
-		if fifo.keeper != nil {
-			_ = fifo.keeper.Close()
+	if fifo != nil && fifo.keeper != nil {
+		_ = fifo.keeper.Close()
+	}
+	if readerDone != nil {
+		select {
+		case <-readerDone:
+		case <-time.After(ankaDebugFIFODrainTimeout):
 		}
-		if fifo.reader != nil {
-			_ = fifo.reader.Close()
-		}
+	}
+	if fifo != nil && fifo.reader != nil {
+		_ = fifo.reader.Close()
 	}
 	if readerDone != nil {
 		<-readerDone
