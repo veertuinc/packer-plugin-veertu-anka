@@ -1,4 +1,4 @@
-//go:generate packer-sdc mapstructure-to-hcl2 -type Config,PortForwardingRule,HostDirectoryMount,VMLabel
+//go:generate packer-sdc mapstructure-to-hcl2 -type Config,PortForwardingRule,HostDirectoryMount,VMLabel,ThinOCIPull
 
 package anka
 
@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 	"github.com/mitchellh/mapstructure"
+	"github.com/veertuinc/packer-plugin-veertu-anka/client"
 	"github.com/veertuinc/packer-plugin-veertu-anka/util"
 )
 
@@ -46,6 +47,8 @@ type Config struct {
 	VCPUCount string `mapstructure:"vcpu_count"`
 
 	AlwaysFetch bool `mapstructure:"always_fetch"`
+
+	ThinOCIPulls []ThinOCIPull `mapstructure:"thin_oci_pulls"`
 
 	UpdateAddons bool `mapstructure:"update_addons"`
 
@@ -150,11 +153,35 @@ func NewConfig(raws ...interface{}) (*Config, error) {
 		}
 	}
 
+	if len(c.ThinOCIPulls) > 0 {
+		if c.SourceVMName == "" {
+			errs = packer.MultiErrorAppend(errs, errors.New("thin_oci_pulls requires source_vm_name"))
+		}
+		if err := validateThinOCIPulls(c.ThinOCIPulls); err != nil {
+			errs = packer.MultiErrorAppend(errs, err)
+		}
+	}
+
+	if err := client.ValidateOCIRemoteTLSOptions(c.registryParams()); err != nil {
+		errs = packer.MultiErrorAppend(errs, err)
+	}
+
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, errs
 	}
 
 	return &c, nil
+}
+
+func (c *Config) registryParams() client.RegistryParams {
+	return client.RegistryParams{
+		Remote:       c.Remote,
+		NodeCertPath: c.NodeCertPath,
+		NodeKeyPath:  c.NodeKeyPath,
+		CaRootPath:   c.CaRootPath,
+		IsInsecure:   c.IsInsecure,
+		HostArch:     c.HostArch,
+	}
 }
 
 func (c *Config) shouldWaitForGuestNetworking() bool {

@@ -20,6 +20,8 @@ type Client interface {
 	Exists(vmName string) (bool, error)
 	License() (LicenseResponse, error)
 	Modify(vmName string, command string, property string, flags ...string) error
+	OCIPull(pullParams OCIPullParams, outputStreamer chan string) error
+	OCIPush(pushParams OCIPushParams, outputStreamer chan string) error
 	RegistryList(registryParams RegistryParams) ([]RegistryListResponse, error)
 	RegistryListRepos() ([]RegistryRemote, error)
 	RegistryPull(registryParams RegistryParams, pullParams RegistryPullParams, outputStreamer chan string) error

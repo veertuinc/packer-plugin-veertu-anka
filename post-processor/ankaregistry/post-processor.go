@@ -37,6 +37,8 @@ type Config struct {
 	RemoteVM    string `mapstructure:"remote_vm"`
 	Local       bool   `mapstructure:"local"`
 	Force       bool   `mapstructure:"force"`
+	// Thin pushes only the build's own layer as a thin OCI tag (`anka push --thin`). It requires an OCI registry URL in remote.
+	Thin bool `mapstructure:"thin"`
 
 	// DeleteTemplatePostPush runs `anka delete --yes` on the builder's local VM only after a successful remote registry push (not when local = true). See issue #142.
 	DeleteTemplatePostPush bool `mapstructure:"delete_template_post_push"`
@@ -80,7 +82,19 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 		errs = packer.MultiErrorAppend(errs, errors.New("the 'local' and 'remote_vm' settings are mutually exclusive"))
 	}
 
+	if p.config.Thin && p.config.Local {
+		errs = packer.MultiErrorAppend(errs, errors.New("the 'local' and 'thin' settings are mutually exclusive"))
+	}
+
+	if p.config.Thin && !client.IsOCIRemote(p.config.Remote) {
+		errs = packer.MultiErrorAppend(errs, errors.New("'thin' requires 'remote' to be an OCI registry URL (oci://... or a URL with /v2 in its path); the Anka Registry stores only full tags"))
+	}
+
 	p.config.HostArch = runtime.GOARCH
+
+	if err := client.ValidateOCIRemoteTLSOptions(p.registryParams()); err != nil {
+		errs = packer.MultiErrorAppend(errs, err)
+	}
 
 	p.client = &client.AnkaClient{}
 
@@ -100,6 +114,10 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 			"unknown artifact type: %s\ncan only import from anka artifacts",
 			artifact.BuilderId())
 		return nil, false, false, err
+	}
+
+	if !p.config.Local && client.IsOCIRemote(p.config.Remote) {
+		return p.pushToOCIRegistry(ui, artifact)
 	}
 
 	reposList, err = p.client.RegistryListRepos()
@@ -128,14 +146,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		}
 	}
 
-	registryParams := client.RegistryParams{
-		Remote:       p.config.Remote,
-		NodeCertPath: p.config.NodeCertPath,
-		NodeKeyPath:  p.config.NodeKeyPath,
-		CaRootPath:   p.config.CaRootPath,
-		IsInsecure:   p.config.IsInsecure,
-		HostArch:     p.config.HostArch,
-	}
+	registryParams := p.registryParams()
 
 	remoteVMName := artifact.String()
 	if p.config.RemoteVM != "" {
@@ -156,11 +167,9 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		VMID:        artifact.String(),
 	}
 
-	showResponse, showErr := p.client.Show(artifact.String())
-	if showErr != nil {
+	if showErr := p.logPrePushShow(ui, artifact); showErr != nil {
 		return artifact, true, false, showErr
 	}
-	client.LogShowResponse(ui, "pre-push", showResponse)
 
 	var id string
 	var latestTag string
@@ -208,13 +217,70 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		return artifact, true, false, errors.New(foundMessage)
 	}
 
-	outputStream, finishOutputStream := client.StreamOutputToUI(ui)
-	pushErr := p.client.RegistryPush(registryParams, pushParams, outputStream)
-	finishOutputStream()
+	pushErr := client.RunWithOutputStreamToUI(ui, func(outputStream chan string) error {
+		return p.client.RegistryPush(registryParams, pushParams, outputStream)
+	})
 	if pushErr != nil {
 		return artifact, true, false, pushErr
 	}
 
+	return p.finishSuccessfulPush(ui, artifact)
+}
+
+// pushToOCIRegistry uses `anka push`, which handles OCI tags. The Anka Registry list and revert API does not exist on an OCI registry,
+// so an existing tag is replaced with --force (set by 'force' or `packer build -force`).
+func (p *PostProcessor) pushToOCIRegistry(ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, bool, error) {
+	if showErr := p.logPrePushShow(ui, artifact); showErr != nil {
+		return artifact, true, false, showErr
+	}
+
+	ociPushParams := client.OCIPushParams{
+		VMID:        artifact.String(),
+		Remote:      p.config.Remote,
+		Tag:         p.config.Tag,
+		Description: p.config.Description,
+		RemoteVM:    p.config.RemoteVM,
+		Thin:        p.config.Thin,
+		Force:       p.config.Force || p.config.PackerForce,
+	}
+
+	ociTagKind := "full"
+	if p.config.Thin {
+		ociTagKind = "thin"
+	}
+	ui.Say(fmt.Sprintf("Pushing template %s to OCI registry %s as %s OCI tag %s", artifact.String(), p.config.Remote, ociTagKind, p.config.Tag))
+
+	pushErr := client.RunWithOutputStreamToUI(ui, func(outputStream chan string) error {
+		return p.client.OCIPush(ociPushParams, outputStream)
+	})
+	if pushErr != nil {
+		return artifact, true, false, pushErr
+	}
+
+	return p.finishSuccessfulPush(ui, artifact)
+}
+
+func (p *PostProcessor) registryParams() client.RegistryParams {
+	return client.RegistryParams{
+		Remote:       p.config.Remote,
+		NodeCertPath: p.config.NodeCertPath,
+		NodeKeyPath:  p.config.NodeKeyPath,
+		CaRootPath:   p.config.CaRootPath,
+		IsInsecure:   p.config.IsInsecure,
+		HostArch:     p.config.HostArch,
+	}
+}
+
+func (p *PostProcessor) logPrePushShow(ui packer.Ui, artifact packer.Artifact) error {
+	showResponse, err := p.client.Show(artifact.String())
+	if err != nil {
+		return err
+	}
+	client.LogShowResponse(ui, "pre-push", showResponse)
+	return nil
+}
+
+func (p *PostProcessor) finishSuccessfulPush(ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, bool, error) {
 	ui.Say("Registry push successful")
 
 	// delete_template_post_push only after a successful remote registry push (not local-only tagging).

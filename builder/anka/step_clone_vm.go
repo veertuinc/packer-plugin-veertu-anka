@@ -74,29 +74,8 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	}
 
 	if doPull {
-		ui.Say(fmt.Sprintf("Pulling source VM %s with %s from Anka Registry", config.SourceVMName, sourceVMTag))
-
-		registryParams := client.RegistryParams{
-			Remote:       config.Remote,
-			NodeCertPath: config.NodeCertPath,
-			NodeKeyPath:  config.NodeKeyPath,
-			CaRootPath:   config.CaRootPath,
-			IsInsecure:   config.IsInsecure,
-			HostArch:     config.HostArch,
-		}
-
-		registryPullParams := client.RegistryPullParams{
-			VMID:   config.SourceVMName,
-			Tag:    config.SourceVMTag,
-			Local:  false,
-			Shrink: false,
-		}
-
-		outputStream, finishOutputStream := client.StreamOutputToUI(ui)
-		err := s.client.RegistryPull(registryParams, registryPullParams, outputStream)
-		finishOutputStream()
-		if err != nil {
-			return onError(fmt.Errorf("failed to pull vm %s with %s from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTag))
+		if err := s.pullSourceVM(config, sourceVMTag, ui); err != nil {
+			return onError(err)
 		}
 	}
 
@@ -127,6 +106,10 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 				s.client.RegistryPush(client.RegistryParams{HostArch: config.HostArch}, pushParams, nil)
 			}
 		}
+	}
+
+	if err := applyThinOCIPulls(s.client, config.SourceVMName, config.ThinOCIPulls, ui); err != nil {
+		return onError(err)
 	}
 
 	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShow.Name, s.vmName))
@@ -191,6 +174,40 @@ func (s *StepCloneVM) Cleanup(state multistep.StateBag) {
 			ui.Error(fmt.Sprint(err))
 		}
 	}
+}
+
+// pullSourceVM pulls the full source tag: `anka pull` for an OCI remote, `anka registry pull` for an Anka Registry.
+func (s *StepCloneVM) pullSourceVM(config *Config, sourceVMTagDescription string, ui packer.Ui) error {
+	if client.IsOCIRemote(config.Remote) {
+		ui.Say(fmt.Sprintf("Pulling source VM %s with %s from OCI registry %s", config.SourceVMName, sourceVMTagDescription, config.Remote))
+		ociPullParams := client.OCIPullParams{
+			VMID:   config.SourceVMName,
+			Remote: config.Remote,
+			Tag:    config.SourceVMTag,
+		}
+		err := client.RunWithOutputStreamToUI(ui, func(outputStream chan string) error {
+			return s.client.OCIPull(ociPullParams, outputStream)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to pull vm %s with %s from OCI registry %s: %w", config.SourceVMName, sourceVMTagDescription, config.Remote, err)
+		}
+		return nil
+	}
+
+	ui.Say(fmt.Sprintf("Pulling source VM %s with %s from Anka Registry", config.SourceVMName, sourceVMTagDescription))
+	registryPullParams := client.RegistryPullParams{
+		VMID:   config.SourceVMName,
+		Tag:    config.SourceVMTag,
+		Local:  false,
+		Shrink: false,
+	}
+	err := client.RunWithOutputStreamToUI(ui, func(outputStream chan string) error {
+		return s.client.RegistryPull(config.registryParams(), registryPullParams, outputStream)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to pull vm %s with %s from registry (make sure to add it as the default: https://docs.veertu.com/anka/intel/command-line-reference/#registry-add)", config.SourceVMName, sourceVMTagDescription)
+	}
+	return nil
 }
 
 func (s *StepCloneVM) modifyVMResources(showResponse client.ShowResponse, config *Config, ui packer.Ui, util util.Util) error {

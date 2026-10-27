@@ -184,6 +184,34 @@ func (mr *MockClientMockRecorder) Modify(vmName, command, property interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Modify", reflect.TypeOf((*MockClient)(nil).Modify), varargs...)
 }
 
+// OCIPull mocks base method.
+func (m *MockClient) OCIPull(pullParams client.OCIPullParams, outputStreamer chan string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OCIPull", pullParams, outputStreamer)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OCIPull indicates an expected call of OCIPull.
+func (mr *MockClientMockRecorder) OCIPull(pullParams, outputStreamer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OCIPull", reflect.TypeOf((*MockClient)(nil).OCIPull), pullParams, outputStreamer)
+}
+
+// OCIPush mocks base method.
+func (m *MockClient) OCIPush(pushParams client.OCIPushParams, outputStreamer chan string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OCIPush", pushParams, outputStreamer)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// OCIPush indicates an expected call of OCIPush.
+func (mr *MockClientMockRecorder) OCIPush(pushParams, outputStreamer interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OCIPush", reflect.TypeOf((*MockClient)(nil).OCIPush), pushParams, outputStreamer)
+}
+
 // RegistryList mocks base method.
 func (m *MockClient) RegistryList(registryParams client.RegistryParams) ([]client.RegistryListResponse, error) {
 	m.ctrl.T.Helper()

@@ -36,9 +36,15 @@ segmented below into two categories: required and optional parameters.
 
 * `key` (String) Path to your node certificate key if the client/node certificate doesn't contain one.
 
+  > `cacert`, `cert`, `insecure`, and `key` are only for an Anka Registry. The build fails if you set them when `remote` is an OCI registry URL, because `anka push` does not accept them.
+
 * `local` (Boolean) Assign a tag to your local template and avoid pushing to the Registry.
 
 * `remote` (String) The registry URL or name to target for registry operation (will use your default configuration if not set).
+
+  > (Anka 3.9.0+) To push to an OCI registry, set `remote` to an OCI registry URL: an `oci://` URL, or an `http(s)://` URL with `/v2` in its path (for example `oci://registry.example.com/v2/veertu/`). See [Push to an OCI registry](#push-to-an-oci-registry).
+
+* `thin` (Boolean) (Anka 3.10.0+) Push only the layer that this build added, as a thin OCI tag (`anka push --thin`). Requires `remote` to be an OCI registry URL. Cannot be used with `local`. Defaults to `false` (a full OCI tag).
 
 * `remote_vm` (String) The name of a registry template you want to push the local template onto.
 
@@ -51,6 +57,28 @@ segmented below into two categories: required and optional parameters.
 ## Other 
 
 When using `packer build -force`, the post-processor will issue a [revert API call](https://docs.veertu.com/anka/anka-build-cloud/working-with-registry-and-api/#revert) to remove the existing tag before pushing the new.
+
+### Push to an OCI registry
+
+When `remote` is an OCI registry URL, the post-processor runs `anka push` instead of `anka registry push`:
+
+* It does not use the Anka Registry list and revert API. An OCI registry does not have it.
+* `force = true` or `packer build -force` adds `--force`. An OCI push with the same tag name replaces the tag.
+* The repository is the last segment of the `remote` path after `/v2/`: `oci://registry.example.com/v2/veertu/tools` pushes to `veertu/tools`. If the path ends with `/`, the repository is the local VM name. `remote_vm` sets the repository name and overrides the path.
+* With `thin = true`, the tag holds only the files that this build added. Pull it onto a VM that already has the base, for example with the clone builder's `thin_oci_pulls`.
+* The Anka Build Cloud Controller pulls only from an Anka Registry. For a Controller template, push a full tag to the Anka Registry.
+
+Registry credentials come from the host environment, for example `ANKA_REGISTRY_AUTH_TOKEN`. A remote name from `anka registry add` always uses `anka registry push`, even when that remote is an OCI registry.
+
+```hcl
+post-processor "veertu-anka-registry-push" {
+  remote = "oci://registry.example.com/v2/veertu/"
+  tag    = "xcode-26.1"
+  thin   = true
+}
+```
+
+Example: [clone-existing-with-thin-oci-tags.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/clone-existing-with-thin-oci-tags.pkr.hcl)
 
 ## Example
 

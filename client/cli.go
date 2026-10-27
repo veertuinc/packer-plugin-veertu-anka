@@ -39,6 +39,14 @@ func StreamOutputToUI(ui packer.Ui) (outputStream chan string, finish func()) {
 	return outputStream, finish
 }
 
+// RunWithOutputStreamToUI runs a command that streams progress and returns after every line reaches the UI.
+func RunWithOutputStreamToUI(ui packer.Ui, runCommand func(outputStream chan string) error) error {
+	outputStream, finishOutputStream := StreamOutputToUI(ui)
+	err := runCommand(outputStream)
+	finishOutputStream()
+	return err
+}
+
 // FormatShowResponse builds a Packer log line from parsed ShowResponse fields.
 // Empty string fields and zero cpu_cores/hard_drive are omitted. Values are never truncated.
 func FormatShowResponse(contextLabel string, show ShowResponse) string {

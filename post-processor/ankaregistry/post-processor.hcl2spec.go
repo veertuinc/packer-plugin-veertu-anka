@@ -28,6 +28,7 @@ type FlatConfig struct {
 	RemoteVM               *string           `mapstructure:"remote_vm" cty:"remote_vm" hcl:"remote_vm"`
 	Local                  *bool             `mapstructure:"local" cty:"local" hcl:"local"`
 	Force                  *bool             `mapstructure:"force" cty:"force" hcl:"force"`
+	Thin                   *bool             `mapstructure:"thin" cty:"thin" hcl:"thin"`
 	DeleteTemplatePostPush *bool             `mapstructure:"delete_template_post_push" cty:"delete_template_post_push" hcl:"delete_template_post_push"`
 	HostArch               *string           `mapstructure:"host_arch,omitempty" cty:"host_arch" hcl:"host_arch"`
 }
@@ -62,6 +63,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"remote_vm":                  &hcldec.AttrSpec{Name: "remote_vm", Type: cty.String, Required: false},
 		"local":                      &hcldec.AttrSpec{Name: "local", Type: cty.Bool, Required: false},
 		"force":                      &hcldec.AttrSpec{Name: "force", Type: cty.Bool, Required: false},
+		"thin":                       &hcldec.AttrSpec{Name: "thin", Type: cty.Bool, Required: false},
 		"delete_template_post_push":  &hcldec.AttrSpec{Name: "delete_template_post_push", Type: cty.Bool, Required: false},
 		"host_arch":                  &hcldec.AttrSpec{Name: "host_arch", Type: cty.String, Required: false},
 	}

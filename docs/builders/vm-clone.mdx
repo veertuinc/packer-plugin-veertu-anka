@@ -71,6 +71,8 @@ There are many configuration options available for the builder. They are segment
 
 * `key` (String) Path to your node's client certificate key, if the `cert` certificate doesn't contain one, to use for registry communication (if certificate authorization is enabled).
 
+  > `cacert`, `cert`, `insecure`, and `key` are only for an Anka Registry. The build fails if you set them when `remote` is an OCI registry URL, because `anka pull` does not accept them.
+
 * `hw_uuid` (String) (Anka 2 only) The Hardware UUID you wish to set (usually generated with `uuidgen`).
 
   > Example: [clone-existing-with-hwuuid.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/clone-existing-with-hwuuid.pkr.hcl)
@@ -106,9 +108,32 @@ There are many configuration options available for the builder. They are segment
 
 * `registry-path` (String) The registry URL (will use your default configuration if not set).
 
-* `remote` (String) The registry name (will use your default configuration if not set).
+* `remote` (String) The registry name or URL (will use your default configuration if not set).
   
   > This takes priority in Anka 3 and `registry-path` will be ignored.
+  >
+  > (Anka 3.9.0+) To pull the source VM as a full OCI tag, set `remote` to an OCI registry URL: an `oci://` URL, or an `http(s)://` URL with `/v2` in its path (for example `oci://registry.example.com/v2/veertu/`). The builder then runs `anka pull` instead of `anka registry pull`. A remote name from `anka registry add` always uses `anka registry pull`.
+
+* `thin_oci_pulls` (Struct) (Anka 3.10.0+) Thin OCI tags to pull onto `source_vm_name` before the clone. Repeat the block for each thin tag. The builder pulls them in the order you write them, each with `anka pull --thin`, after the source VM is local and has a tag.
+
+  > The pulls change `source_vm_name` itself: the thin tags stay on the source VM after the build.
+  >
+  > Each pull is always thin. A full pull after thin tags removes those thin tags, so a full tag can only be the source VM itself (local, or pulled with `remote` and `source_vm_tag`).
+  >
+  > Example: [clone-existing-with-thin-oci-tags.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/clone-existing-with-thin-oci-tags.pkr.hcl)
+
+  * `url` (String) Required. The OCI tag to pull: an `oci://` URL, or an `http(s)://` URL with `/v2` in its path (for example `oci://ghcr.io/homebrew/core/cmake:4.3.4`).
+  * `transform` (List of String) `sed` expressions that change the file paths of this layer. Each one becomes an `anka pull --transform` option, in order (for example `["s|cmake/4.3.4|usr/local"]`).
+
+  ```hcl
+  thin_oci_pulls {
+    url = "oci://registry.example.com/v2/veertu/tools:xcode-26.1"
+  }
+  thin_oci_pulls {
+    url       = "oci://ghcr.io/homebrew/core/cmake:4.3.4"
+    transform = ["s|cmake/4.3.4|usr/local"]
+  }
+  ```
 
 * `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default. Also the tag to target when pulling from the registry (defaults to latest tag).
 
