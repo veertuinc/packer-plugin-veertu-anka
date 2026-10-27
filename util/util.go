@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,12 +13,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"bytes"
 
-	"github.com/groob/plist"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/pathing"
+	"github.com/micromdm/plist"
 )
 
 var (
@@ -108,7 +108,7 @@ func (u *AnkaUtil) ObtainMacOSVersionFromInstallerApp(path string) (InstallerApp
 	if err != nil {
 		return installerPlist, fmt.Errorf("failed to stat installer at %q: %w", path, err)
 	}
-	plistPath := filepath.Join(path, "Contents", "Info.plist")	
+	plistPath := filepath.Join(path, "Contents", "Info.plist")
 	_, err = os.Stat(plistPath)
 	if os.IsNotExist(err) {
 		return installerPlist, fmt.Errorf("installer app info plist did not exist at %q: %w", plistPath, err)
