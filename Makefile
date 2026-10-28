@@ -1,7 +1,7 @@
 WORKDIR := $(shell pwd)
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
 # Override at build/publish time: make VERSION=4.7.0 ... or export VERSION / PROJECT_VERSION.
-# Default: exact tag on HEAD, else 0.0.0-dev.<sha> for local builds.
+# Default: exact tag on HEAD, else 0.0.0-dev for local builds.
 VERSION ?= $(shell ./scripts/plugin-version.bash --dev)
 VERSION_TAG := v$(VERSION)
 FLAGS := -X main.version=$(VERSION) -X main.commit=$(LATEST-GIT-SHA)

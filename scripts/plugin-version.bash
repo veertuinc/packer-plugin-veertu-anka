@@ -5,7 +5,7 @@
 #   1. VERSION env
 #   2. PROJECT_VERSION env
 #   3. Exact semver-like tag on HEAD (prefer v-prefixed)
-#   4. With --dev: 0.0.0-dev.<shortsha>
+#   4. With --dev: 0.0.0-dev (Packer plugins install only allows prerelease "dev")
 #   5. Otherwise exit 1
 set -euo pipefail
 
@@ -55,8 +55,7 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
   fi
 
   if [[ "${ALLOW_DEV}" == true ]]; then
-    short_sha="$(git rev-parse --short HEAD)"
-    echo "0.0.0-dev.${short_sha}"
+    echo "0.0.0-dev"
     exit 0
   fi
 fi

@@ -18,11 +18,11 @@ All steps for releasing are internal to Veertu and are not public.
 
 1. Create a Jenkins job with Script Path `Jenkinsfile-edge` (defaults call `build-packer-plugin/edge`, `test-packer-plugin/edge`, `release-packer-plugin/edge`).
 2. Trigger that job when plugin `edge` changes (webhook, poll, or manual). anka-packer `edge` checks out plugin `edge`.
-3. Build uses version `0.0.0-edge.<shortsha>` for zip names.
+3. Build uses version `0.0.0-dev` for zip names (Packer only accepts prerelease `dev`; commit is in the binary metadata).
 4. After tests succeed, release sets `PLUGIN_VERSION=edge`, force-moves tag `edge`, and uploads the build artifacts.
 
 ## Version overrides
 
 - Build/publish: set `VERSION` or `PROJECT_VERSION` (optional leading `v`)
 - Local: `make VERSION=4.7.0 go.releaser` or tag HEAD (`git tag v4.7.0`) before build
-- Untagged local builds fall back to `0.0.0-dev.<shortsha>`
+- Untagged local builds fall back to `0.0.0-dev`

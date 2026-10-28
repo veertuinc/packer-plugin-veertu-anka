@@ -17,6 +17,6 @@ There is no committed `VERSION` file. At build and publish time the version come
 
 1. `VERSION` or `PROJECT_VERSION` environment variable (optional leading `v`)
 2. An exact semver-like git tag on `HEAD` (prefer `vMAJOR.MINOR.PATCH`)
-3. For local/dev builds only: `0.0.0-dev.<shortsha>`
+3. For local/dev/edge builds only: `0.0.0-dev` (Packer `plugins install --path` rejects any other prerelease; the git commit is passed via ldflags)
 
 Official GitHub releases use a tag such as `v4.7.0`. Jenkins release creates that tag when it publishes.
