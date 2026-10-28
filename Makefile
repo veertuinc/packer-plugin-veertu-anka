@@ -1,6 +1,9 @@
 WORKDIR := $(shell pwd)
 LATEST-GIT-SHA := $(shell git rev-parse HEAD)
-VERSION := $(shell cat VERSION)
+# Override at build/publish time: make VERSION=4.7.0 ... or export VERSION / PROJECT_VERSION.
+# Default: exact tag on HEAD, else 0.0.0-dev.<sha> for local builds.
+VERSION ?= $(shell ./scripts/plugin-version.bash --dev)
+VERSION_TAG := v$(VERSION)
 FLAGS := -X main.version=$(VERSION) -X main.commit=$(LATEST-GIT-SHA)
 BIN := packer-plugin-veertu-anka
 ARCH := $(shell arch)
@@ -44,11 +47,13 @@ go.build:
 	GOARCH=$(ARCH) go build $(RACE) -ldflags "$(FLAGS)" -o $(BIN_FULL)
 	chmod +x dist/$(BIN)*
 
-#go.releaser 	@ Run goreleaser release --clean for current version
+#go.releaser 	@ Run goreleaser release --clean for VERSION (from env, tag, or make VERSION=...)
 go.releaser:
+	@if [ -z "$(VERSION)" ]; then echo "ERROR: VERSION is empty"; exit 1; fi
 	git tag -d "$(VERSION)" 2>/dev/null || true
-	git tag -a "$(VERSION)" -m "Version $(VERSION)"
-	echo "LATEST TAG: $$(git describe --tags --abbrev=0)"
+	git tag -d "$(VERSION_TAG)" 2>/dev/null || true
+	git tag -a "$(VERSION_TAG)" -m "Version $(VERSION_TAG)"
+	echo "VERSION=$(VERSION) TAG=$(VERSION_TAG) LATEST TAG: $$(git describe --tags --abbrev=0)"
 	PACKER_CI_PROJECT_API_VERSION=$(PACKER_CI_PROJECT_API_VERSION) goreleaser release --verbose --clean
 
 #validate-examples:  @ Run `packer validate` against example packer definitions using the built package

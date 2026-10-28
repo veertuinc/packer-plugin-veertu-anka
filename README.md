@@ -261,7 +261,8 @@ We use [gomock](https://github.com/golang/mock) to quickly and reliably mock our
 ### Run the plugin locally
 
 ```bash
-go run -ldflags="-X main.version=$(cat VERSION) -X main.commit=$(git rev-parse HEAD)" main.go
+go run -ldflags="-X main.version=$(./scripts/plugin-version.bash --dev) -X main.commit=$(git rev-parse HEAD)" main.go
+# Or set an explicit version: VERSION=4.7.0 make go.build
 ```
 
 ### Building, Linting, and Testing

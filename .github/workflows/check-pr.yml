@@ -14,7 +14,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - run: git tag $(cat VERSION)
+      - name: Tag HEAD for GoReleaser snapshot version
+        run: |
+          VER="${VERSION:-0.0.0-pr.${{ github.run_id }}}"
+          VER="${VER#v}"
+          git tag "v${VER}"
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -23,7 +27,7 @@ jobs:
         uses: hashicorp/setup-packer@main
         id: setup
         with:
-          version: 1.12.0
+          version: latest
       - name: Check generated docs
         shell: bash
         run: |
