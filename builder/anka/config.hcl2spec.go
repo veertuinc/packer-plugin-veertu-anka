@@ -80,6 +80,7 @@ type FlatConfig struct {
 	RAMSize                   *string                  `mapstructure:"ram_size" cty:"ram_size" hcl:"ram_size"`
 	VCPUCount                 *string                  `mapstructure:"vcpu_count" cty:"vcpu_count" hcl:"vcpu_count"`
 	AlwaysFetch               *bool                    `mapstructure:"always_fetch" cty:"always_fetch" hcl:"always_fetch"`
+	SkipClone                 *bool                    `mapstructure:"skip_clone" cty:"skip_clone" hcl:"skip_clone"`
 	ThinOCIPulls              []FlatThinOCIPull        `mapstructure:"thin_oci_pulls" cty:"thin_oci_pulls" hcl:"thin_oci_pulls"`
 	UpdateAddons              *bool                    `mapstructure:"update_addons" cty:"update_addons" hcl:"update_addons"`
 	Remote                    *string                  `mapstructure:"remote" cty:"remote" hcl:"remote"`
@@ -181,6 +182,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"ram_size":                     &hcldec.AttrSpec{Name: "ram_size", Type: cty.String, Required: false},
 		"vcpu_count":                   &hcldec.AttrSpec{Name: "vcpu_count", Type: cty.String, Required: false},
 		"always_fetch":                 &hcldec.AttrSpec{Name: "always_fetch", Type: cty.Bool, Required: false},
+		"skip_clone":                   &hcldec.AttrSpec{Name: "skip_clone", Type: cty.Bool, Required: false},
 		"thin_oci_pulls":               &hcldec.BlockListSpec{TypeName: "thin_oci_pulls", Nested: hcldec.ObjectSpec((*FlatThinOCIPull)(nil).HCL2Spec())},
 		"update_addons":                &hcldec.AttrSpec{Name: "update_addons", Type: cty.Bool, Required: false},
 		"remote":                       &hcldec.AttrSpec{Name: "remote", Type: cty.String, Required: false},

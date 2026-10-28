@@ -48,6 +48,9 @@ type Config struct {
 
 	AlwaysFetch bool `mapstructure:"always_fetch"`
 
+	// SkipClone builds on source_vm_name in place instead of cloning it; vm_name is ignored.
+	SkipClone bool `mapstructure:"skip_clone"`
+
 	ThinOCIPulls []ThinOCIPull `mapstructure:"thin_oci_pulls"`
 
 	UpdateAddons bool `mapstructure:"update_addons"`

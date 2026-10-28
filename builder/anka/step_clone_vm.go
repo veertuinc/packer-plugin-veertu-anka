@@ -36,15 +36,11 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 	}
 
 	s.client = state.Get("client").(client.Client)
-	s.vmName = config.VMName
-
-	if s.vmName == "" {
-		s.vmName = fmt.Sprintf("%s-%s", config.SourceVMName, ankaUtil.RandSeq(10))
-	}
+	s.vmName = resolveWorkingVMName(config, ankaUtil)
 
 	state.Put("vm_name", s.vmName)
 
-	if config.PackerForce {
+	if config.PackerForce && !config.SkipClone {
 		exists, err := s.client.Exists(s.vmName)
 		if err != nil {
 			return onError(err)
@@ -92,7 +88,7 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 
 	// Check arch of host
 	// // If arm64, ensure the source has a local tag
-	if !doPull {
+	if !doPull && !config.SkipClone {
 		if sourceShow.Version == "" {
 			if config.HostArch == "arm64" {
 				ui.Say("Preparing source VM by creating a local tag (necessary in Anka 3 to optimize disk usage of clones)")
@@ -112,26 +108,32 @@ func (s *StepCloneVM) Run(ctx context.Context, state multistep.StateBag) multist
 		return onError(err)
 	}
 
-	ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShow.Name, s.vmName))
+	workingVMShowLabel := "post-clone"
+	if config.SkipClone {
+		workingVMShowLabel = "skip-clone"
+		ui.Say(fmt.Sprintf("Skipping clone; building on source VM %s in place", s.vmName))
+	} else {
+		ui.Say(fmt.Sprintf("Cloning source VM %s into a new virtual machine: %s", sourceShow.Name, s.vmName))
 
-	err = s.client.Clone(client.CloneParams{VMName: s.vmName, SourceUUID: sourceShow.UUID})
+		err = s.client.Clone(client.CloneParams{VMName: s.vmName, SourceUUID: sourceShow.UUID})
+		if err != nil {
+			return onError(err)
+		}
+	}
+
+	workingVMShow, err := s.client.Show(s.vmName)
 	if err != nil {
 		return onError(err)
 	}
 
-	clonedShow, err := s.client.Show(s.vmName)
+	client.LogShowResponse(ui, workingVMShowLabel, workingVMShow)
+
+	err = s.modifyVMResources(workingVMShow, config, ui, ankaUtil)
 	if err != nil {
 		return onError(err)
 	}
 
-	client.LogShowResponse(ui, "post-clone", clonedShow)
-
-	err = s.modifyVMResources(clonedShow, config, ui, ankaUtil)
-	if err != nil {
-		return onError(err)
-	}
-
-	err = s.modifyVMProperties(clonedShow, config, ui)
+	err = s.modifyVMProperties(workingVMShow, config, ui)
 	if err != nil {
 		return onError(err)
 	}
@@ -157,6 +159,10 @@ func (s *StepCloneVM) Cleanup(state multistep.StateBag) {
 		return
 	}
 
+	if config := state.Get("config").(*Config); config.SkipClone {
+		return
+	}
+
 	errorObj := state.Get("error")
 	switch errorObj.(type) {
 	case *common.VMAlreadyExistsError:
@@ -174,6 +180,16 @@ func (s *StepCloneVM) Cleanup(state multistep.StateBag) {
 			ui.Error(fmt.Sprint(err))
 		}
 	}
+}
+
+func resolveWorkingVMName(config *Config, ankaUtil util.Util) string {
+	if config.SkipClone {
+		return config.SourceVMName
+	}
+	if config.VMName != "" {
+		return config.VMName
+	}
+	return fmt.Sprintf("%s-%s", config.SourceVMName, ankaUtil.RandSeq(10))
 }
 
 // pullSourceVM pulls the full source tag: `anka pull` for an OCI remote, `anka registry pull` for an Anka Registry.

@@ -696,6 +696,178 @@ func TestCloneVMRun(t *testing.T) {
 	})
 }
 
+func TestCloneVMRunWithSkipClone(t *testing.T) {
+	sourceVMName := "source_foo"
+	sourceVMShowResponse := client.ShowResponse{Name: sourceVMName, UUID: "1234-abcdef-hijk-5678"}
+
+	newSkipCloneStepState := func(t *testing.T, config *Config) (*StepCloneVM, *multistep.BasicStateBag, *mocks.MockClient, *mocks.MockUtil, *packer.MockUi) {
+		mockCtrl := gomock.NewController(t)
+		t.Cleanup(mockCtrl.Finish)
+		ankaClient := mocks.NewMockClient(mockCtrl)
+		ankaUtil := mocks.NewMockUtil(mockCtrl)
+		mockui := &packer.MockUi{}
+		state := new(multistep.BasicStateBag)
+		state.Put("ui", mockui)
+		state.Put("client", ankaClient)
+		state.Put("util", ankaUtil)
+		state.Put("config", config)
+		return &StepCloneVM{}, state, ankaClient, ankaUtil, mockui
+	}
+
+	sayMessagesOf := func(mockui *packer.MockUi) []string {
+		var sayMessages []string
+		for _, message := range mockui.SayMessages {
+			sayMessages = append(sayMessages, message.Message)
+		}
+		return sayMessages
+	}
+
+	t.Run("uses source vm in place, ignores vm_name, and never clones", func(t *testing.T) {
+		config := &Config{
+			SkipClone:    true,
+			VMName:       "ignored_vm_name",
+			SourceVMName: sourceVMName,
+			HostArch:     "arm64",
+			PackerConfig: common.PackerConfig{PackerBuilderType: "veertu-anka-vm-clone"},
+		}
+		step, state, ankaClient, _, mockui := newSkipCloneStepState(t, config)
+
+		gomock.InOrder(
+			ankaClient.EXPECT().Exists(sourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(sourceVMName).Return(sourceVMShowResponse, nil).Times(1),
+			ankaClient.EXPECT().Show(sourceVMName).Return(sourceVMShowResponse, nil).Times(1),
+		)
+		ankaClient.EXPECT().Clone(gomock.Any()).Times(0)
+		ankaClient.EXPECT().RegistryPush(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+
+		stepAction := step.Run(context.Background(), state)
+
+		assert.Equal(t, multistep.ActionContinue, stepAction)
+		assert.Equal(t, state.Get("vm_name"), sourceVMName)
+		sayMessages := sayMessagesOf(mockui)
+		assert.Assert(t, sliceContains(sayMessages, "Skipping clone; building on source VM source_foo in place"), "got %#v", sayMessages)
+		assert.Assert(t, sliceContains(sayMessages, "anka show (skip-clone): name=source_foo uuid=1234-abcdef-hijk-5678"), "got %#v", sayMessages)
+	})
+
+	t.Run("pulls source vm when missing locally", func(t *testing.T) {
+		config := &Config{
+			SkipClone:    true,
+			SourceVMName: sourceVMName,
+			PackerConfig: common.PackerConfig{PackerBuilderType: "veertu-anka-vm-clone"},
+		}
+		step, state, ankaClient, _, _ := newSkipCloneStepState(t, config)
+		registryPullParams := client.RegistryPullParams{VMID: sourceVMName}
+
+		gomock.InOrder(
+			ankaClient.EXPECT().Exists(sourceVMName).Return(false, nil).Times(1),
+			ankaClient.EXPECT().RegistryPull(client.RegistryParams{}, registryPullParams, gomock.Any()).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(sourceVMName).Return(sourceVMShowResponse, nil).Times(2),
+		)
+		ankaClient.EXPECT().Clone(gomock.Any()).Times(0)
+
+		assert.Equal(t, multistep.ActionContinue, step.Run(context.Background(), state))
+	})
+
+	t.Run("always_fetch pulls source vm", func(t *testing.T) {
+		config := &Config{
+			SkipClone:    true,
+			AlwaysFetch:  true,
+			SourceVMName: sourceVMName,
+			PackerConfig: common.PackerConfig{PackerBuilderType: "veertu-anka-vm-clone"},
+		}
+		step, state, ankaClient, _, _ := newSkipCloneStepState(t, config)
+		registryPullParams := client.RegistryPullParams{VMID: sourceVMName}
+
+		gomock.InOrder(
+			ankaClient.EXPECT().RegistryPull(client.RegistryParams{}, registryPullParams, gomock.Any()).Return(nil).Times(1),
+			ankaClient.EXPECT().Show(sourceVMName).Return(sourceVMShowResponse, nil).Times(2),
+		)
+		ankaClient.EXPECT().Clone(gomock.Any()).Times(0)
+
+		assert.Equal(t, multistep.ActionContinue, step.Run(context.Background(), state))
+	})
+
+	t.Run("modifies source vm resources in place", func(t *testing.T) {
+		config := &Config{
+			SkipClone:    true,
+			RAMSize:      "16G",
+			VCPUCount:    "4",
+			SourceVMName: sourceVMName,
+			PackerConfig: common.PackerConfig{PackerBuilderType: "veertu-anka-vm-clone"},
+		}
+		step, state, ankaClient, _, mockui := newSkipCloneStepState(t, config)
+		sourceVMShowWithResources := client.ShowResponse{Name: sourceVMName, UUID: sourceVMShowResponse.UUID, VCPUCores: 8, RAM: "8G"}
+		stopParams := client.StopParams{VMName: sourceVMName}
+
+		gomock.InOrder(
+			ankaClient.EXPECT().Exists(sourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(sourceVMName).Return(sourceVMShowWithResources, nil).Times(2),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(sourceVMName, "set", "ram", config.RAMSize).Return(nil).Times(1),
+			ankaClient.EXPECT().Stop(stopParams).Return(nil).Times(1),
+			ankaClient.EXPECT().Modify(sourceVMName, "set", "cpu", "-c", config.VCPUCount).Return(nil).Times(1),
+		)
+		ankaClient.EXPECT().Clone(gomock.Any()).Times(0)
+
+		stepAction := step.Run(context.Background(), state)
+
+		assert.Equal(t, multistep.ActionContinue, stepAction)
+		sayMessages := sayMessagesOf(mockui)
+		assert.Assert(t, sliceContains(sayMessages, "Modifying VM source_foo RAM to 16G"), "got %#v", sayMessages)
+		assert.Assert(t, sliceContains(sayMessages, "Modifying VM source_foo VCPU core count to 4"), "got %#v", sayMessages)
+	})
+
+	t.Run("packer force does not delete source vm", func(t *testing.T) {
+		config := &Config{
+			SkipClone:    true,
+			SourceVMName: sourceVMName,
+			PackerConfig: common.PackerConfig{
+				PackerBuilderType: "veertu-anka-vm-clone",
+				PackerForce:       true,
+			},
+		}
+		step, state, ankaClient, _, _ := newSkipCloneStepState(t, config)
+
+		gomock.InOrder(
+			ankaClient.EXPECT().Exists(sourceVMName).Return(true, nil).Times(1),
+			ankaClient.EXPECT().Show(sourceVMName).Return(sourceVMShowResponse, nil).Times(2),
+		)
+		ankaClient.EXPECT().Delete(gomock.Any()).Times(0)
+
+		assert.Equal(t, multistep.ActionContinue, step.Run(context.Background(), state))
+	})
+
+	t.Run("cleanup after failed build does not delete source vm", func(t *testing.T) {
+		config := &Config{
+			SkipClone:    true,
+			SourceVMName: sourceVMName,
+			PackerConfig: common.PackerConfig{PackerBuilderType: "veertu-anka-vm-clone"},
+		}
+		step, state, ankaClient, _, _ := newSkipCloneStepState(t, config)
+		step.client = ankaClient
+		step.vmName = sourceVMName
+		state.Put(multistep.StateHalted, true)
+		ankaClient.EXPECT().Delete(gomock.Any()).Times(0)
+
+		step.Cleanup(state)
+	})
+}
+
+func TestCloneVMCleanupDeletesClonedVMAfterFailedBuild(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	ankaClient := mocks.NewMockClient(mockCtrl)
+	state := new(multistep.BasicStateBag)
+	state.Put("ui", &packer.MockUi{})
+	state.Put("config", &Config{VMName: "foo", SourceVMName: "source_foo"})
+	state.Put(multistep.StateHalted, true)
+	step := StepCloneVM{client: ankaClient, vmName: "foo"}
+
+	ankaClient.EXPECT().Delete(client.DeleteParams{VMName: "foo"}).Return(nil).Times(1)
+
+	step.Cleanup(state)
+}
+
 func sliceContains(values []string, target string) bool {
 	for _, value := range values {
 		if value == target {

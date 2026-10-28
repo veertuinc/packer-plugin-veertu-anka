@@ -35,6 +35,8 @@ There are many configuration options available for the builder. They are segment
 * `vm_name` (String) The name for the VM that is created.
 
   > Generated using the source_vm_name if not provided: (`{{ source_vm_name }}-{10RandomChars}`).
+  >
+  > Ignored when `skip_clone` is `true`.
 
 * `vcpu_count` (String) The number of vCPU cores, defaults to `2`.
 
@@ -56,6 +58,16 @@ There are many configuration options available for the builder. They are segment
 * `always_fetch` (Boolean) Always pull the source VM from the registry. Defaults to false.
 
   > Example: [pull-and-clone-existing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/pull-and-clone-existing.pkr.hcl)
+
+* `skip_clone` (Boolean) Do not clone `source_vm_name`. The builder starts, modifies, and provisions `source_vm_name` itself, then stops or suspends it. Defaults to `false`.
+
+  > The build changes `source_vm_name` in place. `vm_name` is ignored. The builder still pulls `source_vm_name` when it is not local, or when `always_fetch` is `true`. Resource and property settings (`vcpu_count`, `ram_size`, `disk_size`, `port_forwarding_rules`, `vm_label`, and others) apply to `source_vm_name`.
+  >
+  > The builder does not delete `source_vm_name` when the build fails or when you use `packer build -force`.
+  >
+  > The artifact name is `source_vm_name`. Thus the `veertu-anka-registry-push` post-processor pushes a new `tag` onto the same registry template, and you do not need `remote_vm`. Do not set `delete_template_post_push = true` unless you want the post-processor to delete `source_vm_name` after the push.
+  >
+  > Example: [skip-clone-with-post-processing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/skip-clone-with-post-processing.pkr.hcl)
 
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
 

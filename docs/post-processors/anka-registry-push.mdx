@@ -57,6 +57,8 @@ segmented below into two categories: required and optional parameters.
 
 * `remote_vm` (String) The name of a registry template you want to push the local template onto.
 
+  > To push a new tag onto the registry template that you started from, without `remote_vm`, set `skip_clone = true` on the `veertu-anka-vm-clone` builder. The builder then provisions `source_vm_name` in place, and the post-processor pushes it with its own name. Example: [skip-clone-with-post-processing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/skip-clone-with-post-processing.pkr.hcl)
+
 * `tag` (String) The name of the tag to push (will default as 'latest' if not set).
 
 * `force` (Boolean) Whether or not to forcefully push, regardless of a tag already existing
