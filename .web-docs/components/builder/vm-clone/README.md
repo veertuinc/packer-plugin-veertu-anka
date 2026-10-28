@@ -26,6 +26,8 @@ There are many configuration options available for the builder. They are segment
 * `vm_name` (String) The name for the VM that is created.
 
   > Generated using the source_vm_name if not provided: (`{{ source_vm_name }}-{10RandomChars}`).
+  >
+  > Ignored when `skip_clone` is `true`.
 
 * `vcpu_count` (String) The number of vCPU cores, defaults to `2`.
 
@@ -47,6 +49,18 @@ There are many configuration options available for the builder. They are segment
 * `always_fetch` (Boolean) Always pull the source VM from the registry. Defaults to false.
 
   > Example: [pull-and-clone-existing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/pull-and-clone-existing.pkr.hcl)
+
+* `skip_clone` (Boolean) Do not clone `source_vm_name`. The builder starts, modifies, and provisions `source_vm_name` itself, then stops or suspends it. Defaults to `false`.
+
+  > The build changes `source_vm_name` in place. `vm_name` is ignored. The builder still pulls `source_vm_name` when it is not local, or when `always_fetch` is `true`. Resource and property settings (`vcpu_count`, `ram_size`, `disk_size`, `port_forwarding_rules`, `vm_label`, and others) apply to `source_vm_name`.
+  >
+  > The builder does not delete `source_vm_name` when the build fails or when you use `packer build -force`.
+  >
+  > The artifact name is `source_vm_name`. Thus the `veertu-anka-registry-push` post-processor pushes a new `tag` onto the same registry template, and you do not need `remote_vm`. Do not set `delete_template_post_push = true` unless you want the post-processor to delete `source_vm_name` after the push.
+  >
+  > Examples:
+  > - [skip-clone-with-post-processing.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/skip-clone-with-post-processing.pkr.hcl) (Anka Registry tag)
+  > - [skip-clone-with-thin-oci-tags.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/skip-clone-with-thin-oci-tags.pkr.hcl) (`thin_oci_pulls` + thin OCI push)
 
 * `boot_delay` (String) The time to wait before running packer provisioner commands, defaults to `7s`.
 
@@ -111,18 +125,24 @@ There are many configuration options available for the builder. They are segment
   >
   > Each pull is always thin. A full pull after thin tags removes those thin tags, so a full tag can only be the source VM itself (local, or pulled with `remote` and `source_vm_tag`).
   >
-  > Example: [clone-existing-with-thin-oci-tags.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/clone-existing-with-thin-oci-tags.pkr.hcl)
+  > Examples:
+  > - [clone-existing-with-thin-oci-tags.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/clone-existing-with-thin-oci-tags.pkr.hcl) (clone, then thin push)
+  > - [skip-clone-with-thin-oci-tags.pkr.hcl](https://github.com/veertuinc/packer-plugin-veertu-anka/blob/edge/examples/skip-clone-with-thin-oci-tags.pkr.hcl) (`skip_clone`, multiple thin pulls, then thin push)
 
   * `url` (String) Required. The OCI tag to pull: an `oci://` URL, or an `http(s)://` URL with `/v2` in its path (for example `oci://ghcr.io/homebrew/core/cmake:4.3.4`).
   * `transform` (List of String) `sed` expressions that change the file paths of this layer. Each one becomes an `anka pull --transform` option, in order (for example `["s|cmake/4.3.4|usr/local"]`).
 
   ```hcl
   thin_oci_pulls {
-    url = "oci://registry.example.com/v2/veertu/tools:xcode-26.1"
-  }
-  thin_oci_pulls {
     url       = "oci://ghcr.io/homebrew/core/cmake:4.3.4"
     transform = ["s|cmake/4.3.4|usr/local"]
+  }
+  # jq needs oniguruma; omit transform so Anka installs into the Homebrew prefix.
+  thin_oci_pulls {
+    url = "oci://ghcr.io/homebrew/core/oniguruma:6.9.10"
+  }
+  thin_oci_pulls {
+    url = "oci://ghcr.io/homebrew/core/jq:1.8.2"
   }
   ```
 
