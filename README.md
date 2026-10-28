@@ -61,12 +61,12 @@ This is a [Packer](https://www.packer.io/) Plugin for building images that work 
 
 **Guest networking:** By default, **veertu-anka-vm-clone** and **veertu-anka-vm-create** run a guest `ping` loop against `8.8.8.8` after start (and after `boot_delay`) before provisioners. Set `wait_for_networking = false` on the source to skip that step. See the builder docs for details.
 
-The most basic pkr.hcl file you can build from is:
+### Create a base VM
 
 ```hcl
 source "veertu-anka-vm-create" "anka-packer-base-macos" {
   installer = "/Applications/Install macOS Big Sur.app/"
-  vm_name = "anka-packer-base-macos"
+  vm_name   = "anka-packer-base-macos"
 }
 
 build {
@@ -80,19 +80,115 @@ build {
 }
 ```
 
-This will create a "base" VM template using the `.app` or `.ipsw` you specified in `installer = "/Applications/Install macOS Big Sur.app/"` with the name `anka-packer-base-macos`. Once the VM has been successfully created, it will push that VM to your default registry with the tag `veertu-registry-push-test`.
+This creates a base VM from the `.app` or `.ipsw` in `installer`, then pushes it to your default registry with tag `veertu-registry-push-test`.
 
-> If you don't specify `vm_name`, we will obtain it from the installer and create a name like `anka-packer-base-12.6-21G115`.
+> If you do not set `vm_name`, the plugin builds a name from the installer, for example `anka-packer-base-12.6-21G115`.
 
-> **However, hw_uuid, port_forwarding_rules, and several other configuration settings are ignored for the created "base" vm.** We recommend using the `veertu-anka-vm-clone` builder to modify these values.
+> **`hw_uuid`, `port_forwarding_rules`, and several other settings are ignored on the created base VM.** Use `veertu-anka-vm-clone` to set those values.
 
-You can also skip the creation of the base VM template and use an existing VM template:
+### Thin OCI tags (Anka 3.10.0+)
+
+Use `thin_oci_pulls` on `veertu-anka-vm-clone` to layer thin OCI tags onto `source_vm_name` before the build. Use `thin = true` on `veertu-anka-registry-push` to push only the files this build added (`remote` must be an OCI registry URL).
+
+Public bottles work today from GHCR (Homebrew). Large tools such as Xcode are tags **you** push to your own OCI registry after you install them in a VM. See [Anka OCI tags](https://docs.veertu.com/anka/templates-and-registries/using-an-oci-registry/oci-tags/).
+
+#### Homebrew bottles from GHCR (`skip_clone`)
+
+With `skip_clone = true`, the builder changes `source_vm_name` in place. You do not need `remote_vm`. Pull order matters. Optional `transform` values become `anka pull --transform` options:
 
 ```hcl
-source "veertu-anka-vm-clone" "anka-packer-from-source" { 
-  vm_name = "anka-packer-from-source"
+source "veertu-anka-vm-clone" "anka-packer-skip-clone-with-thin-oci-tags" {
   source_vm_name = "anka-packer-base-macos"
-  always_fetch = true
+  skip_clone     = true
+
+  thin_oci_pulls {
+    url       = "oci://ghcr.io/homebrew/core/cmake:4.3.4"
+    transform = ["s|cmake/4.3.4|usr/local"]
+  }
+
+  thin_oci_pulls {
+    url = "oci://ghcr.io/homebrew/core/oniguruma:6.9.10"
+  }
+
+  thin_oci_pulls {
+    url = "oci://ghcr.io/homebrew/core/jq:1.8.2"
+  }
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.anka-packer-skip-clone-with-thin-oci-tags",
+  ]
+
+  provisioner "shell" {
+    inline = [
+      "/usr/local/bin/cmake --version",
+      "/opt/homebrew/bin/jq --version",
+      "mkdir -p /Users/Shared/anka-packer-skip-clone-thin",
+      "echo 'built by packer skip_clone + thin OCI' > /Users/Shared/anka-packer-skip-clone-thin/build.txt",
+    ]
+  }
+
+  post-processor "veertu-anka-registry-push" {
+    remote = "oci://registry.example.com/v2/veertu/"
+    tag    = "anka-packer-skip-clone-thin-1"
+    thin   = true
+  }
+}
+```
+
+Full file: [examples/skip-clone-with-thin-oci-tags.pkr.hcl](./examples/skip-clone-with-thin-oci-tags.pkr.hcl)
+
+#### Xcode from your OCI registry, then push the next thin layer
+
+There is no public Xcode OCI tag on GHCR. Install Xcode once, stop the VM, and push a thin tag (Anka `push_mode` `2` / `anka push --thin`). Then pull that tag in Packer and push only this build's layer:
+
+```hcl
+source "veertu-anka-vm-clone" "anka-packer-with-xcode" {
+  source_vm_name = "27.0.1"
+  skip_clone     = true
+
+  // Tag you pushed earlier, for example:
+  //   ANKA_PUSH_MODE=2 anka push 27.0.1 -t xcode-27.1 oci://registry.example.com/v2/
+  thin_oci_pulls {
+    url = "oci://registry.example.com/v2/veertu/27.0.1:xcode-27.1"
+  }
+}
+
+build {
+  sources = [
+    "source.veertu-anka-vm-clone.anka-packer-with-xcode",
+  ]
+
+  provisioner "shell" {
+    inline = [
+      "xcodebuild -version",
+    ]
+  }
+
+  post-processor "veertu-anka-registry-push" {
+    remote = "oci://registry.example.com/v2/veertu/"
+    tag    = "fastlane-2.228.0"
+    thin   = true
+  }
+}
+```
+
+#### Clone after a thin pull
+
+Same `thin_oci_pulls` + `thin = true` pattern, but the builder clones first. Example (Homebrew defaults; override the pull URL with `-var` if needed): [examples/clone-existing-with-thin-oci-tags.pkr.hcl](./examples/clone-existing-with-thin-oci-tags.pkr.hcl)
+
+Needs Anka 3.10.0+, network access to the pull registry (GHCR or yours), and an OCI `remote` for the thin push. See [vm-clone](./docs/builders/vm-clone.mdx) (`thin_oci_pulls`, `skip_clone`) and [anka-registry-push](./docs/post-processors/anka-registry-push.mdx) (`thin`).
+
+### Clone an existing VM
+
+If the template/tag is not local, the builder pulls it from the registry, then clones it:
+
+```hcl
+source "veertu-anka-vm-clone" "anka-packer-from-source" {
+  vm_name        = "anka-packer-from-source"
+  source_vm_name = "anka-packer-base-macos"
+  always_fetch   = true
 }
 
 build {
@@ -101,8 +197,6 @@ build {
   ]
 }
 ```
-
-This will check to see if the VM template/tag exists locally, and if not, pull it from the registry:
 
 ```bash
 ❯ PKR_VAR_source_vm_tag="v1" PACKER_LOG=1 packer build -var 'source_vm_name=anka-packer-base-macos' examples/clone-existing-with-port-forwarding-rules.pkr.hcl
@@ -113,11 +207,9 @@ This will check to see if the VM template/tag exists locally, and if not, pull i
 2021/04/07 14:11:53 packer-plugin-veertu-anka plugin: 2021/04/07 14:11:53 Executing anka --machine-readable registry pull --tag v1 anka-packer-base-macos
 ```
 
-> Within your `.pkrvars.hcl` files, you can utilize `variable` blocks and then assign them values using the command line `packer build -var 'foo=bar'` or as environment variables `PKR_VAR_foo=bar` https://www.packer.io/docs/templates/hcl_templates/variables#assigning-values-to-build-variables
+> In `.pkrvars.hcl`, use `variable` blocks. Set values with `packer build -var 'foo=bar'` or `PKR_VAR_foo=bar`. See [Packer variables](https://www.packer.io/docs/templates/hcl_templates/variables#assigning-values-to-build-variables).
 
-This will clone `anka-packer-base-macos` to a new VM and, if there are set configurations, make them.
-
-> Check out the [examples directory](./examples) to see how port-forwarding and other options are used.
+> More templates (port forwarding and other options) are in the [examples directory](./examples).
 
 ### Build Variables
 

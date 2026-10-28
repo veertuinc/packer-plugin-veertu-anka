@@ -21,7 +21,7 @@ variable "source_vm_name" {
 
 variable "oci_push_remote" {
   type    = string
-  default = "http://127.0.0.1:15455/v2/veertu/"
+  default = "oci://registry.example.com/v2/veertu/"
 }
 
 variable "oci_push_tag" {

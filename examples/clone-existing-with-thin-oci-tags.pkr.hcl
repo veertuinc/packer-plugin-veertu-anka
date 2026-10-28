@@ -1,7 +1,10 @@
-// Requires Anka 3.10.0 or later on the host.
-// 1. Pulls thin OCI tags onto source_vm_name (in order, each with --thin and optional --transform).
-// 2. Clones source_vm_name and runs the provisioners.
-// 3. Pushes only the build's own layer as a thin OCI tag.
+// Requires Anka 3.10.0 or later on the host, and network access to the pull registry.
+// Defaults pull a real Homebrew bottle from GHCR. Robot CI overrides thin_oci_pull_*
+// and oci_push_* with a temporary Zot registry.
+//
+// 1. Pull thin OCI tags onto source_vm_name (in order; optional --transform).
+// 2. Clone source_vm_name and run the provisioners.
+// 3. Push only the build's own layer as a thin OCI tag.
 
 variable "source_vm_name" {
   type    = string
@@ -15,17 +18,17 @@ variable "vm_name" {
 
 variable "thin_oci_pull_url" {
   type    = string
-  default = "http://127.0.0.1:15455/v2/veertu/anka-packer-thin-tool:tool-1"
+  default = "oci://ghcr.io/homebrew/core/cmake:4.3.4"
 }
 
 variable "thin_oci_pull_transforms" {
   type    = list(string)
-  default = []
+  default = ["s|cmake/4.3.4|usr/local"]
 }
 
 variable "oci_push_remote" {
   type    = string
-  default = "http://127.0.0.1:15455/v2/veertu/"
+  default = "oci://registry.example.com/v2/veertu/"
 }
 
 variable "oci_push_tag" {
@@ -55,6 +58,7 @@ build {
 
   provisioner "shell" {
     inline = [
+      // With the Homebrew default this is /usr/local/bin/cmake; Robot CI overrides the pull URL.
       "echo 'built by packer' > ~/anka-packer-thin-oci-build.txt",
     ]
   }
