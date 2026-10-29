@@ -32,8 +32,8 @@ The script refreshes `edge` on the plugin and anka-packer, creates `release/v<ve
 #### 2. Build, test, and publish
 
 1. Job `packer-plugin-veertu-anka/release%2Fv<version>` runs docs check → build → test (SCM trigger / multibranch scan).
-2. If tests pass, the Console shows **Release**. Press it to publish GitHub tag `v<version>` (always pre-release) and upload artifacts. Abort marks the job ABORTED and does **not** publish.
-3. A human must update the GitHub release notes for that tag (the job does not write them).
+2. If tests pass, the Console shows **Release**. Press it to publish GitHub tag `v<version>` as a **full release** (not pre-release) and upload artifacts. The release body lists commits since the previous `v*` tag. Abort marks the job ABORTED and does **not** publish.
+3. A human may edit the GitHub release notes after publish if the auto commit list needs more detail.
 4. Merge `release/v<version>` into `edge` (both repos) when you want edge to include that work.
 
 ## Version overrides
