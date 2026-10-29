@@ -17,8 +17,9 @@ Multibranch Pipeline on the internal `anka-packer` repo, Script Path `Jenkinsfil
 
 1. Create version branch `release/v<version>` for both the plugin repo and anka-packer; commit and push.
 2. Job `packer-plugin-veertu-anka/release%2Fv<version>` runs build and test.
-3. If tests pass, the Console shows **Release**. Press it to publish GitHub tag `v<version>` and upload artifacts. Abort marks the job ABORTED and does **not** publish.
-4. Merge the version branch into `edge` (both repos) when you want edge to include that work.
+3. If tests pass, the Console shows **Release**. Press it to publish GitHub tag `v<version>` (always pre-release) and upload artifacts. Abort marks the job ABORTED and does **not** publish.
+4. A human must update the GitHub release notes for that tag (the job does not write them).
+5. Merge the version branch into `edge` (both repos) when you want edge to include that work.
 
 ### Create the Jenkins job (once)
 
