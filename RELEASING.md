@@ -15,23 +15,26 @@ Multibranch Pipeline on the internal `anka-packer` repo, Script Path `Jenkinsfil
 
 ### Official version release
 
-1. Create version branch `release/v<version>` for both the plugin repo and anka-packer; commit and push.
-2. Job `packer-plugin-veertu-anka/release%2Fv<version>` runs build and test.
-3. If tests pass, the Console shows **Release**. Press it to publish GitHub tag `v<version>` (always pre-release) and upload artifacts. Abort marks the job ABORTED and does **not** publish.
-4. A human must update the GitHub release notes for that tag (the job does not write them).
-5. Merge the version branch into `edge` (both repos) when you want edge to include that work.
+Jenkins maps the anka-packer branch name to the same plugin branch name (`release/v<version>` on both). Create those branches first, then let the job publish.
 
-### Create the Jenkins job (once)
+#### 1. Create the release branches
 
-1. New Item → Multibranch Pipeline → name `packer-plugin-veertu-anka`.
-2. Branch Sources: Bitbucket/Git `git@bitbucket.org:veertunew/anka-packer.git` (same credentials as the other packer jobs).
-3. Build Configuration → Mode: by Jenkinsfile → Script Path: `Jenkinsfile`.
-4. Discover `edge` and `release/*` (filter as needed).
-5. Scan / save. Wire Bitbucket webhook or periodic scan like the other packer multibranch jobs.
+Use the same version string on both repos (example: `4.7.0` → branch `release/v4.7.0`). From a clean anka-packer checkout on disk:
 
-## Legacy jobs (still available)
+```bash
+./scripts/create-release-branch.bash 4.7.0
+# Local branches only:
+# ./scripts/create-release-branch.bash 4.7.0 --no-push
+```
 
-`build-packer-plugin`, `test-packer-plugin`, and `release-packer-plugin` (`Jenkinsfile-build` / `-test` / `-release`) remain for manual or one-off runs. Prefer `packer-plugin-veertu-anka` for normal edge and release flow.
+The script refreshes `edge` on the plugin and anka-packer, creates `release/v<version>` on both, points the submodule at the plugin tip, and pushes (unless `--no-push`).
+
+#### 2. Build, test, and publish
+
+1. Job `packer-plugin-veertu-anka/release%2Fv<version>` runs docs check → build → test (SCM trigger / multibranch scan).
+2. If tests pass, the Console shows **Release**. Press it to publish GitHub tag `v<version>` (always pre-release) and upload artifacts. Abort marks the job ABORTED and does **not** publish.
+3. A human must update the GitHub release notes for that tag (the job does not write them).
+4. Merge `release/v<version>` into `edge` (both repos) when you want edge to include that work.
 
 ## Version overrides
 
