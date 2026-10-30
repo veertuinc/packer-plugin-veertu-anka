@@ -94,7 +94,9 @@ Public bottles work today from GHCR (Homebrew). Large tools such as Xcode are ta
 
 #### Homebrew bottles from GHCR (`skip_clone`)
 
-With `skip_clone = true`, the builder changes `source_vm_name` in place. You do not need `remote_vm`. Pull order matters. Optional `transform` values become `anka pull --transform` options:
+With `skip_clone = true`, the builder changes `source_vm_name` in place. You do not need `remote_vm`. Pull order matters. Optional `transform` values become `anka pull --transform` options.
+
+> Anka does not relocate the `@@HOMEBREW_PREFIX@@` / `@@HOMEBREW_CELLAR@@` placeholders in Homebrew bottles. Only bottles that link no other Homebrew libraries (`cellar :any_skip_relocation`, for example `cmake` and `ninja`) run after a thin pull. Bottles such as `jq` (which links `oniguruma`) do not.
 
 ```hcl
 source "veertu-anka-vm-clone" "anka-packer-skip-clone-with-thin-oci-tags" {
@@ -107,11 +109,8 @@ source "veertu-anka-vm-clone" "anka-packer-skip-clone-with-thin-oci-tags" {
   }
 
   thin_oci_pulls {
-    url = "oci://ghcr.io/homebrew/core/oniguruma:6.9.10"
-  }
-
-  thin_oci_pulls {
-    url = "oci://ghcr.io/homebrew/core/jq:1.8.2"
+    url       = "oci://ghcr.io/homebrew/core/ninja:1.13.2"
+    transform = ["s|ninja/1.13.2|opt/homebrew"]
   }
 }
 
@@ -123,7 +122,7 @@ build {
   provisioner "shell" {
     inline = [
       "/usr/local/bin/cmake --version",
-      "/opt/homebrew/bin/jq --version",
+      "/opt/homebrew/bin/ninja --version",
       "mkdir -p /Users/Shared/anka-packer-skip-clone-thin",
       "echo 'built by packer skip_clone + thin OCI' > /Users/Shared/anka-packer-skip-clone-thin/build.txt",
     ]

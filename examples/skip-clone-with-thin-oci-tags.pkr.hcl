@@ -9,10 +9,11 @@
 // 2. Start source_vm_name, run provisioners, stop/suspend.
 // 3. Push a thin OCI tag that holds only the files this build added.
 //
-// cmake uses --transform to flatten the bottle under /usr/local (Anka docs pattern).
-// jq depends on oniguruma: pull oniguruma first, and leave both bottles un-transformed
-// so Anka installs them into the Homebrew prefix (/opt/homebrew) where Mach-O
-// @@HOMEBREW_PREFIX@@ / @@HOMEBREW_CELLAR@@ placeholders resolve.
+// Each pull uses --transform to flatten the bottle into a prefix: cmake under
+// /usr/local (Anka docs pattern) and ninja under /opt/homebrew.
+// Anka does not relocate Homebrew @@HOMEBREW_PREFIX@@ / @@HOMEBREW_CELLAR@@
+// placeholders, so only bottles that link no other Homebrew libraries
+// (cellar :any_skip_relocation, such as cmake and ninja) run after a thin pull.
 
 variable "source_vm_name" {
   type    = string
@@ -45,11 +46,8 @@ source "veertu-anka-vm-clone" "anka-packer-skip-clone-with-thin-oci-tags" {
   }
 
   thin_oci_pulls {
-    url = "oci://ghcr.io/homebrew/core/oniguruma:6.9.10"
-  }
-
-  thin_oci_pulls {
-    url = "oci://ghcr.io/homebrew/core/jq:1.8.2"
+    url       = "oci://ghcr.io/homebrew/core/ninja:1.13.2"
+    transform = ["s|ninja/1.13.2|opt/homebrew"]
   }
 
   vm_label {
@@ -66,7 +64,7 @@ build {
   provisioner "shell" {
     inline = [
       "/usr/local/bin/cmake --version",
-      "/opt/homebrew/bin/jq --version",
+      "/opt/homebrew/bin/ninja --version",
       "mkdir -p /Users/Shared/anka-packer-skip-clone-thin",
       "echo 'built by packer skip_clone + thin OCI' > /Users/Shared/anka-packer-skip-clone-thin/build.txt",
     ]

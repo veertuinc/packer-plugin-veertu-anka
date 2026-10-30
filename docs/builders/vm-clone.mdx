@@ -146,14 +146,13 @@ There are many configuration options available for the builder. They are segment
     url       = "oci://ghcr.io/homebrew/core/cmake:4.3.4"
     transform = ["s|cmake/4.3.4|usr/local"]
   }
-  # jq needs oniguruma; omit transform so Anka installs into the Homebrew prefix.
   thin_oci_pulls {
-    url = "oci://ghcr.io/homebrew/core/oniguruma:6.9.10"
-  }
-  thin_oci_pulls {
-    url = "oci://ghcr.io/homebrew/core/jq:1.8.2"
+    url       = "oci://ghcr.io/homebrew/core/ninja:1.13.2"
+    transform = ["s|ninja/1.13.2|opt/homebrew"]
   }
   ```
+
+  > Anka does not relocate the `@@HOMEBREW_PREFIX@@` / `@@HOMEBREW_CELLAR@@` placeholders in Homebrew bottles. Only bottles that link no other Homebrew libraries (`cellar :any_skip_relocation`, for example `cmake` and `ninja`) run after a thin pull.
 
 * `source_vm_tag` (String) Specify the tag of the VM we want to clone instead of using the default. Also the tag to target when pulling from the registry (defaults to latest tag).
 
