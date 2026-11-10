@@ -1,0 +1,1318 @@
+name: govulncheck
+
+# Find Go vulnerabilities and open one pull request for each finding.
+#
+# Copy this file to another Go repository.
+# Change only the values in env.
+#
+# BASE_BRANCH is the branch to check out and the pull request base.
+# GO_VERSION_FILE is the go.mod or go.work file.
+# actions/setup-go reads the Go version from the go line in that file.
+# The scan runs in the directory of that file.
+# CI_WORKFLOW_FILES is a comma-separated list of workflow files.
+# After a GITHUB_TOKEN pull request, this workflow dispatches those files.
+# GitHub does not start pull_request workflows for GITHUB_TOKEN.
+# Leave CI_WORKFLOW_FILES empty to skip dispatch.
+#
+# CI without a personal access token:
+# 1. Preferred. Create a GitHub App with Contents write and Pull requests write.
+#    Install the app on this repository.
+#    Set secrets GOVULNCHECK_APP_ID and GOVULNCHECK_APP_PRIVATE_KEY.
+#    GOVULNCHECK_APP_ID is the numeric App ID.
+#    GOVULNCHECK_APP_PRIVATE_KEY is the app private key, PEM text.
+#    The workflow opens the pull request with the app token.
+#    pull_request workflows then start.
+# 2. Fallback. GITHUB_TOKEN opens the pull request, then this workflow
+#    dispatches CI_WORKFLOW_FILES.
+#    Those files must have a workflow_dispatch trigger.
+#    In Settings, Actions, General, Workflow permissions:
+#    select Read and write permissions.
+#    Enable "Allow GitHub Actions to create and approve pull requests".
+#
+# Standard library findings and go command findings use module path
+# stdlib or toolchain. go get cannot bump those modules.
+# The fix is a newer Go toolchain.
+# This workflow runs: go get toolchain@goX.Y.Z
+# That command sets the toolchain line in go.mod.
+# It leaves the go language line unchanged when the go command can do so.
+# The workflow sets GOTOOLCHAIN=auto for that build and test,
+# so the new toolchain compiles the module.
+# actions/setup-go@v5 installs the version from the go line.
+# It does not read the toolchain line.
+# The go command default is GOTOOLCHAIN=auto.
+# With that default, a newer toolchain line is the toolchain used to compile.
+# This repository does not set GOTOOLCHAIN=local.
+# The workflow does not open a pull request when build or test fails.
+# A finding with no fixed version is listed in the job summary.
+# Skip a finding when an open pull request uses head branch govulncheck/<GO-ID>,
+# or when the pull request title contains the GO id or an alias.
+# Also skip a finding when an open pull request head sets every affected module
+# to the fixed version or a newer version. The workflow reads go.mod on that branch.
+# The job summary names the pull request that covers the finding.
+
+on:
+  schedule:
+    # Daily at 06:17 UTC. GitHub runs the schedule from the default branch.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report findings only. Do not push branches or open pull requests."
+        type: boolean
+        default: false
+        required: false
+
+env:
+  BASE_BRANCH: edge
+  GO_VERSION_FILE: go.mod
+  CI_WORKFLOW_FILES: check-pr.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: govulncheck-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  govulncheck:
+    name: Find vulnerabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check for GitHub App credentials
+        id: app-check
+        env:
+          GOVULNCHECK_APP_ID: ${{ secrets.GOVULNCHECK_APP_ID }}
+          GOVULNCHECK_APP_PRIVATE_KEY: ${{ secrets.GOVULNCHECK_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "$GOVULNCHECK_APP_ID" ] && [ -n "$GOVULNCHECK_APP_PRIVATE_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub App token
+        id: app-token
+        if: steps.app-check.outputs.present == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.GOVULNCHECK_APP_ID }}
+          private-key: ${{ secrets.GOVULNCHECK_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Check out base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+          fetch-depth: 1
+          persist-credentials: true
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - name: Delete the local tag that uses the base branch name
+        run: |
+          # This repository has an annotated tag named edge.
+          # actions/checkout fetches refs/tags/edge* when the ref is not qualified.
+          # git rev-parse edge then returns the tag, and the scan stops.
+          if git rev-parse -q --verify "refs/tags/${BASE_BRANCH}" >/dev/null; then
+            git tag -d "${BASE_BRANCH}"
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ env.GO_VERSION_FILE }}
+
+      - name: Install govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Open one pull request per vulnerability
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          USE_APP_TOKEN: ${{ steps.app-token.outputs.token != '' && 'true' || 'false' }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+        run: |
+          python3 - << 'GOVULNCHECK_PY'
+          #!/usr/bin/env python3
+          """Open one pull request per Go vulnerability reported by govulncheck.
+          
+          The workflow file embeds this program. Repository-specific values come from
+          the environment: BASE_BRANCH, GO_VERSION_FILE, CI_WORKFLOW_FILES, DRY_RUN,
+          and USE_APP_TOKEN.
+          """
+          
+          from __future__ import annotations
+          
+          import json
+          import os
+          import re
+          import shutil
+          import subprocess
+          import sys
+          import tempfile
+          from dataclasses import dataclass, field
+          
+          
+          TOOLCHAIN_MODULES = {"stdlib", "toolchain"}
+          BRANCH_PREFIX = "govulncheck/"
+          
+          
+          class CmdError(RuntimeError):
+              pass
+          
+          
+          def log(text: str = "") -> None:
+              print(text, flush=True)
+          
+          
+          def run(
+              cmd: list[str],
+              *,
+              cwd: str | None = None,
+              env: dict[str, str] | None = None,
+              check: bool = True,
+              quiet: bool = False,
+              timeout: int = 1200,
+          ) -> tuple[int, str]:
+              if not quiet:
+                  log("+ " + " ".join(cmd))
+              proc = subprocess.run(
+                  cmd,
+                  cwd=cwd,
+                  env=env,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.STDOUT,
+                  timeout=timeout,
+                  check=False,
+              )
+              out = proc.stdout or ""
+              if not quiet and out:
+                  log(out.rstrip("\n"))
+              if check and proc.returncode != 0:
+                  tail = out[-4000:]
+                  raise CmdError(
+                      "command failed ({0}): {1}\n{2}".format(proc.returncode, " ".join(cmd), tail)
+                  )
+              return proc.returncode, out
+          
+          
+          def parse_messages(text: str) -> tuple[dict | None, dict[str, dict], list[dict]]:
+              decoder = json.JSONDecoder()
+              index = 0
+              limit = len(text)
+              config = None
+              osvs: dict[str, dict] = {}
+              findings: list[dict] = []
+              while index < limit:
+                  while index < limit and text[index].isspace():
+                      index += 1
+                  if index >= limit:
+                      break
+                  try:
+                      obj, end = decoder.raw_decode(text, index)
+                  except json.JSONDecodeError as exc:
+                      raise SystemExit("cannot parse govulncheck JSON: {0}".format(exc)) from exc
+                  index = end
+                  if not isinstance(obj, dict):
+                      continue
+                  if isinstance(obj.get("config"), dict):
+                      config = obj["config"]
+                  osv = obj.get("osv")
+                  if isinstance(osv, dict) and osv.get("id"):
+                      osvs[osv["id"]] = osv
+                  finding = obj.get("finding")
+                  if isinstance(finding, dict) and finding.get("osv"):
+                      findings.append(finding)
+              return config, osvs, findings
+          
+          
+          def frame_has(finding: dict, key: str) -> bool:
+              for frame in finding.get("trace") or []:
+                  if frame.get(key):
+                      return True
+              return False
+          
+          
+          def normalize_version(version: str) -> str:
+              value = version.strip()
+              if value.startswith("go") and len(value) > 2 and value[2].isdigit():
+                  rest = value[2:]
+                  if re.fullmatch(r"\d+(?:\.\d+){0,2}", rest):
+                      parts = rest.split(".")
+                      while len(parts) < 3:
+                          parts.append("0")
+                      return "v" + ".".join(parts)
+                  return "v" + rest
+              if value and not value.startswith("v"):
+                  return "v" + value
+              return value
+          
+          
+          def parse_semver(version: str) -> tuple[list[int], list[str]] | None:
+              value = normalize_version(version)
+              if not value.startswith("v"):
+                  return None
+              body = value[1:].split("+", 1)[0]
+              main, separator, pre = body.partition("-")
+              parts = main.split(".")
+              if not 1 <= len(parts) <= 3:
+                  return None
+              numbers: list[int] = []
+              for part in parts:
+                  if not part.isdigit() or (len(part) > 1 and part.startswith("0")):
+                      return None
+                  numbers.append(int(part))
+              while len(numbers) < 3:
+                  numbers.append(0)
+              if not separator:
+                  return numbers, []
+              idents = pre.split(".")
+              for ident in idents:
+                  if not ident or not re.fullmatch(r"[0-9A-Za-z-]+", ident):
+                      return None
+                  if ident.isdigit() and len(ident) > 1 and ident.startswith("0"):
+                      return None
+              return numbers, idents
+          
+          
+          def cmp_idents(left: list[str], right: list[str]) -> int:
+              if left == right:
+                  return 0
+              if not left:
+                  return 1
+              if not right:
+                  return -1
+              for left_ident, right_ident in zip(left, right):
+                  if left_ident == right_ident:
+                      continue
+                  left_num = left_ident.isdigit()
+                  right_num = right_ident.isdigit()
+                  if left_num != right_num:
+                      return -1 if left_num else 1
+                  if left_num:
+                      return (int(left_ident) > int(right_ident)) - (int(left_ident) < int(right_ident))
+                  return (left_ident > right_ident) - (left_ident < right_ident)
+              if len(left) == len(right):
+                  return 0
+              return 1 if len(left) > len(right) else -1
+          
+          
+          def semver_cmp(left: str, right: str) -> int | None:
+              parsed_left = parse_semver(left)
+              parsed_right = parse_semver(right)
+              if parsed_left is None or parsed_right is None:
+                  return None
+              if parsed_left[0] != parsed_right[0]:
+                  return (parsed_left[0] > parsed_right[0]) - (parsed_left[0] < parsed_right[0])
+              return cmp_idents(parsed_left[1], parsed_right[1])
+          
+          
+          def semver_to_go_tag(version: str) -> str:
+              raw = version.strip()
+              if raw.startswith("go") and len(raw) > 2 and raw[2].isdigit():
+                  return raw
+              if not raw.startswith("v"):
+                  raw = "v" + raw
+              if raw.startswith("v0.0.0"):
+                  raise ValueError("no Go release for {0}".format(version))
+              if raw == "v1.0.0":
+                  return "go1"
+              parsed = parse_semver(raw)
+              if parsed is None:
+                  raise ValueError("invalid Go version {0}".format(version))
+              major, minor, patch = parsed[0]
+              idents = parsed[1]
+              if patch == 0:
+                  base = "go{0}.{1}".format(major, minor)
+              else:
+                  base = "go{0}.{1}.{2}".format(major, minor, patch)
+              if not idents:
+                  return base
+              match = re.fullmatch(r"(.*)\.(\d+)", ".".join(idents))
+              if not match:
+                  raise ValueError("cannot map prerelease {0} to a Go tag".format(version))
+              return base + match.group(1) + match.group(2)
+          
+          
+          def title_has_ident(title: str, ident: str) -> bool:
+              pattern = r"(?<![A-Za-z0-9-])" + re.escape(ident) + r"(?![A-Za-z0-9-])"
+              return re.search(pattern, title, re.IGNORECASE) is not None
+          
+          
+          def alias_label(aliases: list[str]) -> str:
+              cves = [alias for alias in aliases if alias.upper().startswith("CVE-")]
+              if cves:
+                  return ", ".join(cves)
+              ghsas = [alias for alias in aliases if alias.upper().startswith("GHSA-")]
+              if ghsas:
+                  return ", ".join(ghsas)
+              return "no CVE"
+          
+          
+          @dataclass
+          class Bump:
+              module: str
+              current: str
+              fixed: str
+              display: str
+              kind: str
+          
+          
+          @dataclass
+          class Vuln:
+              osv_id: str
+              aliases: list[str]
+              summary: str
+              bumps: list[Bump] = field(default_factory=list)
+              called: bool = False
+              imported: bool = False
+              unfixed: list[str] = field(default_factory=list)
+          
+              def branch(self) -> str:
+                  return BRANCH_PREFIX + self.osv_id
+          
+              def title(self) -> str:
+                  parts = ["{0} to {1}".format(bump.module, bump.display) for bump in self.bumps]
+                  if len(parts) == 1:
+                      bump_text = "bump " + parts[0]
+                  else:
+                      bump_text = "bump " + ", ".join(parts)
+                  title = "Fix {0} ({1}): {2}".format(self.osv_id, alias_label(self.aliases), bump_text)
+                  if len(title) <= 240:
+                      return title
+                  return title[:237] + "..."
+          
+          
+          def pr_body(vuln: Vuln) -> str:
+              lines = [
+                  "This pull request fixes {0}.".format(vuln.osv_id),
+                  "",
+                  "Vulnerability report: https://pkg.go.dev/vuln/{0}".format(vuln.osv_id),
+                  "",
+              ]
+              if vuln.aliases:
+                  lines.append("Aliases:")
+                  lines.extend("- {0}".format(alias) for alias in vuln.aliases)
+              else:
+                  lines.append("Aliases: none.")
+              lines.append("")
+              if vuln.summary:
+                  lines.append("Summary: {0}".format(vuln.summary))
+                  lines.append("")
+              if vuln.called:
+                  lines.append("The vulnerable code is called.")
+              else:
+                  lines.append("The vulnerable code is not called.")
+                  if vuln.imported:
+                      lines.append("The vulnerable package is imported.")
+                  else:
+                      lines.append("The vulnerable package is not imported.")
+                  lines.append(
+                      "Module scan reports the module version. "
+                      "Image scanners can flag the module when the program does not call the vulnerable function."
+                  )
+              lines.append("")
+              lines.append("Bumps:")
+              for bump in vuln.bumps:
+                  if bump.kind == "toolchain":
+                      lines.append(
+                          "- {0} from {1} to {2} (toolchain line in go.mod)".format(
+                              bump.module, bump.current or "unknown", bump.display
+                          )
+                      )
+                  else:
+                      lines.append(
+                          "- {0} from {1} to {2}".format(
+                              bump.module, bump.current or "unknown", bump.display
+                          )
+                      )
+              if any(bump.kind == "toolchain" for bump in vuln.bumps):
+                  lines.extend(
+                      [
+                          "",
+                          "A standard library finding or a go command finding is fixed by a newer Go toolchain.",
+                          "This pull request sets the toolchain line in go.mod.",
+                      ]
+                  )
+              lines.extend(
+                  [
+                      "",
+                      "The workflow ran these commands before it opened this pull request:",
+                  ]
+              )
+              for bump in vuln.bumps:
+                  if bump.kind == "toolchain":
+                      lines.append("- go get toolchain@{0}".format(bump.display))
+                  else:
+                      lines.append("- go get {0}@{1}".format(bump.module, bump.display))
+              lines.extend(["- go mod tidy", "- go build ./...", "- go test ./..."])
+              if vuln.unfixed:
+                  lines.append("")
+                  lines.append("These modules have no fixed version and were not changed:")
+                  lines.extend("- {0}".format(item) for item in vuln.unfixed)
+              return "\n".join(lines) + "\n"
+          
+          
+          def choose_fixed(pairs: list[tuple[str, str]]) -> tuple[str, str]:
+              current, fixed = pairs[0]
+              for next_current, next_fixed in pairs[1:]:
+                  compared = semver_cmp(next_fixed, fixed)
+                  if compared is None:
+                      if parse_semver(fixed) is None and parse_semver(next_fixed) is not None:
+                          current, fixed = next_current, next_fixed
+                      continue
+                  if compared > 0:
+                      current, fixed = next_current, next_fixed
+              return current, fixed
+          
+          
+          def make_bump(module: str, current: str, fixed: str) -> Bump:
+              if module in TOOLCHAIN_MODULES:
+                  return Bump(module, current, fixed, semver_to_go_tag(fixed), "toolchain")
+              return Bump(module, current, fixed, fixed, "module")
+          
+          
+          def add_finding(
+              finding: dict,
+              grouped: dict[str, dict[str, list[tuple[str, str]]]],
+              unfixed: dict[str, list[str]],
+          ) -> None:
+              osv_id = finding["osv"]
+              grouped.setdefault(osv_id, {})
+              unfixed.setdefault(osv_id, [])
+              trace = finding.get("trace") or []
+              if not trace:
+                  unfixed[osv_id].append("missing trace")
+                  return
+              frame = trace[0]
+              module = frame.get("module") or ""
+              current = frame.get("version") or ""
+              fixed = finding.get("fixed_version") or ""
+              if not module or module == "unknown-module":
+                  unfixed[osv_id].append(module or "unknown-module")
+                  return
+              if not fixed:
+                  unfixed[osv_id].append("{0} (no fixed version)".format(module))
+                  return
+              compared = semver_cmp(current, fixed) if current else -1
+              if compared is not None and compared >= 0:
+                  return
+              grouped[osv_id].setdefault(module, []).append((current, fixed))
+          
+          
+          def build_vulns(
+              module_findings: list[dict],
+              symbol_findings: list[dict],
+              osvs: dict[str, dict],
+          ) -> list[Vuln]:
+              called = {finding["osv"] for finding in symbol_findings if frame_has(finding, "function")}
+              imported = {finding["osv"] for finding in symbol_findings if frame_has(finding, "package")}
+              grouped: dict[str, dict[str, list[tuple[str, str]]]] = {}
+              unfixed: dict[str, list[str]] = {}
+              for finding in module_findings:
+                  add_finding(finding, grouped, unfixed)
+              known = set(grouped)
+              for finding in symbol_findings:
+                  if finding["osv"] in known or not frame_has(finding, "function"):
+                      continue
+                  add_finding(finding, grouped, unfixed)
+          
+              vulns: list[Vuln] = []
+              for osv_id in sorted(set(grouped) | set(unfixed)):
+                  entry = osvs.get(osv_id) or {}
+                  aliases = [alias for alias in (entry.get("aliases") or []) if isinstance(alias, str)]
+                  summary = ""
+                  if entry.get("summary"):
+                      summary = str(entry["summary"]).splitlines()[0]
+                  bumps: list[Bump] = []
+                  bump_errors: list[str] = []
+                  for module, pairs in grouped.get(osv_id, {}).items():
+                      current, fixed = choose_fixed(pairs)
+                      try:
+                          bumps.append(make_bump(module, current, fixed))
+                      except ValueError as exc:
+                          bump_errors.append("{0} ({1})".format(module, exc))
+                  bumps.sort(key=lambda bump: (bump.kind == "toolchain", bump.module))
+                  notes = list(dict.fromkeys(unfixed.get(osv_id, []) + bump_errors))
+                  if not bumps and not notes:
+                      continue
+                  vulns.append(
+                      Vuln(
+                          osv_id=osv_id,
+                          aliases=aliases,
+                          summary=summary,
+                          bumps=bumps,
+                          called=osv_id in called,
+                          imported=osv_id in imported,
+                          unfixed=notes,
+                      )
+                  )
+              return vulns
+          
+          
+          def gh_cmd(args: list[str]) -> list[str]:
+              repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
+              cmd = ["gh", *args]
+              if repo:
+                  cmd.extend(["--repo", repo])
+              return cmd
+          
+          
+          def load_open_prs() -> list[dict]:
+              _, out = run(
+                  gh_cmd(["pr", "list", "--state", "open", "--limit", "200", "--json", "number,title,headRefName"]),
+                  quiet=True,
+              )
+              prs = json.loads(out)
+              if not isinstance(prs, list):
+                  raise SystemExit("gh pr list did not return a list")
+              if len(prs) >= 200:
+                  raise SystemExit("200 or more open pull requests. Refusing to open a pull request.")
+              return prs
+          
+          
+          def strip_mod_comment(line: str) -> str:
+              quote = False
+              index = 0
+              while index < len(line):
+                  if line[index] == '"':
+                      quote = not quote
+                  elif not quote and line.startswith("//", index):
+                      return line[:index]
+                  index += 1
+              return line
+          
+          
+          def unquote_mod_token(token: str) -> str:
+              if len(token) >= 2 and token[0] == '"' and token[-1] == '"':
+                  return token[1:-1]
+              return token
+          
+          
+          def looks_like_module_version(token: str) -> bool:
+              value = unquote_mod_token(token)
+              return value.startswith("v") or (value.startswith("go") and len(value) > 2 and value[2].isdigit())
+          
+          
+          def apply_replace(statement: str, versions: dict[str, str]) -> None:
+              left, separator, right = statement.partition("=>")
+              if not separator:
+                  return
+              left_parts = left.split()
+              right_parts = right.split()
+              if not left_parts or not right_parts:
+                  return
+              old_path = unquote_mod_token(left_parts[0])
+              if len(right_parts) >= 2 and looks_like_module_version(right_parts[-1]):
+                  versions[old_path] = unquote_mod_token(right_parts[-1])
+                  return
+              # A local replace or a path with no version does not prove a fixed version.
+              versions[old_path] = ""
+          
+          
+          def parse_gomod_state(text: str) -> tuple[dict[str, str], str, str]:
+              versions: dict[str, str] = {}
+              toolchain = ""
+              go_line = ""
+              block = ""
+              for raw in text.splitlines():
+                  line = strip_mod_comment(raw).strip()
+                  if not line:
+                      continue
+                  if line == ")":
+                      block = ""
+                      continue
+                  if line in ("require (", "replace (", "exclude (", "retract ("):
+                      block = line.split()[0]
+                      continue
+                  if block == "require":
+                      parts = line.split()
+                      if len(parts) >= 2:
+                          versions.setdefault(unquote_mod_token(parts[0]), parts[1])
+                      continue
+                  if block == "replace":
+                      apply_replace(line, versions)
+                      continue
+                  if block in ("exclude", "retract"):
+                      continue
+                  parts = line.split()
+                  if parts[0] == "go" and len(parts) >= 2:
+                      go_line = parts[1]
+                  elif parts[0] == "toolchain" and len(parts) >= 2:
+                      toolchain = parts[1]
+                  elif parts[0] == "require" and len(parts) >= 3:
+                      versions.setdefault(unquote_mod_token(parts[1]), parts[2])
+                  elif parts[0] == "replace":
+                      apply_replace(line[len("replace "):].strip(), versions)
+              return versions, toolchain, go_line
+          
+          
+          def higher_go_version(left: str, right: str) -> str:
+              if not left:
+                  return right
+              if not right:
+                  return left
+              compared = semver_cmp(left, right)
+              if compared is None:
+                  return left
+              return left if compared >= 0 else right
+          
+          
+          def gomod_covers_vuln(vuln: Vuln, text: str) -> tuple[bool, str]:
+              if not vuln.bumps:
+                  return False, ""
+              versions, toolchain, go_line = parse_gomod_state(text)
+              details = []
+              for bump in vuln.bumps:
+                  if bump.kind == "toolchain":
+                      selected = higher_go_version(toolchain, go_line)
+                      compared = semver_cmp(selected, bump.fixed) if selected else None
+                      if compared is None or compared < 0:
+                          return False, ""
+                      details.append("{0} to {1}".format(bump.module, selected))
+                      continue
+                  selected = versions.get(bump.module)
+                  if not selected:
+                      return False, ""
+                  compared = semver_cmp(selected, bump.fixed)
+                  if compared is None or compared < 0:
+                      return False, ""
+                  details.append("{0} to {1}".format(bump.module, selected))
+              return True, ", ".join(details)
+          
+          
+          def blocking_pr(
+              vuln: Vuln,
+              prs: list[dict],
+              read_gomod=None,
+          ) -> tuple[dict | None, str]:
+              branch = vuln.branch()
+              idents = [vuln.osv_id, *vuln.aliases]
+              for pr in prs:
+                  head = pr.get("headRefName") or ""
+                  if head.lower() == branch.lower():
+                      return pr, "open pull request #{0} has head branch {1}".format(pr.get("number"), head)
+                  title = pr.get("title") or ""
+                  for ident in idents:
+                      if ident and title_has_ident(title, ident):
+                          return pr, "open pull request #{0} title contains {1}".format(pr.get("number"), ident)
+              if read_gomod is None or not vuln.bumps:
+                  return None, ""
+              for pr in prs:
+                  text = read_gomod(pr)
+                  if not text:
+                      continue
+                  covered, detail = gomod_covers_vuln(vuln, text)
+                  if covered:
+                      return pr, "open pull request #{0} sets {1}".format(pr.get("number"), detail)
+              return None, ""
+          
+          
+          def fetch_pr_gomod(root: str, number: int, rel_path: str) -> str | None:
+              cache = getattr(fetch_pr_gomod, "cache", None)
+              if cache is None:
+                  cache = {}
+                  fetch_pr_gomod.cache = cache
+              key = (number, rel_path)
+              if key in cache:
+                  return cache[key]
+              log("read {0} from pull request #{1}".format(rel_path, number))
+              code, _ = run(
+                  ["git", "fetch", "--depth", "1", "origin", "pull/{0}/head".format(number)],
+                  cwd=root,
+                  check=False,
+                  quiet=True,
+              )
+              if code != 0:
+                  log("cannot fetch pull request #{0}".format(number))
+                  cache[key] = None
+                  return None
+              code, content = run(
+                  ["git", "show", "FETCH_HEAD:{0}".format(rel_path)],
+                  cwd=root,
+                  check=False,
+                  quiet=True,
+              )
+              if code != 0:
+                  log("pull request #{0} has no {1}".format(number, rel_path))
+                  cache[key] = None
+                  return None
+              cache[key] = content
+              return content
+          
+          
+          def write_summary(text: str) -> None:
+              log(text.rstrip("\n"))
+              path = os.environ.get("GITHUB_STEP_SUMMARY", "").strip()
+              if not path:
+                  return
+              with open(path, "a", encoding="utf-8") as handle:
+                  handle.write(text)
+                  if not text.endswith("\n"):
+                      handle.write("\n")
+          
+          
+          def repo_root() -> str:
+              _, out = run(["git", "rev-parse", "--show-toplevel"], quiet=True)
+              return out.strip()
+          
+          
+          def module_dir(root: str) -> str:
+              go_file = os.environ.get("GO_VERSION_FILE", "go.mod").strip() or "go.mod"
+              path = go_file if os.path.isabs(go_file) else os.path.join(root, go_file)
+              if not os.path.isfile(path):
+                  raise SystemExit("Go version file not found: {0}".format(path))
+              return os.path.dirname(path) or root
+          
+          
+          def rel_module_files(root: str, mod_dir: str) -> tuple[str, str]:
+              relative = os.path.relpath(mod_dir, root)
+              if relative == ".":
+                  return "go.mod", "go.sum"
+              return os.path.join(relative, "go.mod"), os.path.join(relative, "go.sum")
+          
+          
+          def run_scan(args: list[str], cwd: str) -> tuple[dict | None, dict[str, dict], list[dict], int]:
+              if not quiet_which("govulncheck"):
+                  raise SystemExit("govulncheck is not on PATH")
+              log("+ govulncheck " + " ".join(args))
+              proc = subprocess.run(
+                  ["govulncheck", *args],
+                  cwd=cwd,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  timeout=1200,
+                  check=False,
+              )
+              if proc.stderr:
+                  log(proc.stderr.rstrip("\n"))
+              if proc.returncode not in (0, 3):
+                  raise CmdError(
+                      "govulncheck failed ({0}): {1}\n{2}".format(
+                          proc.returncode, " ".join(args), (proc.stderr or "")[-4000:]
+                      )
+                  )
+              config, osvs, findings = parse_messages(proc.stdout or "")
+              return config, osvs, findings, proc.returncode
+          
+          
+          def quiet_which(name: str) -> str | None:
+              return shutil.which(name)
+          
+          
+          def go_env(auto_toolchain: bool) -> dict[str, str]:
+              env = os.environ.copy()
+              if auto_toolchain:
+                  env["GOTOOLCHAIN"] = "auto"
+              return env
+          
+          
+          def selected_version(module: str, cwd: str, env: dict[str, str]) -> str:
+              _, out = run(["go", "list", "-m", "-json", module], cwd=cwd, env=env, quiet=True)
+              info = json.loads(out)
+              replace = info.get("Replace") or {}
+              if replace.get("Version"):
+                  return replace["Version"]
+              return info.get("Version") or ""
+          
+          
+          def toolchain_line(go_mod_path: str) -> str:
+              with open(go_mod_path, encoding="utf-8") as handle:
+                  for line in handle:
+                      if line.startswith("toolchain "):
+                          parts = line.split()
+                          if len(parts) >= 2:
+                              return parts[1]
+              return ""
+          
+          
+          def apply_bumps(vuln: Vuln, mod_dir: str, go_mod_path: str) -> None:
+              auto = any(bump.kind == "toolchain" for bump in vuln.bumps)
+              env = go_env(auto)
+              for bump in vuln.bumps:
+                  if bump.kind == "toolchain":
+                      run(["go", "get", "toolchain@{0}".format(bump.display)], cwd=mod_dir, env=env)
+                  else:
+                      run(["go", "get", "{0}@{1}".format(bump.module, bump.display)], cwd=mod_dir, env=env)
+              run(["go", "mod", "tidy"], cwd=mod_dir, env=env)
+              for bump in vuln.bumps:
+                  if bump.kind == "toolchain":
+                      got = toolchain_line(go_mod_path)
+                      if got != bump.display:
+                          raise CmdError(
+                              "toolchain line is {0!r} after go get. Expected {1!r}.".format(got, bump.display)
+                          )
+                      continue
+                  selected = selected_version(bump.module, mod_dir, env)
+                  compared = semver_cmp(selected, bump.fixed)
+                  if compared is None or compared < 0:
+                      raise CmdError(
+                          "selected {0} {1} is not the fixed version {2}".format(
+                              bump.module, selected or "unknown", bump.fixed
+                          )
+                      )
+              run(["go", "build", "./..."], cwd=mod_dir, env=env)
+              run(["go", "test", "./..."], cwd=mod_dir, env=env)
+          
+          
+          def planned_commands(vuln: Vuln) -> list[str]:
+              commands = []
+              for bump in vuln.bumps:
+                  if bump.kind == "toolchain":
+                      commands.append("go get toolchain@{0}".format(bump.display))
+                  else:
+                      commands.append("go get {0}@{1}".format(bump.module, bump.display))
+              commands.extend(["go mod tidy", "go build ./...", "go test ./..."])
+              return commands
+          
+          
+          def print_plan(vuln: Vuln, action: str, reason: str, base: str) -> None:
+              log("--- {0} ---".format(vuln.osv_id))
+              if vuln.summary:
+                  log("summary: {0}".format(vuln.summary))
+              log("report: https://pkg.go.dev/vuln/{0}".format(vuln.osv_id))
+              log("aliases: {0}".format(", ".join(vuln.aliases) if vuln.aliases else "none"))
+              log("called: {0}".format("yes" if vuln.called else "no"))
+              log("imported: {0}".format("yes" if vuln.imported else "no"))
+              if vuln.unfixed:
+                  log("no fixed version: {0}".format(", ".join(vuln.unfixed)))
+              for bump in vuln.bumps:
+                  log(
+                      "bump: {0} {1} -> {2}".format(
+                          bump.module, bump.current or "unknown", bump.display
+                      )
+                  )
+              if vuln.bumps:
+                  log("commands:")
+                  for command in planned_commands(vuln):
+                      log("  " + command)
+                  log("branch: {0}".format(vuln.branch()))
+                  log("base: {0}".format(base))
+                  log("title: {0}".format(vuln.title()))
+                  log("body:")
+                  log(pr_body(vuln).rstrip("\n"))
+              log("action: {0}".format(action))
+              if reason:
+                  log("reason: {0}".format(reason))
+              log("")
+          
+          
+          def checkout_base(root: str, base: str) -> None:
+              run(["git", "checkout", "--force", base], cwd=root)
+              run(["git", "reset", "--hard", base], cwd=root)
+          
+          
+          def commit_and_push(root: str, vuln: Vuln, gomod: str, gosum: str) -> None:
+              paths = [gomod]
+              if os.path.isfile(os.path.join(root, gosum)):
+                  paths.append(gosum)
+              run(["git", "add", "--", *paths], cwd=root)
+              code, _ = run(["git", "diff", "--cached", "--quiet"], cwd=root, check=False, quiet=True)
+              if code == 0:
+                  raise CmdError("go get did not change {0}".format(" ".join(paths)))
+              run(
+                  [
+                      "git",
+                      "-c",
+                      "user.name=github-actions[bot]",
+                      "-c",
+                      "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+                      "commit",
+                      "-m",
+                      vuln.title(),
+                  ],
+                  cwd=root,
+              )
+              run(["git", "push", "--set-upstream", "origin", vuln.branch()], cwd=root)
+          
+          
+          def create_pr(vuln: Vuln, base: str) -> str:
+              with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+                  handle.write(pr_body(vuln))
+                  body_path = handle.name
+              try:
+                  _, out = run(
+                      gh_cmd(
+                          [
+                              "pr",
+                              "create",
+                              "--base",
+                              base,
+                              "--head",
+                              vuln.branch(),
+                              "--title",
+                              vuln.title(),
+                              "--body-file",
+                              body_path,
+                          ]
+                      )
+                  )
+              finally:
+                  os.unlink(body_path)
+              for line in out.splitlines():
+                  if line.startswith("https://"):
+                      return line.strip()
+              return out.strip()
+          
+          
+          def dispatch_ci(branch: str, files: list[str]) -> None:
+              for name in files:
+                  last_error = ""
+                  for _ in range(3):
+                      try:
+                          run(gh_cmd(["workflow", "run", name, "--ref", branch]))
+                          last_error = ""
+                          break
+                      except CmdError as exc:
+                          last_error = str(exc)
+                  if last_error:
+                      raise CmdError(last_error)
+          
+          
+          def workflow_files() -> list[str]:
+              raw = os.environ.get("CI_WORKFLOW_FILES", "")
+              return [item.strip() for item in raw.split(",") if item.strip()]
+          
+          
+          def env_flag(name: str) -> bool:
+              return os.environ.get(name, "").strip().lower() == "true"
+          
+          
+          def drop_main_module(vuln: Vuln, main_module: str) -> None:
+              kept: list[Bump] = []
+              for bump in vuln.bumps:
+                  if bump.kind == "module" and bump.module == main_module:
+                      vuln.unfixed.append("{0} (this module is the main module)".format(bump.module))
+                      continue
+                  kept.append(bump)
+              vuln.bumps = kept
+          
+          
+          def pr_has_checks(number: int) -> bool:
+              _, out = run(
+                  gh_cmd(["pr", "view", str(number), "--json", "statusCheckRollup"]),
+                  quiet=True,
+              )
+              data = json.loads(out)
+              return bool(data.get("statusCheckRollup"))
+          
+          
+          def maybe_dispatch_existing(
+              vuln: Vuln,
+              blocker: dict,
+              dry_run: bool,
+              use_app_token: bool,
+              ci_files: list[str],
+          ) -> str:
+              """Start CI for a pull request this workflow already opened.
+          
+              GITHUB_TOKEN does not start pull_request workflows. A failed dispatch
+              must be retried on the next run. Do not dispatch again when checks exist.
+              """
+              head = (blocker.get("headRefName") or "").lower()
+              if dry_run or use_app_token or not ci_files or head != vuln.branch().lower():
+                  return ""
+              number = blocker.get("number")
+              if not isinstance(number, int) or pr_has_checks(number):
+                  return ""
+              dispatch_ci(vuln.branch(), ci_files)
+              return " No checks on the pull request. Dispatched {0}.".format(", ".join(ci_files))
+          
+          
+          def open_one(
+              root: str,
+              mod_dir: str,
+              vuln: Vuln,
+              base: str,
+              dry_run: bool,
+              use_app_token: bool,
+              ci_files: list[str],
+          ) -> tuple[str, str]:
+              gomod_rel, _ = rel_module_files(root, mod_dir)
+              seen: dict[int, str | None] = {}
+          
+              def read_gomod(pr: dict) -> str | None:
+                  number = pr.get("number")
+                  if not isinstance(number, int):
+                      return None
+                  if number not in seen:
+                      seen[number] = fetch_pr_gomod(root, number, gomod_rel)
+                  return seen[number]
+          
+              blocker, reason = blocking_pr(vuln, load_open_prs(), read_gomod)
+              if blocker:
+                  extra = maybe_dispatch_existing(vuln, blocker, dry_run, use_app_token, ci_files)
+                  print_plan(vuln, "skip", reason + extra, base)
+                  return "skip", reason + extra
+              if not vuln.bumps:
+                  reason = "no fixed version: " + ", ".join(vuln.unfixed)
+                  print_plan(vuln, "no-fix", reason, base)
+                  return "no-fix", reason
+              if dry_run:
+                  print_plan(vuln, "would-open", "dry run does not push or open a pull request", base)
+                  return "would-open", vuln.title()
+          
+              go_mod, go_sum = rel_module_files(root, mod_dir)
+              go_mod_path = os.path.join(root, go_mod)
+              pushed = False
+              opened_url = ""
+              try:
+                  run(["git", "checkout", "-B", vuln.branch(), base], cwd=root)
+                  apply_bumps(vuln, mod_dir, go_mod_path)
+                  commit_and_push(root, vuln, go_mod, go_sum)
+                  pushed = True
+                  opened_url = create_pr(vuln, base)
+                  if use_app_token:
+                      reason = (
+                          "opened {0}. pull_request workflows start because the token is a GitHub App token"
+                      ).format(opened_url)
+                  elif ci_files:
+                      dispatch_ci(vuln.branch(), ci_files)
+                      reason = "opened {0}. dispatched {1}".format(opened_url, ", ".join(ci_files))
+                  else:
+                      raise CmdError(
+                          "opened {0} but CI did not start. "
+                          "Set GOVULNCHECK_APP_ID and GOVULNCHECK_APP_PRIVATE_KEY, "
+                          "or set CI_WORKFLOW_FILES.".format(opened_url)
+                      )
+                  print_plan(vuln, "opened", reason, base)
+                  return "opened", reason
+              except Exception:
+                  # Keep a pull request that was created. Delete only an orphan branch.
+                  if pushed and not opened_url:
+                      run(
+                          ["git", "push", "origin", "--delete", vuln.branch()],
+                          cwd=root,
+                          check=False,
+                      )
+                  raise
+              finally:
+                  checkout_base(root, base)
+                  if not pushed:
+                      run(["git", "branch", "-D", vuln.branch()], cwd=root, check=False, quiet=True)
+          
+          
+          def scan_config_line(label: str, config: dict | None) -> str:
+              if not config:
+                  return "{0}: no config message".format(label)
+              return "{0}: scanner {1} db {2} go {3} level {4}".format(
+                  label,
+                  config.get("scanner_version") or "unknown",
+                  config.get("db_last_modified") or "unknown",
+                  config.get("go_version") or "unknown",
+                  config.get("scan_level") or "unknown",
+              )
+          
+          
+          def main() -> int:
+              if env_flag("GOVULNCHECK_SELF_TEST"):
+                  self_test()
+                  log("self test passed")
+                  return 0
+          
+              dry_run = env_flag("DRY_RUN")
+              use_app_token = env_flag("USE_APP_TOKEN")
+              base = os.environ.get("BASE_BRANCH", "").strip()
+              if not base:
+                  raise SystemExit("BASE_BRANCH is empty")
+              ci_files = workflow_files()
+              root = repo_root()
+              mod = module_dir(root)
+          
+              _, status = run(["git", "status", "--porcelain"], cwd=root, quiet=True)
+              if status.strip():
+                  raise SystemExit("worktree is not clean")
+              _, head_name = run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, quiet=True)
+              _, head_sha = run(["git", "rev-parse", "HEAD"], cwd=root, quiet=True)
+              code, base_sha = run(["git", "rev-parse", base], cwd=root, quiet=True, check=False)
+              on_base = head_name.strip() == base or (
+                  code == 0 and head_sha.strip() == base_sha.strip()
+              )
+              if not on_base:
+                  raise SystemExit("HEAD is {0}. Expected {1}".format(head_name.strip(), base))
+          
+              _, go_version = run(["go", "version"], cwd=mod, quiet=True)
+              _, main_json = run(["go", "list", "-m", "-json"], cwd=mod, quiet=True)
+              main_module = json.loads(main_json).get("Path", "")
+          
+              log("govulncheck")
+              log("base branch: {0}".format(base))
+              log("go version file: {0}".format(os.environ.get("GO_VERSION_FILE", "go.mod")))
+              log("module directory: {0}".format(mod))
+              log("main module: {0}".format(main_module))
+              log("go: {0}".format(go_version.strip()))
+              log("dry run: {0}".format("yes" if dry_run else "no"))
+              log("token: {0}".format("github app" if use_app_token else "GITHUB_TOKEN"))
+              log("ci workflows: {0}".format(", ".join(ci_files) if ci_files else "none"))
+              log(
+                  "standard library policy: set the toolchain line with go get toolchain@goX.Y.Z. "
+                  "Do not change the go language line when the go command can keep it."
+              )
+              log("")
+          
+              mod_config, mod_osvs, mod_findings, _ = run_scan(
+                  ["-scan", "module", "-format", "json"], mod
+              )
+              sym_config, sym_osvs, sym_findings, _ = run_scan(
+                  ["-format", "json", "./..."], mod
+              )
+              osvs = dict(mod_osvs)
+              osvs.update(sym_osvs)
+              log(scan_config_line("module scan", mod_config))
+              log(scan_config_line("symbol scan", sym_config))
+              log("module findings: {0}".format(len(mod_findings)))
+              log("symbol findings: {0}".format(len(sym_findings)))
+              log(
+                  "symbol called findings: {0}".format(
+                      sum(1 for finding in sym_findings if frame_has(finding, "function"))
+                  )
+              )
+              log("")
+          
+              vulns = build_vulns(mod_findings, sym_findings, osvs)
+              for vuln in vulns:
+                  drop_main_module(vuln, main_module)
+          
+              if not any(bump.kind == "toolchain" for vuln in vulns for bump in vuln.bumps):
+                  log("No standard library findings.")
+                  log("")
+          
+              results: list[tuple[str, str, str]] = []
+              failures = 0
+              for vuln in vulns:
+                  if not vuln.bumps:
+                      reason = "no fixed version: " + ", ".join(vuln.unfixed or ["none reported"])
+                      print_plan(vuln, "no-fix", reason, base)
+                      results.append(("no-fix", vuln.osv_id, reason))
+                      continue
+                  try:
+                      # Reload open pull requests inside open_one so a pull request
+                      # opened earlier in this run is visible to the next finding.
+                      action, detail = open_one(root, mod, vuln, base, dry_run, use_app_token, ci_files)
+                      results.append((action, vuln.osv_id, detail))
+                  except Exception as exc:
+                      failures += 1
+                      detail = str(exc).strip()
+                      print_plan(vuln, "failed", detail, base)
+                      results.append(("failed", vuln.osv_id, detail))
+                      checkout_base(root, base)
+          
+              lines = ["", "=== summary ==="]
+              if not results:
+                  lines.append("No vulnerable modules.")
+              for action, osv_id, detail in results:
+                  flat = " ".join(detail.split())
+                  lines.append("{0} {1} {2}".format(action, osv_id, flat))
+              if failures:
+                  lines.append("failures: {0}".format(failures))
+              write_summary("\n".join(lines) + "\n")
+              return 1 if failures else 0
+          
+          
+          def self_test() -> None:
+              assert title_has_ident("Bump x/net for CVE-2026-78661", "CVE-2026-78661")
+              assert not title_has_ident("Bump x/net for CVE-2026-78661", "CVE-2026-7866")
+              assert not title_has_ident("Bump x/net for CVE-2026-78661", "GO-2026-6860")
+              assert title_has_ident("Fix GO-2026-6860 (no CVE): bump", "GO-2026-6860")
+              assert semver_cmp("v0.61.0", "v0.62.0") == -1
+              assert semver_cmp("v0.62.0", "v0.62.0") == 0
+              assert semver_cmp("v0.58.0", "v0.58.1-0.20261009181718-2f1f834330b2") == -1
+              assert semver_cmp("v1.2.3-rc.1", "v1.2.3") == -1
+              assert semver_cmp("v1.0.0-alpha", "v1.0.0-alpha.1") == -1
+              assert semver_cmp("v1.0.0-alpha.1", "v1.0.0-alpha.beta") == -1
+              assert semver_cmp("v1.0.0-beta.2", "v1.0.0-beta.11") == -1
+              assert semver_cmp("go1.27.3", "v1.27.4") == -1
+              assert semver_to_go_tag("v1.22.5") == "go1.22.5"
+              assert semver_to_go_tag("v1.21.0") == "go1.21"
+              assert semver_to_go_tag("v1.22.0-rc.1") == "go1.22rc1"
+              assert semver_to_go_tag("v1.27.0-rc.3") == "go1.27rc3"
+              assert semver_to_go_tag("v1.0.0") == "go1"
+              try:
+                  semver_to_go_tag("v0.0.0-20240101120000-abcdefabcdef")
+              except ValueError:
+                  pass
+              else:
+                  raise AssertionError("pseudo-version must not become a Go tag")
+              vuln = Vuln(
+                  osv_id="GO-2026-6860",
+                  aliases=["CVE-2026-78661"],
+                  summary="example",
+                  bumps=[Bump("golang.org/x/net", "v0.61.0", "v0.62.0", "v0.62.0", "module")],
+                  called=False,
+              )
+              assert vuln.title() == "Fix GO-2026-6860 (CVE-2026-78661): bump golang.org/x/net to v0.62.0"
+              assert vuln.branch() == "govulncheck/GO-2026-6860"
+              body = pr_body(vuln)
+              assert "https://pkg.go.dev/vuln/GO-2026-6860" in body
+              assert "CVE-2026-78661" in body
+              assert "The vulnerable code is not called." in body
+              pr100 = {
+                  "number": 100,
+                  "title": "Bump golang.org/x/net to v0.62.0 for CVE-2026-78661",
+                  "headRefName": "cursor/bump-x-net-cve-2026-78661-9c00",
+              }
+              blocker, reason = blocking_pr(vuln, [pr100])
+              assert blocker is not None
+              assert "CVE-2026-78661" in reason
+              assert "#100" in reason
+              pr100_mod = """
+          module example.com/m
+          
+          go 1.27.3
+          
+          require (
+          \tgolang.org/x/net v0.62.0 // indirect
+          \tgolang.org/x/crypto v0.58.0 // indirect
+          )
+          """
+              sibling = Vuln(
+                  osv_id="GO-2026-6866",
+                  aliases=["CVE-2026-97045"],
+                  summary="example",
+                  bumps=[Bump("golang.org/x/net", "v0.61.0", "v0.62.0", "v0.62.0", "module")],
+              )
+              blocker, reason = blocking_pr(sibling, [pr100], read_gomod=lambda _pr: pr100_mod)
+              assert blocker is not None
+              assert reason == "open pull request #100 sets golang.org/x/net to v0.62.0"
+              low_mod = pr100_mod.replace("v0.62.0", "v0.61.0")
+              blocker, _ = blocking_pr(sibling, [pr100], read_gomod=lambda _pr: low_mod)
+              assert blocker is None
+              both = Vuln(
+                  osv_id="GO-2026-0000",
+                  aliases=[],
+                  summary="example",
+                  bumps=[
+                      Bump("golang.org/x/net", "v0.61.0", "v0.62.0", "v0.62.0", "module"),
+                      Bump("golang.org/x/crypto", "v0.58.0", "v0.59.0", "v0.59.0", "module"),
+                  ],
+              )
+              blocker, _ = blocking_pr(both, [pr100], read_gomod=lambda _pr: pr100_mod)
+              assert blocker is None
+              replaced = pr100_mod + "replace golang.org/x/crypto => golang.org/x/crypto v0.59.0\n"
+              blocker, reason = blocking_pr(both, [pr100], read_gomod=lambda _pr: replaced)
+              assert blocker is not None
+              assert "golang.org/x/crypto to v0.59.0" in reason
+              std = Vuln(
+                  osv_id="GO-2026-0001",
+                  aliases=[],
+                  summary="example",
+                  bumps=[Bump("stdlib", "go1.27.3", "v1.27.4", "go1.27.4", "toolchain")],
+              )
+              assert gomod_covers_vuln(std, "module m\n\ngo 1.27.3\n\ntoolchain go1.27.4\n")[0]
+              assert not gomod_covers_vuln(std, "module m\n\ngo 1.27.3\n")[0]
+          
+          
+          if __name__ == "__main__":
+              try:
+                  sys.exit(main())
+              except CmdError as exc:
+                  log(str(exc))
+                  sys.exit(1)
+          GOVULNCHECK_PY
