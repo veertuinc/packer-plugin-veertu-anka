@@ -12,7 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          # head.sha is set for pull_request.
+          # workflow_dispatch leaves head.sha empty. Use github.sha for that event.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: Tag HEAD for GoReleaser snapshot version
         run: |
