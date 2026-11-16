@@ -4,6 +4,7 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
+    target-branch: "edge"
     schedule:
       interval: "weekly"
       day: "tuesday"
