@@ -6,7 +6,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/hashicorp/hcl/v2 v2.25.0
 	github.com/hashicorp/packer-plugin-sdk v0.6.13
-	github.com/micromdm/plist v0.3.0
+	github.com/micromdm/plist v0.4.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/zclconf/go-cty v1.19.0
 	gotest.tools/v3 v3.5.2
