@@ -10,24 +10,23 @@ name: govulncheck
 # actions/setup-go reads the Go version from the go line in that file.
 # The scan runs in the directory of that file.
 # CI_WORKFLOW_FILES is a comma-separated list of workflow files.
-# After a GITHUB_TOKEN pull request, this workflow dispatches those files.
-# GitHub does not start pull_request workflows for GITHUB_TOKEN.
-# Leave CI_WORKFLOW_FILES empty to skip dispatch.
+# Those files need a pull_request trigger to report checks on a fix pull request.
+# This workflow does not dispatch them.
+# A workflow_dispatch run does not appear on the pull request.
+# It does not satisfy a required status check.
 #
 # CI without a personal access token:
-# 1. Preferred. Create a GitHub App with Contents write and Pull requests write.
+# 1. Create a GitHub App with Contents write and Pull requests write.
 #    Install the app on this repository.
 #    Set secrets GOVULNCHECK_APP_ID and GOVULNCHECK_APP_PRIVATE_KEY.
 #    GOVULNCHECK_APP_ID is the numeric App ID.
 #    GOVULNCHECK_APP_PRIVATE_KEY is the app private key, PEM text.
 #    The workflow opens the pull request with the app token.
-#    pull_request workflows then start.
-# 2. Fallback. GITHUB_TOKEN opens the pull request, then this workflow
-#    dispatches CI_WORKFLOW_FILES.
-#    Those files must have a workflow_dispatch trigger.
-#    In Settings, Actions, General, Workflow permissions:
-#    select Read and write permissions.
-#    Enable "Allow GitHub Actions to create and approve pull requests".
+#    pull_request workflows then run, and the required check is on the pull request.
+# 2. Without those secrets, this workflow does not open a pull request.
+#    GITHUB_TOKEN can create the pull request. GitHub then holds the
+#    pull_request workflows until a person with write access selects
+#    Approve workflows to run. The required check stays missing until then.
 #
 # Standard library findings and go command findings use module path
 # stdlib or toolchain. go get cannot bump those modules.
@@ -70,7 +69,6 @@ env:
 permissions:
   contents: write
   pull-requests: write
-  actions: write
 
 concurrency:
   group: govulncheck-${{ github.repository }}
@@ -962,18 +960,12 @@ jobs:
               return out.strip()
           
           
-          def dispatch_ci(branch: str, files: list[str]) -> None:
-              for name in files:
-                  last_error = ""
-                  for _ in range(3):
-                      try:
-                          run(gh_cmd(["workflow", "run", name, "--ref", branch]))
-                          last_error = ""
-                          break
-                      except CmdError as exc:
-                          last_error = str(exc)
-                  if last_error:
-                      raise CmdError(last_error)
+          APP_TOKEN_REQUIRED = (
+              "GitHub App token is not set. "
+              "Set secrets GOVULNCHECK_APP_ID and GOVULNCHECK_APP_PRIVATE_KEY. "
+              "A pull request opened with GITHUB_TOKEN leaves pull_request workflows waiting for approval. "
+              "A workflow_dispatch run does not appear on the pull request and does not satisfy the required check."
+          )
           
           
           def workflow_files() -> list[str]:
@@ -993,37 +985,6 @@ jobs:
                       continue
                   kept.append(bump)
               vuln.bumps = kept
-          
-          
-          def pr_has_checks(number: int) -> bool:
-              _, out = run(
-                  gh_cmd(["pr", "view", str(number), "--json", "statusCheckRollup"]),
-                  quiet=True,
-              )
-              data = json.loads(out)
-              return bool(data.get("statusCheckRollup"))
-          
-          
-          def maybe_dispatch_existing(
-              vuln: Vuln,
-              blocker: dict,
-              dry_run: bool,
-              use_app_token: bool,
-              ci_files: list[str],
-          ) -> str:
-              """Start CI for a pull request this workflow already opened.
-          
-              GITHUB_TOKEN does not start pull_request workflows. A failed dispatch
-              must be retried on the next run. Do not dispatch again when checks exist.
-              """
-              head = (blocker.get("headRefName") or "").lower()
-              if dry_run or use_app_token or not ci_files or head != vuln.branch().lower():
-                  return ""
-              number = blocker.get("number")
-              if not isinstance(number, int) or pr_has_checks(number):
-                  return ""
-              dispatch_ci(vuln.branch(), ci_files)
-              return " No checks on the pull request. Dispatched {0}.".format(", ".join(ci_files))
           
           
           def open_one(
@@ -1048,9 +1009,8 @@ jobs:
           
               blocker, reason = blocking_pr(vuln, load_open_prs(), read_gomod)
               if blocker:
-                  extra = maybe_dispatch_existing(vuln, blocker, dry_run, use_app_token, ci_files)
-                  print_plan(vuln, "skip", reason + extra, base)
-                  return "skip", reason + extra
+                  print_plan(vuln, "skip", reason, base)
+                  return "skip", reason
               if not vuln.bumps:
                   reason = "no fixed version: " + ", ".join(vuln.unfixed)
                   print_plan(vuln, "no-fix", reason, base)
@@ -1058,6 +1018,8 @@ jobs:
               if dry_run:
                   print_plan(vuln, "would-open", "dry run does not push or open a pull request", base)
                   return "would-open", vuln.title()
+              if not use_app_token:
+                  raise CmdError(APP_TOKEN_REQUIRED)
           
               go_mod, go_sum = rel_module_files(root, mod_dir)
               go_mod_path = os.path.join(root, go_mod)
@@ -1069,19 +1031,11 @@ jobs:
                   commit_and_push(root, vuln, go_mod, go_sum)
                   pushed = True
                   opened_url = create_pr(vuln, base)
-                  if use_app_token:
-                      reason = (
-                          "opened {0}. pull_request workflows start because the token is a GitHub App token"
-                      ).format(opened_url)
-                  elif ci_files:
-                      dispatch_ci(vuln.branch(), ci_files)
-                      reason = "opened {0}. dispatched {1}".format(opened_url, ", ".join(ci_files))
-                  else:
-                      raise CmdError(
-                          "opened {0} but CI did not start. "
-                          "Set GOVULNCHECK_APP_ID and GOVULNCHECK_APP_PRIVATE_KEY, "
-                          "or set CI_WORKFLOW_FILES.".format(opened_url)
-                      )
+                  names = ", ".join(ci_files) if ci_files else "none"
+                  reason = (
+                      "opened {0}. pull_request workflows start because the token is a GitHub App token. "
+                      "Expected workflows: {1}."
+                  ).format(opened_url, names)
                   print_plan(vuln, "opened", reason, base)
                   return "opened", reason
               except Exception:
@@ -1150,7 +1104,7 @@ jobs:
               log("go: {0}".format(go_version.strip()))
               log("dry run: {0}".format("yes" if dry_run else "no"))
               log("token: {0}".format("github app" if use_app_token else "GITHUB_TOKEN"))
-              log("ci workflows: {0}".format(", ".join(ci_files) if ci_files else "none"))
+              log("pull_request workflows: {0}".format(", ".join(ci_files) if ci_files else "none"))
               log(
                   "standard library policy: set the toolchain line with go get toolchain@goX.Y.Z. "
                   "Do not change the go language line when the go command can keep it."
@@ -1307,6 +1261,10 @@ jobs:
               )
               assert gomod_covers_vuln(std, "module m\n\ngo 1.27.3\n\ntoolchain go1.27.4\n")[0]
               assert not gomod_covers_vuln(std, "module m\n\ngo 1.27.3\n")[0]
+              assert "GOVULNCHECK_APP_ID" in APP_TOKEN_REQUIRED
+              assert "GOVULNCHECK_APP_PRIVATE_KEY" in APP_TOKEN_REQUIRED
+              assert "workflow_dispatch" in APP_TOKEN_REQUIRED
+              assert "required check" in APP_TOKEN_REQUIRED
           
           
           if __name__ == "__main__":
