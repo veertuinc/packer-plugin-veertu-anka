@@ -11,78 +11,61 @@ All steps for releasing are internal to Veertu and are not public.
 
 Until Jenkins uses the GitHub remotes, the Bitbucket remotes stay the live SCM.
 
-## Preferred: unified Jenkins job `packer-plugin-veertu-anka`
+## Jenkins job `packer-plugin-veertu-anka`
 
-Multibranch Pipeline on `anka-packer`, Script Path `Jenkinsfile`. One run does **docs check → build → test → GitHub release**.
+One Pipeline job. It is not a multibranch job. SCM is anka-packer branch `edge`. Script Path is `Jenkinsfile`.
 
-### Edge continuous pre-release
+One run does **docs check → resolve release → build → test → GitHub release**.
 
-1. Push to anka-packer `edge` (plugin submodule tracks plugin `edge`).
-2. Job `packer-plugin-veertu-anka/edge` runs automatically (SCM trigger / scan).
-3. Build uses version `0.0.0-dev` (Packer path-install only allows prerelease `dev`; commit is in binary metadata).
-4. After tests succeed, the job publishes movable GitHub tag `edge` (always pre-release) and uploads the build artifacts. Set job param **`SKIP_RELEASE`** to stop after build + test with no publish.
+The job checks out plugin `edge`. It reads version tags on that commit. A version tag is `vMAJOR.MINOR.PATCH` with no suffix. The tag named `edge` is ignored.
 
-### Official version release
+Required GitHub release assets:
 
-This path is for a human feature release. A security patch does not use it. Follow [Automation](#automation). Do not create `release/vX.Y.Z` for a security patch.
+- darwin arm64 zip
+- darwin amd64 zip
+- linux amd64 zip
+- `SHA256SUMS`
+- `SHA256SUMS.sig`
 
-Jenkins maps the anka-packer branch name to the same plugin branch name (`release/v<version>` on both). Create those branches first, then let the job publish.
+| Plugin `edge` HEAD | Build version | After tests pass |
+| --- | --- | --- |
+| One version tag, and any required asset is missing | `X.Y.Z` | Create the GitHub release when it is missing. Upload each missing asset. Full release. The git tag stays on the commit you pushed. |
+| Any other commit | `0.0.0-dev` | Replace the GitHub pre-release `edge` and move git tag `edge` to this commit. |
 
-#### 1. Create the release branches
+The job checks GitHub again after the tests. If every required asset is already on the version release, the job replaces the `edge` pre-release with the artifacts from this run.
 
-Use the same version string on both repos (example: `4.7.0` → branch `release/v4.7.0`). From a clean anka-packer checkout on disk:
+A failed docs check, build, or test publishes nothing. A version release that is missing a required asset stays unreleased. The next green run uploads the missing files.
 
-```bash
-./scripts/create-release-branch.bash 4.7.0
-# Local branches only:
-# ./scripts/create-release-branch.bash 4.7.0 --no-push
-```
+`SKIP_TESTS` skips the test stages. `SKIP_RELEASE` skips notarization and GitHub publish.
 
-The script refreshes `edge` on the plugin and anka-packer, creates `release/v<version>` on both, points the submodule at the plugin tip, and pushes (unless `--no-push`).
+A push to anka-packer `edge` can start the job. A person can also start it. A tag push on the plugin repo does not start the job. The version tag must already be on plugin `origin/edge` HEAD when the job runs. A tag on an older commit publishes the `edge` pre-release.
 
-#### 2. Build, test, and publish
+More than one version tag on that commit fails the job before the build.
 
-1. Job `packer-plugin-veertu-anka/release%2Fv<version>` runs docs check → build → test (SCM trigger / multibranch scan).
-2. If tests pass, the Console shows **Release**. Press it to publish GitHub tag `v<version>` as a **full release** (not pre-release) and upload artifacts. The release body lists commits since the previous `v*` tag. Abort marks the job ABORTED and does **not** publish. Set job param **`SKIP_RELEASE`** to skip the confirm + publish stages (build + test only).
-3. A human may edit the GitHub release notes after publish if the auto commit list needs more detail.
-4. Merge `release/v<version>` into `edge` (both repos) when you want edge to include that work.
+`Notify Integration Release (Tag)` still runs when the `v*` tag is pushed. That is before this job uploads artifacts.
 
-## Automation
+## Jenkins item change
 
-The bot follows only this section for a security patch.
+Remove the multibranch job `packer-plugin-veertu-anka`. Create one Pipeline job with the same name.
 
-A security patch is cut from `edge` on this public repo and from `edge` on `anka-packer`. There is no `release/vX.Y.Z` branch. Do not run `./scripts/create-release-branch.bash`. Do not merge a release branch back. The commit is already on `edge`.
+- SCM: anka-packer `edge` (`git@bitbucket.org:veertunew/anka-packer.git` until Jenkins uses GitHub).
+- Script Path: `Jenkinsfile`.
+- Do not discover `release/*`.
+- Do not create `packer-plugin-veertu-anka-release`.
 
-The next security version is the latest full-release `v*` tag plus one patch. Ignore the movable pre-release tag `edge` when you choose the number. On 2026-11-09 the latest full release is `v4.7.0`, so the version string is `4.7.1` and the tag is `v4.7.1`.
+Do this in Jenkins after `edge` contains this `Jenkinsfile`.
 
-1. Pull-request check `Check PR / goreleaser` must have passed on the `edge` commit before you start Jenkins. No GitHub workflow runs on push to `edge`. Do not wait for one.
-2. Do not trigger `packer-plugin-veertu-anka/edge`. That job publishes the movable pre-release tag `edge`. Do not move tag `edge`.
-3. Do not dispatch `Notify Integration Release (Manual)`. That workflow is for documentation only.
-4. Do not trigger `packer-plugin-veertu-anka/release%2FvX.Y.Z`. That job exists only for a `release/vX.Y.Z` branch, and a security patch has no such branch.
-5. Read private `veertuinc/anka-packer` (branch `edge`) and `veertuinc/anka-packer-test` (branch `master`). They are migrating from Bitbucket `veertunew/anka-packer` and `veertunew/anka-packer-test`. If the bot cannot read `veertuinc/anka-packer`, stop and notify. Do not create the GitHub Release from this public repo to get around that.
-6. Trigger Jenkins job `packer-plugin-veertu-anka-release` (`https://jenkins.veertu.com/job/packer-plugin-veertu-anka-release/`). Set `VERSION` to `X.Y.Z` with no leading `v`. Leave `SKIP_RELEASE` unset. If that job does not exist, stop and notify. Do not substitute the `edge` job or a `release/v*` job.
-7. Wait for docs check, build, and test. The test suite comes from `anka-packer-test`. If any of those fail, stop. Do not ask Nathan to submit **Release**.
-8. When the build is waiting for input, post in Slack channel `C01SDPZ2R6Z`. Mention Nathan as `<@U01DZ9N8UJV>` and ask him to submit the **Release** input on that build. Include the build URL and the version. Do not submit the input. Do not abort the build. Abort does not publish.
-9. Poll the build after that post. When it finishes, verify the result. `SUCCESS` publishes tag `vX.Y.Z` on this repo as a full GitHub Release (not a pre-release) and uploads the artifacts. `FAILURE`, `UNSTABLE`, or `ABORTED` does not publish. Stop and notify. Do not push the tag yourself. Confirm that tag `edge` did not move.
-10. Workflow `Notify Integration Release (Tag)` runs from the `v*` tag push. Report its result. Do not re-tag if it fails.
+## Version release
 
-### Jenkins job to create
+1. Push the plugin commit to `edge`.
+2. Tag that same commit, for example `v4.7.1`, and push the tag.
+3. Start `packer-plugin-veertu-anka`, or push anka-packer `edge` so the job starts.
+4. When the tests pass, the job publishes `v4.7.1` because the GitHub release has no required assets.
 
-Job `packer-plugin-veertu-anka-release` does not exist yet. The multibranch item `packer-plugin-veertu-anka` is a different job. Its `edge` branch publishes tag `edge`. Its `release/v*` branch needs a release branch. Neither one is the security-patch job.
-
-Create one Pipeline job:
-
-1. Name: `packer-plugin-veertu-anka-release`.
-2. SCM: `veertuinc/anka-packer`, branch `edge`. Until that repo is the live remote, use `git@bitbucket.org:veertunew/anka-packer.git`, branch `edge`.
-3. Script Path: `Jenkinsfile` in `anka-packer`. The `edge` branch of that file today publishes tag `edge` and does not wait for **Release**. Change it for this job: wait for **Release**, then publish tag `v${VERSION}` as a full release. Do not move tag `edge`.
-4. Parameters: `VERSION` (string, `X.Y.Z`, no `v`) and `SKIP_RELEASE` (boolean, default false). `SKIP_RELEASE` skips confirm and publish. Build and test still run.
-5. Tests clone `veertuinc/anka-packer-test` (branch `master`). Until that repo is the live remote, clone Bitbucket `veertunew/anka-packer-test`, branch `master`.
-6. The **Release** input stays manual. The bot triggers the job and verifies the result. Nathan submits the input.
-
-When the GitHub migration is done, point the existing multibranch job `packer-plugin-veertu-anka` at `veertuinc/anka-packer`. Leave its `edge` branch as the pre-release path only.
+A security patch uses this same path. Do not create a `release/vX.Y.Z` branch. Do not run `./scripts/create-release-branch.bash`.
 
 ## Version overrides
 
-- Build/publish: set `VERSION` or `PROJECT_VERSION` (optional leading `v`)
-- Local: `make VERSION=4.7.0 go.releaser` or tag HEAD (`git tag v4.7.0`) before build
-- Untagged local builds fall back to `0.0.0-dev`
+- Build/publish: the job sets `VERSION` from the decision file.
+- Local: `make VERSION=4.7.0 go.releaser` or tag HEAD (`git tag v4.7.0`) before build.
+- Untagged local builds fall back to `0.0.0-dev`.
