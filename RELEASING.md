@@ -2,18 +2,11 @@
 
 All steps for releasing are internal to Veertu and are not public.
 
-`anka-packer` holds the Jenkins `Jenkinsfile` and the plugin submodule. `anka-packer-test` is the private test suite. Both are moving from Bitbucket to private GitHub repos:
-
-| Role | Bitbucket (live until the migration finishes) | GitHub destination | Branch |
-| --- | --- | --- | --- |
-| Wrapper and Jenkinsfile | `veertunew/anka-packer` | `veertuinc/anka-packer` | `edge` |
-| Private test suite | `veertunew/anka-packer-test` | `veertuinc/anka-packer-test` | `master` |
-
-Until Jenkins uses the GitHub remotes, the Bitbucket remotes stay the live SCM.
+The wrapper and Jenkinsfile are [veertuinc/anka-packer-wrapper](https://github.com/veertuinc/anka-packer-wrapper), branch `edge`. The plugin submodule is `veertuinc/packer-plugin-veertu-anka`, branch `edge`. `anka-packer-test` is the private test suite.
 
 ## Jenkins job `packer-plugin-veertu-anka`
 
-One Pipeline job. It is not a multibranch job. SCM is anka-packer branch `edge`. Script Path is `Jenkinsfile`.
+One Pipeline job. It is not a multibranch job. SCM is `veertuinc/anka-packer-wrapper` branch `edge`. Script Path is `Jenkinsfile`.
 
 One run does **docs check → resolve release → build → test → GitHub release**.
 
@@ -38,7 +31,7 @@ A failed docs check, build, or test publishes nothing. A version release that is
 
 `SKIP_TESTS` skips the test stages. `SKIP_RELEASE` skips notarization and GitHub publish.
 
-A push to anka-packer `edge` can start the job. A person can also start it. A tag push on the plugin repo does not start the job. The version tag must already be on plugin `origin/edge` HEAD when the job runs. A tag on an older commit publishes the `edge` pre-release.
+A push to `anka-packer-wrapper` `edge` can start the job. A person can also start it. A tag push on the plugin repo does not start the job. The version tag must already be on plugin `origin/edge` HEAD when the job runs. A tag on an older commit publishes the `edge` pre-release.
 
 More than one version tag on that commit fails the job before the build.
 
@@ -48,7 +41,7 @@ More than one version tag on that commit fails the job before the build.
 
 Remove the multibranch job `packer-plugin-veertu-anka`. Create one Pipeline job with the same name.
 
-- SCM: anka-packer `edge` (`git@bitbucket.org:veertunew/anka-packer.git` until Jenkins uses GitHub).
+- SCM: `git@github.com:veertuinc/anka-packer-wrapper.git`, branch `edge`.
 - Script Path: `Jenkinsfile`.
 - Do not discover `release/*`.
 - Do not create `packer-plugin-veertu-anka-release`.
@@ -59,7 +52,7 @@ Do this in Jenkins after `edge` contains this `Jenkinsfile`.
 
 1. Push the plugin commit to `edge`.
 2. Tag that same commit, for example `v4.7.1`, and push the tag.
-3. Start `packer-plugin-veertu-anka`, or push anka-packer `edge` so the job starts.
+3. Start `packer-plugin-veertu-anka`, or push `anka-packer-wrapper` `edge` so the job starts.
 4. When the tests pass, the job publishes `v4.7.1` because the GitHub release has no required assets.
 
 A security patch uses this same path. Do not create a `release/vX.Y.Z` branch. Do not run `./scripts/create-release-branch.bash`.
